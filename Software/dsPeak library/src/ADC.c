@@ -36,40 +36,55 @@
 void ADC_init (void)
 {
     ADC_stop();                     // Stop ADC if it was already in use
-//   
-//    // Initialize dsPIC pins to analog inputs
-//    // MOTOR_1_CURRENT is AN1 on RA1
-//    TRISAbits.TRISA1 = 1;   // Set MOTOR_1_CURRENT pin to input
-//    ANSELAbits.ANSA1 = 1;   // Set MOROT_1_CURRENT pin to analog input mode
-//    
-//    // MOTOR_2_CURRENT is AN3 on RB1
-//    TRISBbits.TRISB1 = 1;   // Set MOTOR_2_CURRENT pin to input
-//    ANSELBbits.ANSB1 = 1;   // Set MOROT_2_CURRENT pin to analog input mode
-//    
-//    // ANALOG_input is AN5 on RB3
-//    TRISBbits.TRISB3 = 1;   // Set ANALOG_input pin to input
-//    ANSELBbits.ANSB3 = 1;   // Set ANALOG_input pin to analog input mode
-//    
-//    // BATTERY_monitor is AN6 on RC0
-//    TRISCbits.TRISC0 = 1;   // Set BATTERY_monitor pin to input
-//    ANSELCbits.ANSC0 = 1;   // Set BATTERY_monitor pin to analog input mode       
-       
-    // Initialize ADC core logic for 12-bits, unsigned integer with auto-conv
+ 
+    // Initialize dsPIC pins to analog inputs
+    
+    // AIN_AN0 (±3.3V analog input) on RB0
+    TRISBbits.TRISB0 = 1;   // Set ANI_AN0 pin to input
+    ANSELBbits.ANSB0 = 1;   // Set ANI_AN0 pin to analog input mode
+
+    // AIN_AN1 (±3.3V analog input) on RB1
+    TRISBbits.TRISB1 = 1;   // Set ANI_AN1 pin to input
+    ANSELBbits.ANSB1 = 1;   // Set ANI_AN1 pin to analog input mode  
+
+    // AIN_AN2 (3.3V analog potentiometer) on RB2
+    TRISBbits.TRISB2 = 1;   // Set ANI_AN2 pin to input
+    ANSELBbits.ANSB2 = 1;   // Set ANI_AN2 pin to analog input mode  
+    
+    // AIN_AN12 (±10V analog input) on RB12
+    TRISBbits.TRISB12 = 1;   // Set ANI_AN12 pin to input
+    ANSELBbits.ANSB12 = 1;   // Set ANI_AN12 pin to analog input mode    
+
+    // AIN_AN13 (±10V analog input) on RB13
+    TRISBbits.TRISB13 = 1;   // Set ANI_AN13 pin to input
+    ANSELBbits.ANSB13 = 1;   // Set ANI_AN13 pin to analog input mode   
+
+    // AIN_AN14 (±10V analog input) on RB14
+    TRISBbits.TRISB14 = 1;   // Set ANI_AN14 pin to input
+    ANSELBbits.ANSB14 = 1;   // Set ANI_AN14 pin to analog input mode   
+
+    // AIN_AN15 (±10V analog input) on RB15
+    TRISBbits.TRISB15 = 1;   // Set ANI_AN15 pin to input
+    ANSELBbits.ANSB15 = 1;   // Set ANI_AN15 pin to analog input mode       
+
+    
+    
+    // Initialize ADC1 core logic for 12-bits
     // and automatic sequential sampling of the 4 inputs
-    AD1CON1bits.AD12B = 1;  // Select 12 bits resolution
-    AD1CON1bits.FORM = 0;   // Select unsigned integer format
-    AD1CON1bits.SSRC = 7;   // Internal counter ends conversion (auto-convert)
-    AD1CON1bits.SSRCG = 0;  // 
-    AD1CON1bits.ASAM = 1;   // Automatic sampling
-    
-    AD1CON2bits.VCFG = 0;   // AVdd and AVss as voltage reference
-    AD1CON2bits.CSCNA = 1;  // Scans input for CH0+
-    AD1CON2bits.SMPI = 3;   // Scan 4 different channels (N-1)
-    
-    AD1CON3 = 0x0F0F;       // Sample for 15*TAD before converting
-    AD1CON4 = 0x0000;
-    AD1CSSH = 0x0000;
-    AD1CSSL = 0x006A;       // Select AN1, AN3, AN5 and AN6 for scanning      
+//    AD1CON1bits.AD12B = 1;  // Select 12 bits resolution
+//    AD1CON1bits.FORM = 0;   // Select unsigned integer format
+//    AD1CON1bits.SSRC = 7;   // Internal counter ends conversion (auto-convert)
+//    AD1CON1bits.SSRCG = 0;  // 
+//    AD1CON1bits.ASAM = 1;   // Automatic sampling
+//    
+//    AD1CON2bits.VCFG = 0;   // AVdd and AVss as voltage reference
+//    AD1CON2bits.CSCNA = 1;  // Scans input for CH0+
+//    AD1CON2bits.SMPI = 3;   // Scan 4 different channels (N-1)
+//    
+//    AD1CON3 = 0x0F0F;       // Sample for 15*TAD before converting
+//    AD1CON4 = 0x0000;
+//    AD1CSSH = 0x0000;
+//    AD1CSSL = 0x006A;       // Select AN1, AN3, AN5 and AN6 for scanning      
 }
 
 //************************void ADC_start (void)*******************************//
