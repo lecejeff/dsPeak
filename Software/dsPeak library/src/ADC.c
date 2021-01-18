@@ -142,9 +142,9 @@ void ADC_stop (void)
 //****************************************************************************//
 unsigned char ADC_sample_status (void)
 {
-    if (ADC_struct.data_ready == ADC_SAMPLE_READY)
+    if (ADC_struct.sample_ready == ADC_SAMPLE_READY)
     {
-        ADC_struct.data_ready = ADC_SAMPLE_NOT_READY;   // Clear flag
+        ADC_struct.sample_ready = ADC_SAMPLE_NOT_READY;   // Clear flag
         return ADC_SAMPLE_READY;                        // Sample ready to be read
     }
     else return ADC_SAMPLE_NOT_READY;
