@@ -47,7 +47,7 @@ void UART_init (unsigned char channel, unsigned long baud)
     {
         case UART_1:
             TRISBbits.TRISB7 = 0;        //UART1_TX is an output on RB7(RP39)
-            RPOR2bits.RP39R = 1;         //RB7(RP39) is UART1_tx
+            //RPOR2bits.RP39R = 1;         //RB7(RP39) is UART1_tx
             TRISBbits.TRISB8 = 1;        //UART1_RX is an input on RB8(RP40)
             RPINR18bits.U1RXR = 0x28;    //RB8(RP40) is UART1_RX
             UART_struct[UART_1].UART_rx_done = 0;   //RX not done
@@ -67,8 +67,8 @@ void UART_init (unsigned char channel, unsigned long baud)
             break;
            
         case UART_2:
-            TRISCbits.TRISC9 = 0;           //UART2_TX is an output on RC9(RP57)
-            RPOR7bits.RP57R = 0x03;         //RC9(RP68) is UART2_TX
+            //TRISCbits.TRISC9 = 0;           //UART2_TX is an output on RC9(RP57)
+            //RPOR7bits.RP57R = 0x03;         //RC9(RP68) is UART2_TX
             TRISBbits.TRISB15 = 1;          //UART2_RX is an input on RB15(RPI47)
             RPINR19bits.U2RXR = 0x2F;       //RB15(RPI47) is UART2_RX
                    

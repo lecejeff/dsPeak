@@ -142,13 +142,13 @@ void ADC_stop (void)
 //****************************************************************************//
 unsigned char ADC_sample_status (void)
 {
-    if (ADC_struct.sample_ready == ADC_SAMPLE_READY)
-    {
-        ADC_struct.sample_ready = ADC_SAMPLE_NOT_READY;   // Clear flag
-        return ADC_SAMPLE_READY;                        // Sample ready to be read
-    }
-    else return ADC_SAMPLE_NOT_READY;
-
+//    if (ADC_struct.sample_ready == ADC_SAMPLE_READY)
+//    {
+//        ADC_struct.sample_ready = ADC_SAMPLE_NOT_READY;   // Clear flag
+//        return ADC_SAMPLE_READY;                        // Sample ready to be read
+//    }
+    //else return ADC_SAMPLE_NOT_READY;
+    return 0;
 }
 
 //**********unsigned int ADC_get_channel (unsigned char channel)**************//
@@ -168,21 +168,21 @@ unsigned int ADC_get_channel (unsigned char channel)
 {
     switch(channel)
     {
-        case ADC_MOTOR_1_CHANNEL:
-            return ADC_struct.motor_1_current;
-            break;
-            
-        case ADC_MOTOR_2_CHANNEL:
-            return ADC_struct.motor_2_current;
-            break;
-            
-        case ADC_ANALOG_INPUT_CHANNEL:
-            return ADC_struct.analog_input;
-            break;
-            
-        case ADC_BATTERY_CHANNEL:
-            return ADC_struct.battery_voltage;
-            break;
+//        case ADC_MOTOR_1_CHANNEL:
+//            return ADC_struct.motor_1_current;
+//            break;
+//            
+//        case ADC_MOTOR_2_CHANNEL:
+//            return ADC_struct.motor_2_current;
+//            break;
+//            
+//        case ADC_ANALOG_INPUT_CHANNEL:
+//            return ADC_struct.analog_input;
+//            break;
+//            
+//        case ADC_BATTERY_CHANNEL:
+//            return ADC_struct.battery_voltage;
+//            break;
             
         default:
             return 0;
@@ -195,25 +195,25 @@ void __attribute__((__interrupt__, no_auto_psv))_AD1Interrupt(void)
 {
     IFS0bits.AD1IF = 0;
     
-    // Sum the result for a total of ADC_avg.average_length 
-    ADC_avg.motor1_average = ADC_avg.motor1_average + ADC1BUF0;
-    ADC_avg.motor2_average = ADC_avg.motor2_average + ADC1BUF1;
-    ADC_avg.analog_in_average = ADC_avg.analog_in_average + ADC1BUF2;
-    ADC_avg.battery_monitor_average = ADC_avg.battery_monitor_average + ADC1BUF3;
-    
-    // When the average counter is exceeded, calculate average value for each channel
-    // and set the data_ready flag
-    if (++ADC_avg.average_counter > ADC_avg.average_length)
-    {
-        ADC_avg.average_counter = 0;
-        ADC_struct.motor_1_current = (unsigned int)(ADC_avg.motor1_average / ADC_avg.average_length);
-        ADC_struct.motor_2_current = (unsigned int)(ADC_avg.motor2_average / ADC_avg.average_length);
-        ADC_struct.analog_input = (unsigned int)(ADC_avg.analog_in_average / ADC_avg.average_length);
-        ADC_struct.battery_voltage = (unsigned int)(ADC_avg.battery_monitor_average / ADC_avg.average_length);
-        ADC_avg.motor1_average = 0;
-        ADC_avg.motor2_average = 0;
-        ADC_avg.analog_in_average = 0;
-        ADC_avg.battery_monitor_average = 0;
-        ADC_struct.data_ready = ADC_SAMPLE_READY;
-    }
+//    // Sum the result for a total of ADC_avg.average_length 
+//    ADC_avg.motor1_average = ADC_avg.motor1_average + ADC1BUF0;
+//    ADC_avg.motor2_average = ADC_avg.motor2_average + ADC1BUF1;
+//    ADC_avg.analog_in_average = ADC_avg.analog_in_average + ADC1BUF2;
+//    ADC_avg.battery_monitor_average = ADC_avg.battery_monitor_average + ADC1BUF3;
+//    
+//    // When the average counter is exceeded, calculate average value for each channel
+//    // and set the data_ready flag
+//    if (++ADC_avg.average_counter > ADC_avg.average_length)
+//    {
+//        ADC_avg.average_counter = 0;
+//        ADC_struct.motor_1_current = (unsigned int)(ADC_avg.motor1_average / ADC_avg.average_length);
+//        ADC_struct.motor_2_current = (unsigned int)(ADC_avg.motor2_average / ADC_avg.average_length);
+//        ADC_struct.analog_input = (unsigned int)(ADC_avg.analog_in_average / ADC_avg.average_length);
+//        ADC_struct.battery_voltage = (unsigned int)(ADC_avg.battery_monitor_average / ADC_avg.average_length);
+//        ADC_avg.motor1_average = 0;
+//        ADC_avg.motor2_average = 0;
+//        ADC_avg.analog_in_average = 0;
+//        ADC_avg.battery_monitor_average = 0;
+//        ADC_struct.data_ready = ADC_SAMPLE_READY;
+//    }
 }

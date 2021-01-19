@@ -29,7 +29,9 @@
 // Definition of SPI modules
 #define SPI_1 0
 #define SPI_2 1
-#define SPI_QTY 2
+#define SPI_3 2
+#define SPI_4 3
+#define SPI_QTY 4
 
 //******************************************************************************
 // Various SPI chip select defines
@@ -44,9 +46,8 @@
 
 //******************************************************************************
 // SPI module pin configuration
-#define DRV8873_CS LATBbits.LATB0      // DRV8873 /CS is RB0
-#define EXTSPI2_CS LATBbits.LATB13      
-#define SPI_MSG_LENGTH DRIVE_DATA_LENGTH
+
+#define SPI_MSG_LENGTH 1
 typedef struct
 {
     unsigned char spi_chip;

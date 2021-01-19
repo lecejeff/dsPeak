@@ -47,7 +47,7 @@ void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, un
 {    
     switch (channel)
     {
-        // SPI1 is DRV8873 control port, SPI master
+        // SPI1 is FTDI EVE interface
         case SPI_1:
             IEC0bits.SPI1IE = 0;
             SPI1STATbits.SPIEN = 0;     // Disable SPI module 
@@ -58,7 +58,11 @@ void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, un
             SPI1CON1bits.MODE16 = 0;    // Communication is byte wide (8bit)   
             SPI1CON1bits.MSTEN = 1;     // SPI master mode enabled 
             SPI1CON2bits.FRMEN = 0;     // Frame mode disabled 
-            SPI1CON1bits.SSEN = 0;      // GPIO controls SPI /CS       
+            SPI1CON1bits.SSEN = 0;      // GPIO controls SPI /CS
+            // SPI1 clock control, Fsck = FCY / (ppre * spre)
+            // Make sure the clock rate is supported by the spi module
+            SPI1CON1bits.PPRE = ppre;
+            SPI1CON1bits.SPRE = spre;
             switch (mode)
             {
                 case SPI_MODE0:
@@ -87,10 +91,16 @@ void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, un
             }
 
             // SPI1 input/output pin mapping  
-            TRISAbits.TRISA4 = 0;   // RA4 is output (MOSI) 
-            TRISAbits.TRISA9 = 1;   // RA9 is input (MISO) 
-            TRISCbits.TRISC3 = 0;   // RC3 is output (SCLK) 
-            TRISBbits.TRISB0 = 0;   // RB0 is output (#CS)
+            TRISFbits.TRISF13 = 0;  // RF13 is an output (SPI1_MOSI) 
+            TRISAbits.TRISA1 = 1;   // RA1 is an input (SPI1_MISO) 
+            TRISFbits.TRISF12 = 0;  // RF12 is an output (SPI1_SCLK) 
+            TRISBbits.TRISB11 = 0;  // RB11 is an output (SPI1_nCS)
+            
+            // SPI1 peripheral pin assignment       
+            RPOR12bits.RP109R = 0x05;   // RB10(RP42) is SPI1_MOSI 
+            RPINR20bits.SDI1R = 17;     // RA1 (RPI17) is SPI1_MISO
+            RPINR20bits.SCK1R = 108;    // RF12 (RP108) is SPI1_SCLK input
+            RPOR11bits.RP108R = 0x06;   // RF12 (RP108) is SPI1_SCLK output         
             
             IPC2bits.SPI1IP = 4;    // SPI int priority is 4 
             IFS0bits.SPI1EIF = 0;   // Disable SPI error int flag 
@@ -99,20 +109,25 @@ void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, un
             spi_struct[channel].spi_tx_cnt = 0;     // 
             spi_struct[channel].spi_rx_cnt = 0;     // 
             spi_struct[channel].spi_tx_length = 0;  // 
-            
             SPI1STATbits.SPIEN = 1; // Enable SPI module               
             break;
             
-        // SPI2 is intellitrol SPI interface, slave port    
+        // SPI2 is SD / FLASH interface  
         case SPI_2:
+            IEC2bits.SPI2IE = 0;
             SPI2STATbits.SPIEN = 0;     // Disable SPI module 
+            IFS2bits.SPI2EIF = 0;       // Disable SPI error int flag 
+            IFS2bits.SPI2IF = 0;        // Disable SPI int flag 
             SPI2CON1bits.DISSCK = 0;    // Internal serial clock is enabled 
             SPI2CON1bits.DISSDO = 0;    // SDOx pin is controlled by the module 
             SPI2CON1bits.MODE16 = 0;    // Communication is byte wide (8bit)   
-            SPI2CON1bits.MSTEN = 0;     // SPI slave mode
+            SPI2CON1bits.MSTEN = 1;     // SPI master mode enabled 
             SPI2CON2bits.FRMEN = 0;     // Frame mode disabled 
-            SPI2CON1bits.SSEN = 1;      // Module controls SPI /CS        
-
+            SPI2CON1bits.SSEN = 0;      // GPIO controls SPI /CS      
+            // SPI2 clock control, Fsck = FCY / (ppre * spre)
+            // Make sure the clock rate is supported by the spi module
+            SPI2CON1bits.PPRE = ppre;
+            SPI2CON1bits.SPRE = spre;
             switch (mode)
             {
                 case SPI_MODE0:
@@ -141,31 +156,28 @@ void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, un
             }
 
             // SPI2 input/output pin mapping 
-            TRISBbits.TRISB13 = 1;      // RB13 is #CS input on intellitrol
-            TRISBbits.TRISB10 = 0;      // RB10 is output (Drive out to master in) 
-            TRISBbits.TRISB12 = 1;      // RB12 is input (Master out to drive in) 
-            TRISBbits.TRISB11 = 1;      // RB11 is input (SCLK) 
+            TRISGbits.TRISG6 = 0;      // RG6 is an output (SPI2_SCLK)
+            TRISGbits.TRISG7 = 1;      // RG7 is an input (SPI2_MISO)
+            TRISGbits.TRISG8 = 0;      // RGB is an output (SPI2_MOSI)
+            TRISGbits.TRISG9 = 0;      // RB9 is an output (SD_nCS)
+            TRISGbits.TRISG0 = 0;      // RG0 is an output (FLASH_nCS)       
 
-            RPINR23bits.SS2R = 0x2D;    // RB13 (RPI45) is Intellitrol #CS
-            RPINR22bits.SDI2R = 0x2C;   // RB12 (RPI44) is SPI2_MISO
-            RPOR4bits.RP42R = 0x08;     // RB10(RP42) is SPI2_MOSI 
-            RPINR22bits.SCK2R = 0x2B;   // SPI2_SCLK is an input on RP43
-            RPOR4bits.RP43R = 0x09;     // SPI2_SCLK both input and output
-            
-            CNENBbits.CNIEB13 = 1;      // Enable change notice interrupt on CS            
-
+            IPC8bits.SPI2IP = 4;        // SPI int priority is 4  
             IFS2bits.SPI2EIF = 0;       // Disable SPI error int flag 
             IFS2bits.SPI2IF = 0;        // Disable SPI int flag               
-            IPC8bits.SPI2IP = 4;        // SPI int priority is 4  
-            IEC2bits.SPI2IE = 1;
-            IEC2bits.SPI2EIE = 1;
             spi_struct[channel].spi_done = 0;                   // no SPI transaction completed
             spi_struct[channel].spi_tx_cnt = 0;                 // no SPI transaction done
             spi_struct[channel].spi_rx_cnt = 0;                 // no SPI transaction done
             spi_struct[channel].spi_tx_length = SPI_MSG_LENGTH; // no SPI transaction done
             
             SPI2STATbits.SPIEN = 1;     // Enable SPI module                    
-            break;        
+            break;  
+            
+        case SPI_3:
+            break;
+            
+        case SPI_4:
+            break;
     }   
 }
 
@@ -277,11 +289,11 @@ void SPI_master_deassert_cs (unsigned char chip)
    switch (chip)            // Upon switch case 
    {
        case DRV8873_CHIP:
-           DRV8873_CS = 1;
+           //DRV8873_CS = 1;
            break;
            
        case EXTSPI2_CHIP:
-           EXTSPI2_CS = 1;
+           //EXTSPI2_CS = 1;
            break;
    }
 }
@@ -304,11 +316,11 @@ void SPI_master_assert_cs (unsigned char chip)
    switch (chip)            // Upon switch case 
    {
        case DRV8873_CHIP:
-           DRV8873_CS = 0;
+           //DRV8873_CS = 0;
            break;  
            
        case EXTSPI2_CHIP:
-           EXTSPI2_CS = 0;
+           //EXTSPI2_CS = 0;
            break;
    }    
 }
@@ -428,8 +440,9 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 {
-    IFS2bits.SPI2IF = 0;                    // clear interrupt flag    
-    if (spi_struct[SPI_2].spi_tx_cnt < DRIVE_DATA_LENGTH)// if write_cnt < write_length 
+    IFS2bits.SPI2IF = 0;                    // clear interrupt flag  
+    unsigned char test = 0;                 // change to write_cnt < length
+    if (spi_struct[SPI_2].spi_tx_cnt < test)// SEE PRECEDING LINE
     {
         spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt] = SPI2BUF;  // Get Data 
         spi_struct[SPI_2].spi_rx_cnt++;                     // Increm RD cnter 

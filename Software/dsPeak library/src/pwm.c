@@ -77,7 +77,7 @@ void PWM_init (void)
     // RGB LED PWM initialization 
     
     // RGB BLUE LED initialization
-    TRISCbits.TRISC8 = 0;   //PWM5H is an output 
+    //TRISCbits.TRISC8 = 0;   //PWM5H is an output 
     PHASE5 = (unsigned int)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE)); //Phase of 50Hz (20ms)
     PDC5 = (unsigned int)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE));   //
     PWM_struct[PWM_5H].base_value = 0;      //base value at 0
@@ -85,7 +85,7 @@ void PWM_init (void)
     PWM_struct[PWM_5H].range = PWM_struct[PWM_5H].end_value - PWM_struct[PWM_5H].base_value;
     
     // RGB GREEN LED initialization
-    TRISCbits.TRISC7 = 0;   //PWM6L is an output 
+    //TRISCbits.TRISC7 = 0;   //PWM6L is an output 
     SPHASE6 = (unsigned int)(FOSC / (PWM6L_PHASE * PWM_CLOCK_PRESCALE));//Phase of 50Hz (20ms)
     SDC6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));//Duty cycle base is 750us
     PWM_struct[PWM_6L].base_value = 0;           //base value at 0
@@ -93,7 +93,7 @@ void PWM_init (void)
     PWM_struct[PWM_6L].range = PWM_struct[PWM_6L].end_value - PWM_struct[PWM_6L].base_value;
 
     // RGB RED LED initialization
-    TRISCbits.TRISC6 = 0;   //PWM6H is an output 
+    //TRISCbits.TRISC6 = 0;   //PWM6H is an output 
     PHASE6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));//Phase of 50Hz (20ms)
     PDC6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));//Duty cycle base is 1ms
     PWM_struct[PWM_6H].base_value = 0;               //base value at 0

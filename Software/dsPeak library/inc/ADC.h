@@ -32,7 +32,7 @@ typedef struct
     unsigned char mode;
     unsigned char resolution;
     unsigned char output_format;
-}ADC_STRUCT;
+}ADC_struct;
 
 void ADC_init (void);
 void ADC_start (void);
