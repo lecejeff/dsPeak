@@ -17,7 +17,7 @@
 #pragma config GSSK = OFF               // General Segment Key bits (General Segment Write Protection and Code Protection is Disabled)
 
 // FOSCSEL
-#pragma config FNOSC = FRC        // Primary oscillator at POR is FRC
+#pragma config FNOSC = FRC              // Primary oscillator at POR is XT, HS or EC, without PLL
 #pragma config IESO = OFF               // Two-speed Oscillator Start-up Enable bit (Start up with user-selected oscillator source)
 
 // FOSC
@@ -51,14 +51,32 @@
 // End of dsPIC33EP512MU814 configuration fuses ------------------------------//
 
 #include "general.h"
+#include "timer.h"
+#include "ft8xx.h"
 
 int main() 
 {
- 
     DSPIC_init();
+    TIMER_init(TIMER_1, 1000);
+    TIMER_start(TIMER_1);
+    
+    FT8XX_init();
+    FT8XX_CMD_gradient(0, 0, 0, 0x00AA00, 480, 272, 0x5555FF);  
+    FT8XX_CMD_clock(0, 240, 136, 70, OPT_FLAT | OPT_NOBACK, 16, 20, 0, 0);  
+    FT8XX_start_new_dl();					// Start a new display list, reset ring buffer and ring pointer
+
+    FT8XX_write_dl_long(CLEAR(1, 1, 1));
+    FT8XX_write_dl_long(TAG_MASK(1));    
+    FT8XX_write_dl_long(TAG(st_Gradient[0].touch_tag));
+    FT8XX_draw_gradient(&st_Gradient[0]);
+    FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
+    FT8XX_draw_clock(&st_Clock[0]);
+    FT8XX_update_screen_dl();         		// Update display list    yield();     
+    
     while (1)
     {
-        
+        __delay_ms(500);
+        LATHbits.LATH8 = !LATHbits.LATH8;
     }
     return 0;
 }
@@ -82,15 +100,36 @@ void DSPIC_init (void)
     // PLLDIV = 68, M = 70
     // PLLPOST = 0, N2 = 2
     // Fout = 20MHz * (140 / (10*2)) = 140MHz = 70MIPS
-    PLLFBDbits.PLLDIV = 68;   
+    PLLFBDbits.PLLDIV = 68; 
+    CLKDIVbits.PLLPOST = 0;
     CLKDIVbits.PLLPRE = 3;
-    CLKDIVbits.PLLPOST = 0;       
     
     // Initiate Clock Switch to Primary oscillator with PLL
     __builtin_write_OSCCONH(0x03);
     __builtin_write_OSCCONL(OSCCON | 0x01);
     // Wait for Clock switch to occur
-    while (OSCCONbits.COSC!= 0x03);    // While COSC doesn't read back Primary Oscillator config
+    while (OSCCONbits.COSC!= 0b011);    // While COSC doesn't read back Primary Oscillator config
     // Wait for PLL to lock
     while (OSCCONbits.LOCK!= 1);
+    
+    TRISHbits.TRISH8 = 0;
+    TRISHbits.TRISH9 = 0;
+    TRISHbits.TRISH10 = 0;
+    TRISHbits.TRISH11 = 0;
+    
+    TRISDbits.TRISD8 = 0;
+    LATDbits.LATD8 = 0;
+    
+    TRISBbits.TRISB3 = 0;
+    LATBbits.LATB3 = 1;
+    
+    TRISBbits.TRISB4 = 0;
+    LATBbits.LATB4 = 1;
+    
+    TRISBbits.TRISB5 = 0;
+    LATBbits.LATB5 = 1;
+    
+    TRISAbits.TRISA5 = 1;
+    
+    TRISCbits.TRISC2 = 0;
 }

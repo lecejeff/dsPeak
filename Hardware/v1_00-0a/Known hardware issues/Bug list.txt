@@ -1,0 +1,3 @@
+1) Microphone X1 : Through-hole drill size not large enough, increase from 0.4mm to 0.6mm
+2) Analog potentiometer R128 : Did no bought the good PN, should be 3386F, bought 3386P, center pin is 2.54mm instead of the expected 5.08mm spacing
+3) Increase MTHOLE to fit with M3 screws

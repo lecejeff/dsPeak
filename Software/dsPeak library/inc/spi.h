@@ -35,24 +35,34 @@
 
 //******************************************************************************
 // Various SPI chip select defines
-#define DRV8873_CHIP 1
-#define EXTSPI2_CHIP 2
-#define NONE 255
+#define FT8XX_EVE_CS        1
+#define SD_CARD_CS          2
+#define FLASH_MEMORY_CS     3
+#define AUDIO_CODEC_CS      4
+#define MIKROBUS1_CS        5
+#define MIKROBUS2_CS        6
 
 #define SPI_MODE0 0
 #define SPI_MODE1 1
 #define SPI_MODE2 2
 #define SPI_MODE3 3
 
-//******************************************************************************
-// SPI module pin configuration
+#define SPI_BUF_LENGTH 16
 
-#define SPI_MSG_LENGTH 1
+//******************************************************************************
+// SPI CS pin assignation for assert / deassert functions
+#define FT8XX_EVE_CS_PIN    LATBbits.LATB11
+#define SD_CARD_CS_PIN      LATGbits.LATG9
+#define FLASH_MEMORY_CS_PIN LATGbits.LATG0
+#define AUDIO_CODEC_CS_PIN  LATDbits.LATD6
+#define MIKROBUS1_CS_PIN    LATHbits.LATH15
+#define MIKROBUS2_CS_PIN    LATHbits.LATH13
+
 typedef struct
 {
     unsigned char spi_chip;
-    unsigned char spi_tx_data[SPI_MSG_LENGTH];
-    unsigned char spi_rx_data[SPI_MSG_LENGTH];
+    unsigned char spi_tx_data[SPI_BUF_LENGTH];
+    unsigned char spi_rx_data[SPI_BUF_LENGTH];
     unsigned char spi_tx_length;
     unsigned char spi_state;
     unsigned char spi_done;
@@ -62,12 +72,11 @@ typedef struct
 
 void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, unsigned char spre); 
 void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char length, unsigned char chip);
-void SPI_fill_transmit_buffer (unsigned char channel, unsigned char * data, unsigned char length);
-unsigned char SPI_rx_done (unsigned char channel);
+unsigned char SPI_txfer_done (unsigned char channel);
 unsigned char * SPI_get_rx_buffer (unsigned char channel);
+unsigned char SPI_get_rx_buffer_index (unsigned char channel, unsigned char index);
 void SPI_master_deassert_cs (unsigned char chip);
 void SPI_master_assert_cs (unsigned char chip);
-void SPI_slave_initiate (void);
-void SPI_clear_rx_buffer (unsigned char channel);
+void SPI_flush_buffer (unsigned char channel);
 #endif
 

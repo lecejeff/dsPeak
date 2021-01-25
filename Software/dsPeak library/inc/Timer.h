@@ -44,9 +44,5 @@ void TIMER_update_freq (unsigned char timer, unsigned long new_freq);
 void TIMER_start (unsigned char timer);
 void TIMER_stop (unsigned char timer);
 unsigned char TIMER_get_state (unsigned char timer, unsigned char type);
-void send_color (unsigned long color);
-void send_reset(void);
-void send_0(void);
-void send_1(void);
 #endif	/* TIMER_H */
 

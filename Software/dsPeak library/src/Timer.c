@@ -33,12 +33,11 @@ TIMER_STRUCT TIMER_struct[TIMER_QTY];
 //****************************************************************************//
 void TIMER_init (unsigned char timer, unsigned long Freq)
 {
-    // 16 bit timers. With 8x prescaler, clock freq is 66.33MHz / 8 = 8291250Hz
-    // Minimum frequency timer : 8 291 250 / Freq <= 65535, Freq >= 127
-    // with 256x prescaler, clock freq is 66.33MHz / 256 = 259101Hz 
-    // Minimum frequency timer : 259101 / Freq <= 65535, Freq >= 4
-    
-    
+    // 16 bit timers. With 8x prescaler, clock freq is 70MHz / 8 = 8.75MHz
+    // Minimum frequency timer : 8.75MHz / Freq <= 65535, Freq >= 133
+    // with 256x prescaler, clock freq is 70MHz / 256 = 273437.5Hz 
+    // Minimum frequency timer : 273437 / Freq <= 65535, Freq >= 4
+       
     TIMER_struct[timer].int_state = 0;
     TIMER_struct[timer].run_state = 0;
     switch(timer)
@@ -407,6 +406,7 @@ unsigned char TIMER_get_state (unsigned char timer, unsigned char type)
 void __attribute__((__interrupt__, no_auto_psv))_T1Interrupt(void)
 {
     IFS0bits.T1IF = 0;
+    __builtin_btg(&LATC, 2);
     TIMER_struct[TIMER_1].int_state = 1;
 }
 
