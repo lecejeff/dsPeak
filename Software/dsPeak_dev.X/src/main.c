@@ -53,10 +53,14 @@
 #include "general.h"
 #include "timer.h"
 #include "ft8xx.h"
+#include "uart.h"
+
+unsigned char flag = 0;
 
 int main() 
 {
     DSPIC_init();
+    UART_init(UART_3, 9600, 1);
     TIMER_init(TIMER_1, 1000);
     TIMER_start(TIMER_1);
     
@@ -72,11 +76,13 @@ int main()
     FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
     FT8XX_draw_clock(&st_Clock[0]);
     FT8XX_update_screen_dl();         		// Update display list    yield();     
-    
+    UART_putstr(UART_3, "dsPeak - UART3 test");
     while (1)
     {
-        __delay_ms(500);
-        LATHbits.LATH8 = !LATHbits.LATH8;
+        if (UART_rx_done(UART_3) == 1)
+        {
+            UART_putstr(UART_3, "OK");
+        }
     }
     return 0;
 }
@@ -111,6 +117,8 @@ void DSPIC_init (void)
     while (OSCCONbits.COSC!= 0b011);    // While COSC doesn't read back Primary Oscillator config
     // Wait for PLL to lock
     while (OSCCONbits.LOCK!= 1);
+    
+    ANSELB = 0;
     
     TRISHbits.TRISH8 = 0;
     TRISHbits.TRISH9 = 0;

@@ -406,7 +406,6 @@ unsigned char TIMER_get_state (unsigned char timer, unsigned char type)
 void __attribute__((__interrupt__, no_auto_psv))_T1Interrupt(void)
 {
     IFS0bits.T1IF = 0;
-    __builtin_btg(&LATC, 2);
     TIMER_struct[TIMER_1].int_state = 1;
 }
 

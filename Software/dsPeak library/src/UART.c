@@ -41,18 +41,17 @@ STRUCT_UART UART_struct[UART_QTY];
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020  
 //****************************************************************************//
-void UART_init (unsigned char channel, unsigned long baud)
+void UART_init (unsigned char channel, unsigned long baud, unsigned char buf_length)
 {
     switch (channel)
     {
         case UART_1:
-            TRISBbits.TRISB7 = 0;        //UART1_TX is an output on RB7(RP39)
+            //TRISBbits.TRISB7 = 0;        //UART1_TX is an output on RB7(RP39)
             //RPOR2bits.RP39R = 1;         //RB7(RP39) is UART1_tx
-            TRISBbits.TRISB8 = 1;        //UART1_RX is an input on RB8(RP40)
-            RPINR18bits.U1RXR = 0x28;    //RB8(RP40) is UART1_RX
+            //TRISBbits.TRISB8 = 1;        //UART1_RX is an input on RB8(RP40)
+            //RPINR18bits.U1RXR = 0x28;    //RB8(RP40) is UART1_RX
             UART_struct[UART_1].UART_rx_done = 0;   //RX not done
-            UART_struct[UART_1].UART_rx_good = 0;
-            UART_struct[UART_1].UART_rx_length = UART_MAX_RX;   //Set RX receive buffer
+            UART_struct[UART_1].UART_rx_length = buf_length;   //Set RX receive buffer
             UART_struct[UART_1].data_counter = 0;
             U1BRG = ((FCY / (16 * baud))-1);
             U1MODE = 0x8000;                // Reset UART to 8-n-1, alt pins, and enable 
@@ -69,12 +68,11 @@ void UART_init (unsigned char channel, unsigned long baud)
         case UART_2:
             //TRISCbits.TRISC9 = 0;           //UART2_TX is an output on RC9(RP57)
             //RPOR7bits.RP57R = 0x03;         //RC9(RP68) is UART2_TX
-            TRISBbits.TRISB15 = 1;          //UART2_RX is an input on RB15(RPI47)
-            RPINR19bits.U2RXR = 0x2F;       //RB15(RPI47) is UART2_RX
+            //TRISBbits.TRISB15 = 1;          //UART2_RX is an input on RB15(RPI47)
+            //RPINR19bits.U2RXR = 0x2F;       //RB15(RPI47) is UART2_RX
                    
-            UART_struct[UART_2].UART_rx_good = 0;
             UART_struct[UART_2].UART_rx_done = 0;  //RX not done
-            UART_struct[UART_2].UART_rx_length = UART_MAX_RX;   //Set RX receive buffer
+            UART_struct[UART_2].UART_rx_length = buf_length;   //Set RX receive buffer
             UART_struct[UART_2].data_counter = 0;
             U2BRG = ((FCY / (16 * baud))-1);
             U2MODE = 0x8000;                // Reset UART to 8-n-1, alt pins, and enable 
@@ -85,6 +83,34 @@ void UART_init (unsigned char channel, unsigned long baud)
             IFS1bits.U2RXIF = 0;
             IEC4bits.U2EIE = 1;     // Enable error interrupts
             IEC1bits.U2RXIE = 1;
+            break;
+            
+        case UART_3:           
+            // UART3 input/output pin mapping
+            TRISFbits.TRISF3 = 0;           // RF3 configured as an output (UART3_TX)
+            TRISBbits.TRISB8 = 1;           // RB8 configured as an input (UART3_RX)
+            
+            // UART3 peripheral pin mapping
+            RPOR8bits.RP99R = 0x1B;         // RF3 (RP99) assigned to UART3_TX
+            RPINR27bits.U3RXR = 40;         // RB8 (RPI40) assigned to UART3_RX
+                   
+            UART_struct[UART_3].UART_rx_done = 0;  //RX not done
+            UART_struct[UART_3].UART_rx_length = buf_length;   //Set RX receive buffer
+            UART_struct[UART_3].data_counter = 0;
+            U3BRG = ((FCY / (16 * baud))-1);
+            U3MODE = 0x8000;                // Reset UART to 8-n-1, alt pins, and enable 
+            U3STA  = 0x0440;                // Reset status register and enable TX & RX
+            IPC20bits.U3EIP = 3;    // Error interrupt priority
+            IPC20bits.U3RXIP = 4;    // RX interrupt priority
+            IFS5bits.U3EIF = 0;     // Clear U1 error flag
+            IFS5bits.U3RXIF = 0;
+            IEC5bits.U3EIE = 1;     // Enable error interrupts
+            IEC5bits.U3RXIE = 1;
+            
+            
+            break; 
+            
+        default:
             break;
     }
     __delay_ms(50);
@@ -117,6 +143,12 @@ void UART_putc (unsigned char channel, unsigned char data)
         while(!U2STAbits.TRMT); //Wait for prev tx to be done
         U2TXREG = data;         //Tx char over serial port         
     }
+    
+    if (channel == UART_3)
+    {
+        while(!U3STAbits.TRMT); //Wait for prev tx to be done
+        U3TXREG = data;         //Tx char over serial port         
+    }    
 }  
 
 //******void UART_putc_ascii (unsigned char channel, unsigned char data)******//
@@ -326,39 +358,23 @@ void UART_send_tx_buffer (unsigned char channel)
 //****************************************************************************//
 unsigned char * UART_get_rx_buffer (unsigned char channel)
 {
-    if (channel == UART_1)
+    switch(channel)
     {
-        return &UART_struct[UART_1].UART_process_data[0];
-    }
+        case UART_1:
+            return &UART_struct[UART_1].UART_rx_data[0];
+        break;
     
-    else if (channel == UART_2)
-    {
-        return &UART_struct[UART_2].UART_rx_data[0];
-    }
-    
-    else
-        return 0;
-}
-
-//*************void UART_clear_rx_buffer (unsigned char channel)**************//
-//Description : Function resets the whole rx buffer to 0
-//
-//Function prototype : void UART_clear_rx_buffer (unsigned char channel)
-//
-//Enter params       : unsigned char channel : UART_x channel
-//
-//Exit params        : None
-//
-//Function call      : UART_clear_rx_buffer(UART_1);
-//
-//Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020   
-//****************************************************************************//
-void UART_clear_rx_buffer (unsigned char channel)
-{
-    unsigned char i = 0;
-    for (i=0; i<UART_MAX_TX; i++)
-    {
-        UART_struct[channel].UART_process_data[i] = 0;
+        case UART_2:
+            return &UART_struct[UART_2].UART_rx_data[0];
+        break;
+ 
+        case UART_3:
+            return &UART_struct[UART_3].UART_rx_data[0];
+        break;        
+        
+        default:
+            return 0;
+        break;
     }
 }
 
@@ -380,26 +396,39 @@ void UART_clear_rx_buffer (unsigned char channel)
 //****************************************************************************//
 unsigned char UART_rx_done (unsigned char channel)
 {
-    if (channel == UART_1)
-    {      
-        if (UART_struct[UART_1].UART_rx_done)
-        {  
-            UART_struct[UART_1].UART_rx_done = 0;
-            return 1;
-        }
-        else return 0;
-    }
-    
-    else if (channel == UART_2)
-    {      
-        if (UART_struct[UART_2].UART_rx_done)
-        {  
-            UART_struct[UART_2].UART_rx_done = 0;
-            return 1;
-        }
-        else return 0;
-    } 
-    else return 0;
+    switch(channel)
+    {     
+        case UART_1:
+            if (UART_struct[UART_1].UART_rx_done)
+            {  
+                UART_struct[UART_1].UART_rx_done = 0;
+                return 1;
+            }
+            else return 0;
+        break;
+
+        case UART_2:
+            if (UART_struct[UART_2].UART_rx_done)
+            {  
+                UART_struct[UART_2].UART_rx_done = 0;
+                return 1;
+            }
+            else return 0;
+        break;
+ 
+        case UART_3:
+            if (UART_struct[UART_3].UART_rx_done)
+            {  
+                UART_struct[UART_3].UART_rx_done = 0;
+                return 1;
+            }
+            else return 0;
+        break;
+        
+        default:
+            return 0;
+        break;
+    }     
 }
 
 //**************void UART_rx_interrupt (unsigned char channel)****************//
@@ -417,36 +446,52 @@ unsigned char UART_rx_done (unsigned char channel)
 //****************************************************************************//
 void UART_rx_interrupt (unsigned char channel)
 {
-    if (channel == UART_1) 
+    switch(channel)   
     {
-        if (UART_struct[UART_1].data_counter < UART_struct[UART_1].UART_rx_length)      //Data to be rx'd not done
-        {
-            UART_struct[UART_1].UART_rx_data[UART_struct[UART_1].data_counter] = U1RXREG;//Get data from buffer
-            UART_struct[UART_1].data_counter++;                             //Increm amount variable
-            UART_struct[UART_1].UART_rx_done = 0;             //RX is not done
-        }
-       
-        if (UART_struct[UART_1].data_counter >= UART_struct[UART_1].UART_rx_length)     //Data all received
-        {
-            UART_struct[UART_1].UART_rx_done = 1;             //RX is done      
-            UART_struct[UART_1].data_counter = 0;
-        }
-    }
+        case UART_1:
+            if (UART_struct[UART_1].data_counter < UART_struct[UART_1].UART_rx_length)      //Data to be rx'd not done
+            {
+                UART_struct[UART_1].UART_rx_data[UART_struct[UART_1].data_counter] = U1RXREG;//Get data from buffer
+                UART_struct[UART_1].data_counter++;                             //Increm amount variable
+                UART_struct[UART_1].UART_rx_done = 0;             //RX is not done
+            }
 
-    else if (channel == UART_2) 
-    {
-        if (UART_struct[UART_2].data_counter < UART_struct[UART_2].UART_rx_length)      //Data to be rx'd not done
-        {
-            UART_struct[UART_2].UART_rx_data[UART_struct[UART_2].data_counter] = U2RXREG;//Get data from buffer
-            UART_struct[UART_2].data_counter++;                             //Increm amount variable
-            UART_struct[UART_2].UART_rx_done = 0;             //RX is not done
-        }
+            if (UART_struct[UART_1].data_counter >= UART_struct[UART_1].UART_rx_length)     //Data all received
+            {
+                UART_struct[UART_1].UART_rx_done = 1;             //RX is done      
+                UART_struct[UART_1].data_counter = 0;
+            }
+        break;
+        
+        case UART_2:
+            if (UART_struct[UART_2].data_counter < UART_struct[UART_2].UART_rx_length)      //Data to be rx'd not done
+            {
+                UART_struct[UART_2].UART_rx_data[UART_struct[UART_2].data_counter] = U2RXREG;//Get data from buffer
+                UART_struct[UART_2].data_counter++;                             //Increm amount variable
+                UART_struct[UART_2].UART_rx_done = 0;             //RX is not done
+            }
 
-        if (UART_struct[UART_2].data_counter >= UART_struct[UART_2].UART_rx_length)     //Data all received
-        {
-            UART_struct[UART_2].UART_rx_done = 1;             //RX is done      
-            UART_struct[UART_2].data_counter = 0;
-        }
+            if (UART_struct[UART_2].data_counter >= UART_struct[UART_2].UART_rx_length)     //Data all received
+            {
+                UART_struct[UART_2].UART_rx_done = 1;             //RX is done      
+                UART_struct[UART_2].data_counter = 0;
+            }
+        break;
+  
+        case UART_3:
+            if (UART_struct[UART_3].data_counter < UART_struct[UART_3].UART_rx_length)      //Data to be rx'd not done
+            {
+                UART_struct[UART_3].UART_rx_data[UART_struct[UART_3].data_counter] = U3RXREG;//Get data from buffer
+                UART_struct[UART_3].data_counter++;                             //Increm amount variable
+                UART_struct[UART_3].UART_rx_done = 0;             //RX is not done
+            }
+
+            if (UART_struct[UART_3].data_counter >= UART_struct[UART_3].UART_rx_length)     //Data all received
+            {
+                UART_struct[UART_3].UART_rx_done = 1;             //RX is done      
+                UART_struct[UART_3].data_counter = 0;
+            }
+        break;
     }     
 }
 
@@ -463,6 +508,11 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
     UART_rx_interrupt(UART_2);// process interrupt routine    
 }
 
+void __attribute__((__interrupt__, no_auto_psv)) _U3RXInterrupt(void)
+{
+    IFS5bits.U3RXIF = 0;      // clear RX interrupt flag
+    UART_rx_interrupt(UART_3);// process interrupt routine    
+}
 
 void __attribute__((__interrupt__, no_auto_psv)) _U1ErrInterrupt(void)
 {
@@ -471,7 +521,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1ErrInterrupt(void)
     U1STAbits.OERR = 0; 
     temp = U1RXREG;
     UART_struct[UART_1].data_counter = 0;
-    IFS4bits.U1EIF = 0;     // Clear U1 error flag
+    IFS4bits.U1EIF = 0;
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _U2ErrInterrupt(void)
@@ -481,5 +531,15 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2ErrInterrupt(void)
     U2STAbits.OERR = 0; 
     temp = U2RXREG;
     UART_struct[UART_2].data_counter = 0;
-    IFS4bits.U2EIF = 0;     // Clear U1 error flag
+    IFS4bits.U2EIF = 0;
+}
+
+void __attribute__((__interrupt__, no_auto_psv)) _U3ErrInterrupt(void)
+{
+    unsigned char temp = 0;   
+    /* Must clear the overrun error to keep UART receiving */
+    U3STAbits.OERR = 0; 
+    temp = U3RXREG;
+    UART_struct[UART_3].data_counter = 0;
+    IFS5bits.U3EIF = 0;
 }

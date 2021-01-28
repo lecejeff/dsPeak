@@ -65,7 +65,7 @@ typedef struct
     unsigned char spi_rx_data[SPI_BUF_LENGTH];
     unsigned char spi_tx_length;
     unsigned char spi_state;
-    unsigned char spi_done;
+    unsigned char spi_txfer_done;
     unsigned char spi_rx_cnt;
     unsigned char spi_tx_cnt;
 }SPI_struct;

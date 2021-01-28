@@ -284,7 +284,7 @@ void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, un
             break;
     }
     
-    spi_struct[channel].spi_done = 0;       // Reset SPI module state machine
+    spi_struct[channel].spi_txfer_done = 0;       // Reset SPI module state machine
     spi_struct[channel].spi_tx_cnt = 0;     // 
     spi_struct[channel].spi_rx_cnt = 0;     // 
     spi_struct[channel].spi_tx_length = 0;  // 
@@ -322,7 +322,7 @@ void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char
         spi_struct[SPI_1].spi_tx_cnt = 0;           // Set transmit counter to 0
         spi_struct[SPI_1].spi_chip = chip;          // Set SPI chip to struct 
         spi_struct[SPI_1].spi_tx_length = length;   // Write length to struct 
-        spi_struct[SPI_1].spi_done = 0;             // SPI bus is busy 
+        spi_struct[SPI_1].spi_txfer_done = 0;             // SPI bus is busy 
         IEC0bits.SPI1IE = 1;                        // Enable SPI interrupt 
         SPI_master_assert_cs(chip);                 // Assert /CS from specified SPI chip  
         SPI1BUF = spi_struct[SPI_1].spi_tx_data[0]; // Send first byte 
@@ -339,7 +339,7 @@ void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char
         spi_struct[SPI_2].spi_tx_cnt = 0;           // Set transmit counter to 0
         spi_struct[SPI_2].spi_chip = chip;          // Set SPI chip to struct 
         spi_struct[SPI_2].spi_tx_length = length;   // Write length to struct 
-        spi_struct[SPI_2].spi_done = 0;             // SPI bus is busy 
+        spi_struct[SPI_2].spi_txfer_done = 0;             // SPI bus is busy 
         IEC2bits.SPI2IE = 1;                        // Enable SPI interrupt 
         SPI_master_assert_cs(chip);                 // Assert /CS from specified SPI chip  
         SPI2BUF = spi_struct[SPI_2].spi_tx_data[0]; // Send first byte 
@@ -356,7 +356,7 @@ void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char
         spi_struct[SPI_3].spi_tx_cnt = 0;           // Set transmit counter to 0
         spi_struct[SPI_3].spi_chip = chip;          // Set SPI chip to struct 
         spi_struct[SPI_3].spi_tx_length = length;   // Write length to struct 
-        spi_struct[SPI_3].spi_done = 0;             // SPI bus is busy 
+        spi_struct[SPI_3].spi_txfer_done = 0;             // SPI bus is busy 
         IEC5bits.SPI3IE = 1;                        // Enable SPI interrupt 
         SPI_master_assert_cs(chip);                 // Assert /CS from specified SPI chip  
         SPI3BUF = spi_struct[SPI_3].spi_tx_data[0]; // Send first byte 
@@ -373,7 +373,7 @@ void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char
         spi_struct[SPI_4].spi_tx_cnt = 0;           // Set transmit counter to 0
         spi_struct[SPI_4].spi_chip = chip;          // Set SPI chip to struct 
         spi_struct[SPI_4].spi_tx_length = length;   // Write length to struct 
-        spi_struct[SPI_4].spi_done = 0;             // SPI bus is busy 
+        spi_struct[SPI_4].spi_txfer_done = 0;             // SPI bus is busy 
         IEC7bits.SPI4IE = 1;                        // Enable SPI interrupt 
         SPI_master_assert_cs(chip);                 // Assert /CS from specified SPI chip  
         SPI4BUF = spi_struct[SPI_4].spi_tx_data[0]; // Send first byte 
@@ -505,9 +505,9 @@ unsigned char SPI_get_rx_buffer_index (unsigned char channel, unsigned char inde
 //****************************************************************************//
 unsigned char SPI_txfer_done (unsigned char channel)
 {
-    if (spi_struct[channel].spi_done)
+    if (spi_struct[channel].spi_txfer_done)
     {
-        spi_struct[channel].spi_done = 0;
+        spi_struct[channel].spi_txfer_done = 0;
         return 1;
     }
     else return 0;
@@ -567,7 +567,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
         spi_struct[SPI_1].spi_rx_cnt = 0;            // Clear RD cnter   
         spi_struct[SPI_1].spi_tx_cnt = 0;            // Clear WR_CNT 
         SPI_master_deassert_cs(spi_struct[SPI_1].spi_chip); // Deassert CS   
-        spi_struct[SPI_1].spi_done = 1;                 // SPI transaction over
+        spi_struct[SPI_1].spi_txfer_done = 1;                 // SPI transaction over
         IEC0bits.SPI1IE = 0;                            // Disable SPI interrupt  
     }
 }
@@ -602,7 +602,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
         spi_struct[SPI_2].spi_rx_cnt = 0;            // Clear RD cnter   
         spi_struct[SPI_2].spi_tx_cnt = 0;            // Clear WR_CNT 
         SPI_master_deassert_cs(spi_struct[SPI_2].spi_chip); // Deassert CS   
-        spi_struct[SPI_2].spi_done = 1;                 // SPI transaction over
+        spi_struct[SPI_2].spi_txfer_done = 1;                 // SPI transaction over
         IEC2bits.SPI2IE = 0;                            // Disable SPI interrupt  
     }
 }
@@ -624,7 +624,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
         spi_struct[SPI_3].spi_rx_cnt = 0;            // Clear RD cnter   
         spi_struct[SPI_3].spi_tx_cnt = 0;            // Clear WR_CNT 
         SPI_master_deassert_cs(spi_struct[SPI_3].spi_chip); // Deassert CS   
-        spi_struct[SPI_3].spi_done = 1;                 // SPI transaction over
+        spi_struct[SPI_3].spi_txfer_done = 1;                 // SPI transaction over
         IEC5bits.SPI3IE = 0;                            // Disable SPI interrupt  
     }
 }
@@ -646,7 +646,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI4Interrupt(void)
         spi_struct[SPI_4].spi_rx_cnt = 0;            // Clear RD cnter   
         spi_struct[SPI_4].spi_tx_cnt = 0;            // Clear WR_CNT 
         SPI_master_deassert_cs(spi_struct[SPI_4].spi_chip); // Deassert CS   
-        spi_struct[SPI_4].spi_done = 1;                 // SPI transaction over
+        spi_struct[SPI_4].spi_txfer_done = 1;                 // SPI transaction over
         IEC7bits.SPI4IE = 0;                            // Disable SPI interrupt  
     }
 }

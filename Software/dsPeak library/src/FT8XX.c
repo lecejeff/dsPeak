@@ -210,7 +210,7 @@ void FT8XX_init (void)
         FT8XX_wr8(REG_CTOUCH_MODE, FT8XX_TOUCH_MODE_CONTINUOUS);      // Touch enabled
         FT8XX_wr8(REG_CTOUCH_EXTENDED, 1);                            // Compatibility mode
     #endif
-    FT8XX_touchpanel_init();
+    //FT8XX_touchpanel_init();
 }
 
 //**********************void FT_touchpanel_init (void)************************//
