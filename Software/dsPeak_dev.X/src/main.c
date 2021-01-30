@@ -60,7 +60,9 @@ unsigned char flag = 0;
 int main() 
 {
     DSPIC_init();
-    UART_init(UART_3, 9600, 1);
+    //UART_init(UART_1, 115200, 16);
+    UART_init(UART_2, 115200, 2);
+    UART_init(UART_3, 115200, 1);
     TIMER_init(TIMER_1, 1000);
     TIMER_start(TIMER_1);
     
@@ -75,14 +77,26 @@ int main()
     FT8XX_draw_gradient(&st_Gradient[0]);
     FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
     FT8XX_draw_clock(&st_Clock[0]);
-    FT8XX_update_screen_dl();         		// Update display list    yield();     
-    UART_putstr(UART_3, "dsPeak - UART3 test");
+    FT8XX_update_screen_dl();         		// Update display list    
+    UART_putstr(UART_3, "dsPeak - UART3 test 12345ABCDEF");
     while (1)
     {
-        if (UART_rx_done(UART_3) == 1)
-        {
-            UART_putstr(UART_3, "OK");
-        }
+        __delay_ms(1000);
+        UART_putstr(UART_3, "Sending string 1 ");
+        UART_putc(UART_3, 0x0D);
+        UART_putc(UART_3, 0x0A);
+        __delay_ms(1000);
+        UART_putstr(UART_3, "How about string 2, longer? ");
+        UART_putc(UART_3, 0x0D);
+        UART_putc(UART_3, 0x0A);        
+        __delay_ms(1000);
+        UART_putstr(UART_3, "Short 3 ");
+        UART_putc(UART_3, 0x0D);
+        UART_putc(UART_3, 0x0A);        
+        __delay_ms(1000);
+        UART_putstr(UART_3, "This is an extremely long string showcasing TX interrupt ");
+        UART_putc(UART_3, 0x0D);
+        UART_putc(UART_3, 0x0A);
     }
     return 0;
 }
@@ -140,4 +154,29 @@ void DSPIC_init (void)
     TRISAbits.TRISA5 = 1;
     
     TRISCbits.TRISC2 = 0;
+}
+
+void hex_to_ascii (unsigned char ucByte, unsigned char *ucByteH, unsigned char *ucByteL)
+{
+    *ucByteH = ucByte >> 4;	   
+    *ucByteL = (ucByte & 0x0F);
+    if ((*ucByteH < 10) && (*ucByteH >= 0)) 
+    {
+        *ucByteH = *ucByteH + 0x30;			
+    }
+    
+    else if ((*ucByteH >= 0x0A) && (*ucByteH <= 0x0F))
+    {
+        *ucByteH = (*ucByteH + 0x37);		
+    }
+    
+    if ((*ucByteL < 10) && (*ucByteL >= 0))	
+    {
+        *ucByteL = (*ucByteL + 0x30);		
+    }
+    
+    else if ((*ucByteL >= 0x0A) && (*ucByteL <= 0x0F))
+    {
+        *ucByteL = (*ucByteL + 0x37);
+    }   
 }

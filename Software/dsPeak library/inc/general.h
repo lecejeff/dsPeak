@@ -19,6 +19,7 @@
 #include <dsp.h>
 
 void DSPIC_init (void);
+void hex_to_ascii (unsigned char ucByte, unsigned char *ucByteH, unsigned char *ucByteL);
 
 #endif	/* GENERAL_H */
 
