@@ -54,17 +54,21 @@
 #include "timer.h"
 #include "ft8xx.h"
 #include "uart.h"
+#include "codec.h"
 
 unsigned char flag = 0;
 
 int main() 
 {
     DSPIC_init();
-    //UART_init(UART_1, 115200, 16);
+    UART_init(UART_1, 115200, 16);
     UART_init(UART_2, 115200, 2);
     UART_init(UART_3, 115200, 1);
-    TIMER_init(TIMER_1, 1000);
-    TIMER_start(TIMER_1);
+    
+    CODEC_init(SYS_FS_48kHz);
+    
+    //TIMER_init(TIMER_1, 1000);
+    //TIMER_start(TIMER_1);
     
     FT8XX_init();
     FT8XX_CMD_gradient(0, 0, 0, 0x00AA00, 480, 272, 0x5555FF);  

@@ -208,7 +208,8 @@ void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, un
             // SPI3 input/output pin mapping 
             TRISDbits.TRISD5 = 0;           // RD5 configured as an output (SPI3_SCLK)
             TRISDbits.TRISD4 = 0;           // RD4 configured as an output (SPI3_MOSI)
-            TRISDbits.TRISD6 = 0;           // RD6 configured as an output (SPI3_nCS)     
+            TRISDbits.TRISD6 = 0;           // RD6 configured as an output (SPI3_nCS) 
+            AUDIO_CODEC_CS_PIN = 1;
 
             // SPI3 peripheral pin assignment       
             RPOR2bits.RP68R = 0x1F;         // RD4 (RP68) assigned to SPI3_MOSI 

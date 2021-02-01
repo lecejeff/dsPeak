@@ -61,8 +61,8 @@ void PWM_init (void)
     TRISAbits.TRISA7 = 0;   //PWM4L is an output 
     SPHASE4 = (unsigned int)(FOSC / (PWM4L_PHASE * PWM_CLOCK_PRESCALE));//Phase of 50Hz (20ms)
     SDC4 = (unsigned int)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));//Duty cycle base is 750us
-    PWM_struct[PWM_4L].base_value = 0;               //base value at 40 % max 
-    PWM_struct[PWM_4L].end_value = SDC4;         //end value at 20ms
+    PWM_struct[PWM_4L].base_value = 0;                  //base value at 40 % max 
+    PWM_struct[PWM_4L].end_value = SDC4;                //end value at 20ms
     PWM_struct[PWM_4L].range = PWM_struct[PWM_4L].end_value - PWM_struct[PWM_4L].base_value;
 
     //
