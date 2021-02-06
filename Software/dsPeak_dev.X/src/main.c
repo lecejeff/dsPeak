@@ -55,6 +55,7 @@
 #include "ft8xx.h"
 #include "uart.h"
 #include "codec.h"
+#include "pwm.h"
 
 unsigned char flag = 0;
 
@@ -64,6 +65,9 @@ int main()
     UART_init(UART_1, 115200, 16);
     UART_init(UART_2, 115200, 2);
     UART_init(UART_3, 115200, 1);
+    
+    //PWM_init(PWM_1L);
+    //PWM_init(PWM_1H);
     
     CODEC_init(SYS_FS_48kHz);
     
@@ -82,6 +86,7 @@ int main()
     FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
     FT8XX_draw_clock(&st_Clock[0]);
     FT8XX_update_screen_dl();         		// Update display list    
+    
     UART_putstr(UART_3, "dsPeak - UART3 test 12345ABCDEF");
     while (1)
     {
@@ -136,7 +141,12 @@ void DSPIC_init (void)
     // Wait for PLL to lock
     while (OSCCONbits.LOCK!= 1);
     
+    ANSELA = 0;
     ANSELB = 0;
+    ANSELC = 0;
+    ANSELD = 0;
+    ANSELE = 0;
+    ANSELG = 0;
     
     TRISHbits.TRISH8 = 0;
     TRISHbits.TRISH9 = 0;

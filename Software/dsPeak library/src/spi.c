@@ -357,7 +357,7 @@ void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char
         spi_struct[SPI_3].spi_tx_cnt = 0;           // Set transmit counter to 0
         spi_struct[SPI_3].spi_chip = chip;          // Set SPI chip to struct 
         spi_struct[SPI_3].spi_tx_length = length;   // Write length to struct 
-        spi_struct[SPI_3].spi_txfer_done = 0;             // SPI bus is busy 
+        spi_struct[SPI_3].spi_txfer_done = 0;       // SPI bus is busy 
         IEC5bits.SPI3IE = 1;                        // Enable SPI interrupt 
         SPI_master_assert_cs(chip);                 // Assert /CS from specified SPI chip  
         SPI3BUF = spi_struct[SPI_3].spi_tx_data[0]; // Send first byte 

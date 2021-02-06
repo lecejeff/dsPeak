@@ -40,30 +40,59 @@ STRUCT_QEI QEI_struct[QEI_QTY];
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-void QEI_init (unsigned char channel, unsigned int refresh_freq)
+void QEI_init (unsigned char channel)
 {
-    QEI_struct[channel].int_event = 0;          // Reset QEI vars on initialization
-    QEI_struct[channel].pulse_getter = 0;       
-    QEI_struct[channel].pulse_cnter_dist = 0;
-    QEI_struct[channel].direction = 0;          //
-    QEI_struct[channel].pulse_cnter = 0;        //
-    QEI_struct[channel].tour_cnter = 0;         //
-    QEI_struct[channel].tour_getter = 0;        //
-    QEI_struct[channel].pulse_for_tour = 0;
-    QEI_struct[channel].speed_rpm = 0;          //
-    
-    QEI_struct[channel].refresh_freq = refresh_freq;                // Default values
-    QEI_struct[channel].motor_gear_derate = GEAR_DERATE;            // Default values
-    QEI_struct[channel].motor_cpr = COUNT_PER_REVOLUTION;           // Default values
-    QEI_struct[channel].pulse_per_tour = QEI_struct[channel].motor_gear_derate * QEI_struct[channel].motor_cpr;
-            
-    if (channel == QEI_1)
+    switch (channel)
     {
-        TRISAbits.TRISA2 = 1;   // DIR A is on RA2 (input)
-        TRISAbits.TRISA3 = 1;   // DIR B is on RA3 (input)
-        CNENAbits.CNIEA2 = 1;   // Change notice interrupt on DIR A pin 
-        CNENAbits.CNIEA3 = 1;   // Change notice interrupt on DIR B pin 
+        case QEI_MOT1:
+            QEI1CONbits.QEIEN = 0;      // Disable QEI module counters
+            IFS3bits.QEI1IF = 0;        // Clear interrupt flag
+            
+            TRISAbits.TRISA7 = 1;       // RA7 configured as an input (QEI_1B)
+            TRISAbits.TRISA6 = 1;       // RA6 configured as an input (QEI_1A)
+            RPINR14bits.QEB1R = 23;     // RA7 (RPI23) assigned to QEI_1B
+            RPINR14bits.QEA1R = 22;     // RA6 (RPI22) assigned to QEI_1A
+            
+            IEC3bits.QEI1IE = 1;        // Enable QEI1 interrupt
+            break;
+            
+        case QEI_MOT2:
+            QEI2CONbits.QEIEN = 0;      // Disable QEI module counters
+            IFS4bits.QEI2IF = 0;        // Clear interrupt flag
+            
+            TRISGbits.TRISG13 = 1;      // RG13 configured as an input (QEI_2B)
+            TRISGbits.TRISG12 = 1;      // RG12 configured as an input (QEI_2A)
+            RPINR16bits.QEB2R = 125;    // RG13 (RP125) assigned to QEI_2B
+            RPINR16bits.QEA2R = 124;    // RG12 (RP124) assigned to QEI_2A   
+            
+            IEC4bits.QEI2IE = 1;        // Enable QEI2 interrupt
+            break;
+            
+        case QEI_ROT_ENC:
+            TRISAbits.TRISA15 = 1;      // RA15 configured as an input (QEI_ROT_ENC_B)
+            TRISAbits.TRISA14 = 1;      // RA14 configured as an input (QEI_ROT_ENC_A)       
+            CNENAbits.CNIEA15 = 1;      // Change notice interrupt enable on QEI_ROT_ENC_B pin
+            CNENAbits.CNIEA14 = 1;      // Change notice interrupt enable on QEI_ROT_ENC_A pin            
+            break;
+            
+        default:
+            break;
+            
     }
+//    QEI_struct[channel].int_event = 0;          // Reset QEI vars on initialization
+//    QEI_struct[channel].pulse_getter = 0;       
+//    QEI_struct[channel].pulse_cnter_dist = 0;
+//    QEI_struct[channel].direction = 0;          //
+//    QEI_struct[channel].pulse_cnter = 0;        //
+//    QEI_struct[channel].tour_cnter = 0;         //
+//    QEI_struct[channel].tour_getter = 0;        //
+//    QEI_struct[channel].pulse_for_tour = 0;
+//    QEI_struct[channel].speed_rpm = 0;          //
+//    
+//    QEI_struct[channel].refresh_freq = refresh_freq;                // Default values
+//    QEI_struct[channel].motor_gear_derate = GEAR_DERATE;            // Default values
+//    QEI_struct[channel].motor_cpr = COUNT_PER_REVOLUTION;           // Default values
+//    QEI_struct[channel].pulse_per_tour = QEI_struct[channel].motor_gear_derate * QEI_struct[channel].motor_cpr;
 }
 
 unsigned long QEI_get_distance (unsigned char channel)
@@ -313,19 +342,19 @@ void QEI_calculate_velocity (unsigned char channel)
 {
     switch (channel)
     {
-        case QEI_1:
+        case QEI_MOT1:
             // Update the actual speed
-            QEI_struct[channel].new_pulse = QEI_get_pulse(QEI_1);
+            QEI_struct[channel].new_pulse = QEI_get_pulse(channel);
             if (QEI_struct[channel].new_pulse > 0)
             {
                 // To get speed in RPM
                 // (Pulses / interrupt * 60s * QEI refresh freq) / (Pulses per tour)                
-                QEI_struct[QEI_1].speed_rpm = (unsigned int)((QEI_struct[channel].new_pulse * 60 * QEI_struct[channel].refresh_freq) / (QEI_struct[channel].pulse_per_tour));
-                QEI_reset_pulse(QEI_1);
+                QEI_struct[channel].speed_rpm = (unsigned int)((QEI_struct[channel].new_pulse * 60 * QEI_struct[channel].refresh_freq) / (QEI_struct[channel].pulse_per_tour));
+                QEI_reset_pulse(channel);
             }
             else
             {
-                QEI_struct[QEI_1].speed_rpm = 0;
+                QEI_struct[channel].speed_rpm = 0;
             }
             break;     
     }
@@ -356,7 +385,7 @@ void QEI_interrupt_handle (unsigned char channel)
     // QEI_A  ___---___---___---___---___---___
     // QEI_B ___---___---___---___---___---___--- 
     
-    if (channel == QEI_1)
+    if (channel == QEI_MOT1)
     {
         // Forward
         if (QEI1A_PIN == 1)

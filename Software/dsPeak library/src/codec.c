@@ -15,7 +15,7 @@
 
 STRUCT_CODEC CODEC_struct; 
 
-unsigned int sine_wave_255_65k[256] = {
+const unsigned int sine_wave_255_65k[256] = {
 0x8000,0x8327,0x864e,0x8973,0x8c98,0x8fba,0x92da,0x95f7,
 0x9911,0x9c27,0x9f38,0xa244,0xa54c,0xa84d,0xab48,0xae3c,
 0xb12a,0xb40f,0xb6ed,0xb9c2,0xbc8e,0xbf50,0xc209,0xc4b7,
@@ -58,9 +58,7 @@ void CODEC_init (unsigned char sys_fs)
     SPI_init(SPI_3, SPI_MODE0, 2, 0);   // PPRE = 3, primary prescale 1:4
                                         // SPRE = 0, Secondary prescale 1:8
                                         // Fspi = FCY / 32 = 2.175MHz
-    
-    
-    
+        
     // Since SPI read is not supported, write default reset values to struct
     // registers to support the modify operation. Reset values taken from datasheet
     CODEC_struct.CHIP_DIG_POWER = 0;        // Every audio subsystem is disabled
@@ -116,26 +114,15 @@ void CODEC_init (unsigned char sys_fs)
     
     // Following the datasheet recommendations for initialization sequence   
     // Codec power supply configuration, hardware implementation-dependent
-    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_write(CODEC_CHIP_ANA_POWER, 0x4260);        // Turnoff startup power supplies to save power
-    CODEC_struct.CHIP_LINREG_CTRL = CODEC_spi_write(CODEC_CHIP_LINREG_CTRL, 0x006C);    // Configure charge pump to use the VDDIO rail
-    CODEC_struct.CHIP_REF_CTRL = CODEC_spi_write(CODEC_CHIP_REF_CTRL, 0x01F0);          // VAG -> 1.575V, BIAS nominal, Normal VAG ramp
+    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_write(CODEC_CHIP_ANA_POWER, 0x4060);        // Turnoff startup power supplies to save power
+    __delay_ms(100);
+    CODEC_struct.CHIP_LINREG_CTRL = CODEC_spi_write(CODEC_CHIP_LINREG_CTRL, 0x0060);    // Configure charge pump to use the VDDIO rail
+    CODEC_struct.CHIP_REF_CTRL = CODEC_spi_write(CODEC_CHIP_REF_CTRL, 0x01F0);          // VAG -> 1.575V, BIAS Nominal, Normal VAG ramp
     CODEC_struct.CHIP_LINE_OUT_CTRL = CODEC_spi_write(CODEC_CHIP_LINE_OUT_CTRL, 0x0322);// LineOut bias -> 360uA, LineOut VAG -> 1.65V
-    CODEC_struct.CHIP_SHORT_CTRL = CODEC_spi_write(CODEC_CHIP_SHORT_CTRL, 0x1106);      // Enable HP short detect, set trip to 75mA
-    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_CTRL, 0x0133);          // Enable Zero-cross detection SEE IF USEFUL OR NOT *****
-    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_write(CODEC_CHIP_ANA_POWER, 0x6AFF);        // Power up LineOUt, HP & capless mode, ADC, DAC
-    
-    // Codec System MCLK and Sample CLock
-    CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFF3, sys_fs<<2);
-    CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFFC, 3);
-    
-    // Set CODEC to I2S master, set data length to 16 bits
-    CODEC_struct.CHIP_I2S_CTRL = CODEC_spi_modify_write(CODEC_CHIP_I2S_CTRL, CODEC_struct.CHIP_I2S_CTRL, 0xFF7F, 1 << 7);
-    CODEC_struct.CHIP_I2S_CTRL = CODEC_spi_modify_write(CODEC_CHIP_I2S_CTRL, CODEC_struct.CHIP_I2S_CTRL, 0xFFCF, 3 << 4);
-    
-    // Codec PLL configuration
-    // Power-up the PLL
-    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFBFF, 1<<10);
-    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFEFF, 1<<8);
+    CODEC_struct.CHIP_SHORT_CTRL = CODEC_spi_write(CODEC_CHIP_SHORT_CTRL, 0x4446);      // Enable HP short detect, set trip to 125mA
+    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_CTRL, 0x0137);          // Enable Zero-cross detection SEE IF USEFUL OR NOT *****
+    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_write(CODEC_CHIP_ANA_POWER, 0x40FF);        // Power up LineOUt, HP & capless mode, ADC, DAC
+    CODEC_struct.CHIP_DIG_POWER = CODEC_spi_write(CODEC_CHIP_DIG_POWER, 0x0073);        // Power UP I2S, DAP, DAC and ADC
     
     // PLL output frequency is based on the sample clock rate used
     if (sys_fs == SYS_FS_44_1kHz)
@@ -153,15 +140,63 @@ void CODEC_init (unsigned char sys_fs)
     // Write PLL dividers to CODEC
     CODEC_struct.CHIP_PLL_CTRL = CODEC_spi_modify_write(CODEC_CHIP_PLL_CTRL, CODEC_struct.CHIP_PLL_CTRL, 0x07FF, pll_int_divisor<<11);
     CODEC_struct.CHIP_PLL_CTRL = CODEC_spi_modify_write(CODEC_CHIP_PLL_CTRL, CODEC_struct.CHIP_PLL_CTRL, 0xFC00, pll_frac_divisor);
+
+    // Codec PLL configuration
+    // Power-up the PLL
+    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFBFF, 1<<10);
+    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFEFF, 1<<8);
     
-    // Set Headphone to mute while routing the audio signal
-    CODEC_mute(HEADPHONE_MUTE);       
+    // Codec System MCLK and Sample CLock
+    CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFF3, sys_fs<<2);
+    CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFFC, 3);
+    
+    // Set CODEC to I2S master, set data length to 16 bits
+    CODEC_struct.CHIP_I2S_CTRL = CODEC_spi_modify_write(CODEC_CHIP_I2S_CTRL, CODEC_struct.CHIP_I2S_CTRL, 0xFF7F, 1 << 7);
+    CODEC_struct.CHIP_I2S_CTRL = CODEC_spi_modify_write(CODEC_CHIP_I2S_CTRL, CODEC_struct.CHIP_I2S_CTRL, 0xFFCF, 3 << 4);
+      
+    // Route MicIn to ADC
+    // ERROR HERE, MIC BAS reads only 0.75V DC voltage
+//    CODEC_struct.CHIP_MIC_CTRL = CODEC_spi_write(CODEC_CHIP_MIC_CTRL, 0x0112);  // Mic bias output enabled, set to 1.5V, Gain of +30dB
+//    CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 0 << 4);   // DAC data source is ADC
+//    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 0 << 2);   // ADC input is microphone 
+    
+    // ROute DAC to Line Out
+//    CODEC_struct.CHIP_LINE_OUT_CTRL = CODEC_spi_write(CODEC_CHIP_LINE_OUT_CTRL, 0x0322);   // Out current = 360uA, LO_VAG = 1.65V
+//    CODEC_struct.CHIP_LINE_OUT_VOL = CODEC_spi_write(CODEC_CHIP_LINE_OUT_VOL, 0x0F0F);      // Recommended nominal for VDDIO = 3.3
+//    CODEC_unmute(ADC_MUTE);
+//    CODEC_unmute(DAC_MUTE);
+//    CODEC_unmute(HEADPHONE_MUTE);    
+    
+    // Set ADC and DAC to stereo
+    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xBFFF, 1<<14);
+    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFFBF, 1<<6);
+    
+    // Route LineIn to ADC
+    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 1 << 2);
+    CODEC_struct.CHIP_ANA_ADC_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_ADC_CTRL, 0x0000);  // Gain of 0dB on ADC
+    // Route ADC to DAC
+    CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 0 << 4);   // DAC data source is ADC
+    CODEC_struct.CHIP_DAC_VOL = CODEC_spi_write(CODEC_CHIP_DAC_VOL, 0x3C3C);    // 0dB gain on DAC
+    // Route DAC output to HP
+    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
+    CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818); 
+    CODEC_unmute(ADC_MUTE);
+    CODEC_unmute(DAC_MUTE);
+    CODEC_unmute(HEADPHONE_MUTE);     
+    
+    // Route Dac to HP Out
+    // CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
+    // CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x0000);
+    // CODEC_unmute(ADC_MUTE);
+    // CODEC_unmute(DAC_MUTE);
+    // CODEC_unmute(HEADPHONE_MUTE);
+    
+    //CODEC_mute(HEADPHONE_MUTE);  
     // Route LineIn to HPOut (preliminary CODEC test)
-    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 1 << 6);
+    //CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 1 << 6);
     // Set HP out left and right volume
-    CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x7F7F);
-    CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x0000);
-    CODEC_unmute(HEADPHONE_MUTE);
+    //CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818);
+    //CODEC_unmute(HEADPHONE_MUTE);
 }
 
 unsigned int CODEC_spi_write (unsigned int adr, unsigned int data) 
@@ -185,15 +220,19 @@ void CODEC_mute (unsigned char channel)
     switch(channel)
     {
         case ADC_MUTE:
-            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_ADC_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFE, 1 << 0);
+            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFE, 1 << 0);
             break;
             
         case HEADPHONE_MUTE:
-            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_ADC_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFEF, 1 << 4);
+            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFEF, 1 << 4);
             break;
             
         case LINEOUT_MUTE:
-            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_ADC_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFEFF, 1 << 8);
+            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFEFF, 1 << 8);
+            break;
+             
+        case DAC_MUTE:
+             CODEC_struct.CHIP_ADCDAC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ADCDAC_CTRL, CODEC_struct.CHIP_ADCDAC_CTRL, 0xFFF3, 3 << 2);
             break;
             
         default:
@@ -206,15 +245,19 @@ void CODEC_unmute (unsigned char channel)
     switch(channel)
     {
         case ADC_MUTE:
-            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_ADC_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFE, 0 << 0);
+            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFE, 0 << 0);
             break;
             
         case HEADPHONE_MUTE:
-            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_ADC_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFEF, 0 << 4);
+            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFEF, 0 << 4);
             break;
             
         case LINEOUT_MUTE:
-            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_ADC_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFEFF, 0 << 8);
+            CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFEFF, 0 << 8);
+            break;
+
+        case DAC_MUTE:
+             CODEC_struct.CHIP_ADCDAC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ADCDAC_CTRL, CODEC_struct.CHIP_ADCDAC_CTRL, 0xFFF3, 0 << 2);
             break;
             
         default:
@@ -254,9 +297,10 @@ void DCI_init (unsigned char sys_fs)
 void __attribute__((__interrupt__, no_auto_psv)) _DCIInterrupt(void)
 {
     static unsigned char sine_counter = 0;
-    
+    unsigned int dumb;
     IFS3bits.DCIIF = 0;      // clear DCI interrupt flag
     TXBUF0 = sine_wave_255_65k[sine_counter];
+    dumb = RXBUF0;
     if (++sine_counter > 255){sine_counter = 0;}
     //UART_rx_interrupt(UART_1);// process interrupt routine
 }

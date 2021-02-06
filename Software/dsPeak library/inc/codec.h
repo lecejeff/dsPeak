@@ -82,7 +82,8 @@
 
 #define ADC_MUTE            0
 #define HEADPHONE_MUTE      1
-#define LINEOUT_MUTE       2
+#define LINEOUT_MUTE        2
+#define DAC_MUTE            3
 
 #define SYS_MCLK    12000000    // SYS_MCLK is 12MHz
 

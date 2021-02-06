@@ -14,8 +14,8 @@
 
 #include "general.h"
 
-#define UART_MAX_TX 256
-#define UART_MAX_RX 256 
+#define UART_MAX_TX 64
+#define UART_MAX_RX 64 
 
 #define UART_1 0
 #define UART_2 1
