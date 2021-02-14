@@ -56,8 +56,14 @@
 #include "uart.h"
 #include "codec.h"
 #include "pwm.h"
+#include "qei.h"
+#include "spi_flash.h"
 
 unsigned char flag = 0;
+unsigned int counter = 0;
+unsigned char buf[2] = {0, 0};
+unsigned char test_spi[8] = {'J', 'e', 't', 'a', 'i', 'm', 'e', '!'};
+unsigned char *ptr;
 
 int main() 
 {
@@ -66,13 +72,25 @@ int main()
     UART_init(UART_2, 115200, 2);
     UART_init(UART_3, 115200, 1);
     
-    //PWM_init(PWM_1L);
-    //PWM_init(PWM_1H);
+    PWM_init(PWM_1L, PWM_TYPE_LOAD);
+    PWM_init(PWM_1H, PWM_TYPE_LOAD);
+    PWM_init(PWM_5H, PWM_TYPE_SERVO);
+    PWM_init(PWM_6L, PWM_TYPE_SERVO);
     
     CODEC_init(SYS_FS_48kHz);
     
-    //TIMER_init(TIMER_1, 1000);
-    //TIMER_start(TIMER_1);
+    SPI_flash_init();
+    SPI_flash_write_enable();
+    SPI_flash_erase(CMD_BLOCK_ERASE_4k, 0);
+    SPI_flash_write(0x100, test_spi, 8);
+    
+//    TIMER_init(TIMER_1, 1000);
+//    TIMER_init(TIMER_2, 1000);
+//    TIMER_start(TIMER_1);
+//    TIMER_start(TIMER_2);
+//    
+//    QEI_init(QEI_MOT1);
+//    QEI_set_fs(QEI_MOT1, 1000);
     
     FT8XX_init();
     FT8XX_CMD_gradient(0, 0, 0, 0x00AA00, 480, 272, 0x5555FF);  
@@ -88,24 +106,41 @@ int main()
     FT8XX_update_screen_dl();         		// Update display list    
     
     UART_putstr(UART_3, "dsPeak - UART3 test 12345ABCDEF");
+    
+    PWM_change_duty(PWM_1H, PWM_TYPE_LOAD, 25);
+    
     while (1)
     {
         __delay_ms(1000);
-        UART_putstr(UART_3, "Sending string 1 ");
-        UART_putc(UART_3, 0x0D);
-        UART_putc(UART_3, 0x0A);
-        __delay_ms(1000);
-        UART_putstr(UART_3, "How about string 2, longer? ");
-        UART_putc(UART_3, 0x0D);
-        UART_putc(UART_3, 0x0A);        
-        __delay_ms(1000);
-        UART_putstr(UART_3, "Short 3 ");
-        UART_putc(UART_3, 0x0D);
-        UART_putc(UART_3, 0x0A);        
-        __delay_ms(1000);
-        UART_putstr(UART_3, "This is an extremely long string showcasing TX interrupt ");
-        UART_putc(UART_3, 0x0D);
-        UART_putc(UART_3, 0x0A);
+        ptr = SPI_flash_read(0x100, 8);
+        UART_putbuf(UART_3, ptr, 8);
+        buf[0] = 0x0D; buf[1] = 0x0A;
+        UART_putbuf(UART_3, buf, 2);
+        
+//        if (TIMER_get_state(TIMER_1, TIMER_INT_STATE))
+//        {
+//            QEI_calculate_velocity(QEI_MOT1);
+//        }
+        
+//        if (TIMER_get_state(TIMER_2, TIMER_INT_STATE))
+//        {
+//            if (++counter > 1000)
+//            {
+//                counter = 0;
+//                unsigned long pulse = QEI_get_pulse(QEI_MOT1);
+//                unsigned int velocity = QEI_get_velocity(QEI_MOT1);
+//                UART_putstr(UART_3, "QEI pos cnt : ");
+//                UART_putc_ascii(UART_3, ((pulse & 0x0000FF00)>>8));    
+//                UART_putc_ascii(UART_3, pulse);
+//                buf[0] = 0x0D; buf[1] = 0x0A;
+//                UART_putbuf(UART_3, buf, 2);
+//                UART_putstr(UART_3, "QEI vel rpm : ");
+//                UART_putc_ascii(UART_3, ((velocity & 0x0000FF00)>>8));    
+//                UART_putc_ascii(UART_3, velocity);      
+//                buf[0] = 0x0D; buf[1] = 0x0A;
+//                UART_putbuf(UART_3, buf, 2);                
+//            }
+//        }        
     }
     return 0;
 }

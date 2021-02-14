@@ -146,31 +146,36 @@ void CODEC_init (unsigned char sys_fs)
     CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFBFF, 1<<10);
     CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFEFF, 1<<8);
     
-    // Codec System MCLK and Sample CLock
+    // Codec System MCLK and Sample Clock
     CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFF3, sys_fs<<2);
     CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFFC, 3);
     
     // Set CODEC to I2S master, set data length to 16 bits
     CODEC_struct.CHIP_I2S_CTRL = CODEC_spi_modify_write(CODEC_CHIP_I2S_CTRL, CODEC_struct.CHIP_I2S_CTRL, 0xFF7F, 1 << 7);
     CODEC_struct.CHIP_I2S_CTRL = CODEC_spi_modify_write(CODEC_CHIP_I2S_CTRL, CODEC_struct.CHIP_I2S_CTRL, 0xFFCF, 3 << 4);
-      
+
+    // Set ADC and DAC to stereo
+    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xBFFF, 1<<14);
+    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFFBF, 1<<6);    
+    
     // Route MicIn to ADC
-    // ERROR HERE, MIC BAS reads only 0.75V DC voltage
-//    CODEC_struct.CHIP_MIC_CTRL = CODEC_spi_write(CODEC_CHIP_MIC_CTRL, 0x0112);  // Mic bias output enabled, set to 1.5V, Gain of +30dB
+//    CODEC_mic_config(MIC_BIAS_RES_2k, MIC_BIAS_VOLT_2V00, MIC_GAIN_30dB);
 //    CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 0 << 4);   // DAC data source is ADC
 //    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 0 << 2);   // ADC input is microphone 
-    
+//    // Route Dac to HP Out
+//     CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
+//     CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818);
+//     CODEC_unmute(ADC_MUTE);
+//     CODEC_unmute(DAC_MUTE);
+//     CODEC_unmute(HEADPHONE_MUTE);
+
     // ROute DAC to Line Out
 //    CODEC_struct.CHIP_LINE_OUT_CTRL = CODEC_spi_write(CODEC_CHIP_LINE_OUT_CTRL, 0x0322);   // Out current = 360uA, LO_VAG = 1.65V
 //    CODEC_struct.CHIP_LINE_OUT_VOL = CODEC_spi_write(CODEC_CHIP_LINE_OUT_VOL, 0x0F0F);      // Recommended nominal for VDDIO = 3.3
 //    CODEC_unmute(ADC_MUTE);
 //    CODEC_unmute(DAC_MUTE);
 //    CODEC_unmute(HEADPHONE_MUTE);    
-    
-    // Set ADC and DAC to stereo
-    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xBFFF, 1<<14);
-    CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFFBF, 1<<6);
-    
+       
     // Route LineIn to ADC
     CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 1 << 2);
     CODEC_struct.CHIP_ANA_ADC_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_ADC_CTRL, 0x0000);  // Gain of 0dB on ADC
@@ -184,12 +189,7 @@ void CODEC_init (unsigned char sys_fs)
     CODEC_unmute(DAC_MUTE);
     CODEC_unmute(HEADPHONE_MUTE);     
     
-    // Route Dac to HP Out
-    // CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
-    // CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x0000);
-    // CODEC_unmute(ADC_MUTE);
-    // CODEC_unmute(DAC_MUTE);
-    // CODEC_unmute(HEADPHONE_MUTE);
+
     
     //CODEC_mute(HEADPHONE_MUTE);  
     // Route LineIn to HPOut (preliminary CODEC test)
@@ -213,6 +213,32 @@ unsigned int CODEC_spi_modify_write (unsigned int adr, unsigned int reg, unsigne
     unsigned char buf[4] = {((adr & 0xFF00)>>8), adr, ((reg & 0xFF00)>>8), reg};
     SPI_master_write(SPI_3, buf, 4, AUDIO_CODEC_CS); 
     return reg;
+}
+
+void CODEC_mic_config (unsigned char bias_res, unsigned char bias_volt, unsigned char gain)
+{
+    // Set microphone bias impedance
+    CODEC_struct.CHIP_MIC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_MIC_CTRL, CODEC_struct.CHIP_MIC_CTRL, 0xFCFF, bias_res << 8);
+    // Set microphone bias voltage
+    CODEC_struct.CHIP_MIC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_MIC_CTRL, CODEC_struct.CHIP_MIC_CTRL, 0xFF8F, bias_volt << 4);
+    // Set microphone gain
+    CODEC_struct.CHIP_MIC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_MIC_CTRL, CODEC_struct.CHIP_MIC_CTRL, 0xFFFC, gain << 0);    
+}
+
+// Set DAC volume
+// Min is 0dB, max is -90dB, in 0.5dB step
+// 0 <= dac_vol_right <= 180, where 180 * 0.5 = -90dB
+void CODEC_set_dac_volume (unsigned char dac_vol_right, unsigned char dac_vol_left)
+{
+    if ((dac_vol_right >= 0) && (dac_vol_right <= 180))
+    {
+        CODEC_struct.dac_vol_right = dac_vol_right + 0x3C;  // 0x3C is 0dB base offset in SGTL5000       
+    }
+    if ((dac_vol_left >= 0) && (dac_vol_left <= 180))
+    {
+        CODEC_struct.dac_vol_left = dac_vol_left + 0x3C;    // 0x3C is 0dB base offset in SGTL5000        
+    }    
+    CODEC_struct.CHIP_DAC_VOL = CODEC_spi_write(CODEC_CHIP_DAC_VOL, ((CODEC_struct.dac_vol_right << 8) | CODEC_struct.dac_vol_left)); 
 }
 
 void CODEC_mute (unsigned char channel)

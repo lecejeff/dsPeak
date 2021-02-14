@@ -75,6 +75,31 @@
 #define CODEC_DAP_COEF_WR_A2_MSB        0x0138
 #define CODEC_DAP_COEF_WR_A2_LSB        0x013A
 
+// Microphone specific defines
+#define MIC_BIAS_RES_OFF    0   // Microphone bias output impedance, match with     
+#define MIC_BIAS_RES_2k     1   // microphone output impedance
+#define MIC_BIAS_RES_4k     2   //
+#define MIC_BIAS_RES_8k     3   //
+
+#define MIC_BIAS_VOLT_1V25  0   // Microphone bias voltage, should be under
+#define MIC_BIAS_VOLT_1V50  1   // VDDA - 0.2V for adequate PSRR
+#define MIC_BIAS_VOLT_1V75  2   //
+#define MIC_BIAS_VOLT_2V00  3   //
+#define MIC_BIAS_VOLT_2V25  4   //
+#define MIC_BIAS_VOLT_2V50  5   //
+#define MIC_BIAS_VOLT_2V75  6   //
+#define MIC_BIAS_VOLT_3V00  7   //
+
+#define MIC_GAIN_0dB        0   // Microphone amplifier gain, setting a gain 
+#define MIC_GAIN_20dB       1   // different than 0dB decreases THD
+#define MIC_GAIN_30dB       2   //
+#define MIC_GAIN_40dB       3   //
+//----------------------------
+
+// CODEC volume defines
+#define DAC_VOLUME_
+
+
 #define SYS_FS_32kHz        0
 #define SYS_FS_44_1kHz      1
 #define SYS_FS_48kHz        2
@@ -138,7 +163,9 @@ typedef struct
     unsigned int DAP_COEF_WR_A1_MSB;
     unsigned int DAP_COEF_WR_A1_LSB;
     unsigned int DAP_COEF_WR_A2_MSB;
-    unsigned int DAP_COEF_WR_A2_LSB;    
+    unsigned int DAP_COEF_WR_A2_LSB; 
+    unsigned char dac_vol_left;
+    unsigned char dac_vol_right;
 }STRUCT_CODEC;
 
 void DCI_init (unsigned char sys_fs);
@@ -147,8 +174,9 @@ unsigned int CODEC_spi_write (unsigned int adr, unsigned int data) ;
 unsigned int CODEC_spi_modify_write (unsigned int adr, unsigned int reg, unsigned int mask, unsigned int data);
 void CODEC_mute (unsigned char channel);
 void CODEC_unmute (unsigned char channel);
-
-
-
+void CODEC_mic_config (unsigned char bias_res, unsigned char bias_volt, unsigned char gain);
+void CODEC_set_input_route (unsigned char channel);
+void CODEC_set_output_route (unsigned char channel);
+void CODEC_set_dac_volume (unsigned char dac_vol_right, unsigned char dac_vol_left);
 #endif	
 

@@ -47,7 +47,7 @@
 #define SPI_MODE2 2
 #define SPI_MODE3 3
 
-#define SPI_BUF_LENGTH 16
+#define SPI_BUF_LENGTH 32
 
 //******************************************************************************
 // SPI CS pin assignation for assert / deassert functions

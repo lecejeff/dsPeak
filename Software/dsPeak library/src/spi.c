@@ -584,27 +584,27 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 //
 //Function call      : Called when interrupt happens
 //
-//Jean-Francois Bilodeau    MPLab X v5.00    09/09/2018
+//Jean-Francois Bilodeau    MPLab X v5.45    13/02/2021
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 {
-    IFS2bits.SPI2IF = 0;                   // clear interrupt flag 
+    IFS2bits.SPI2IF = 0;                   
     spi_struct[SPI_2].spi_tx_cnt++;
-    if (spi_struct[SPI_2].spi_tx_cnt < spi_struct[SPI_2].spi_tx_length)// if write_cnt < write_length 
+    if (spi_struct[SPI_2].spi_tx_cnt < spi_struct[SPI_2].spi_tx_length)
     {
-        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt] = SPI2BUF;  // Get Data 
-        spi_struct[SPI_2].spi_rx_cnt++;                           // Increm RD cnter 
-        SPI2BUF = spi_struct[SPI_2].spi_tx_data[spi_struct[SPI_2].spi_tx_cnt];      // Write new data  
+        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt] = SPI2BUF;  
+        spi_struct[SPI_2].spi_rx_cnt++;                          
+        SPI2BUF = spi_struct[SPI_2].spi_tx_data[spi_struct[SPI_2].spi_tx_cnt];     
     }
     
-    else // If write_cnt == length, all data was transmitted 
+    else 
     {               
-        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt] = SPI2BUF;// Get last Data 
-        spi_struct[SPI_2].spi_rx_cnt = 0;            // Clear RD cnter   
-        spi_struct[SPI_2].spi_tx_cnt = 0;            // Clear WR_CNT 
-        SPI_master_deassert_cs(spi_struct[SPI_2].spi_chip); // Deassert CS   
-        spi_struct[SPI_2].spi_txfer_done = 1;                 // SPI transaction over
-        IEC2bits.SPI2IE = 0;                            // Disable SPI interrupt  
+        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt] = SPI2BUF;
+        spi_struct[SPI_2].spi_rx_cnt = 0;           
+        spi_struct[SPI_2].spi_tx_cnt = 0;         
+        SPI_master_deassert_cs(spi_struct[SPI_2].spi_chip); 
+        spi_struct[SPI_2].spi_txfer_done = 1;                 
+        IEC2bits.SPI2IE = 0;                          
     }
 }
 

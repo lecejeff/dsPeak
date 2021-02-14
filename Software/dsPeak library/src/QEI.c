@@ -53,7 +53,17 @@ void QEI_init (unsigned char channel)
             RPINR14bits.QEB1R = 23;     // RA7 (RPI23) assigned to QEI_1B
             RPINR14bits.QEA1R = 22;     // RA6 (RPI22) assigned to QEI_1A
             
+            QEI1CONbits.PIMOD = 5;      // Reset position counter when poscnt = QEI1GEC
+            QEI1GECH = 0;               // Only use 32bit value for the Greather than or equal compare register
+            QEI1GECL = QEI_MOT1_PPR;    // Set default pulse per revolution value
+            QEI1STATbits.PCHEQIEN = 1;  // Enable position counter >= cmp interrupt enable
+            QEI1IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
+            
+            QEI_set_gear_derate(channel, QEI_MOT1_GDR);
+            QEI_set_cpr(channel, QEI_MOT1_PPR);
+            
             IEC3bits.QEI1IE = 1;        // Enable QEI1 interrupt
+            QEI1CONbits.QEIEN = 1;      // Enable QEI module counters
             break;
             
         case QEI_MOT2:
@@ -125,7 +135,27 @@ void QEI_set_fs (unsigned char channel, unsigned int refresh_freq)
 //****************************************************************************//
 unsigned long QEI_get_pulse (unsigned char channel)
 {
-    return QEI_struct[channel].pulse_getter;
+    unsigned long position = 0, hold = 0;
+    switch (channel)
+    {
+        case QEI_MOT1:
+            position = POS1CNTL;
+            //hold = POS1HLD;
+            //position |= (hold << 16);
+            return position;
+            break;
+            
+        case QEI_MOT2:
+            position &= POS2CNTL;
+            hold = POS2HLD;
+            position |= (hold << 16);
+            return position;
+            break;
+            
+        default:
+            return 0;
+            break;
+    }    
 }
 
 //*****************void QEI_reset_pulse (unsigned char channel)***************//
@@ -143,8 +173,21 @@ unsigned long QEI_get_pulse (unsigned char channel)
 //****************************************************************************//
 void QEI_reset_pulse (unsigned char channel)
 {
-    QEI_struct[channel].pulse_getter = 0;
-    QEI_struct[channel].pulse_cnter = 0;
+    switch (channel)
+    {
+        case QEI_MOT1:
+            POS1HLD = 0;
+            POS1CNTL = 0;
+            break;
+            
+        case QEI_MOT2:
+            POS2HLD = 0;
+            POS2CNTL = 0;
+            break;
+            
+        default:
+            break;
+    }
 }
 
 //void QEI_set_gear_derate (unsigned char channel, unsigned int new_gear_derate)//
@@ -322,7 +365,24 @@ unsigned char QEI_get_direction (unsigned char channel)
 //****************************************************************************//
 unsigned int QEI_get_velocity (unsigned char channel)
 {
-    return QEI_struct[channel].speed_rpm;
+    switch (channel)
+    {
+        case QEI_MOT1:
+            return QEI_struct[channel].speed_rpm;
+            break;
+                    
+        case QEI_MOT2:
+            return QEI_struct[channel].speed_rpm;
+            break;
+            
+        case QEI_ROT_ENC:
+            return 0;
+            break;
+            
+        default:
+            return 0;
+            break;
+    }
 }
 
 //*********void QEI_calculate_velocity (unsigned char channel)***********//
@@ -344,13 +404,11 @@ void QEI_calculate_velocity (unsigned char channel)
     {
         case QEI_MOT1:
             // Update the actual speed
-            QEI_struct[channel].new_pulse = QEI_get_pulse(channel);
+            QEI_struct[channel].new_pulse = VEL1CNT;
             if (QEI_struct[channel].new_pulse > 0)
             {
-                // To get speed in RPM
-                // (Pulses / interrupt * 60s * QEI refresh freq) / (Pulses per tour)                
+                // To get speed in RPM             
                 QEI_struct[channel].speed_rpm = (unsigned int)((QEI_struct[channel].new_pulse * 60 * QEI_struct[channel].refresh_freq) / (QEI_struct[channel].pulse_per_tour));
-                QEI_reset_pulse(channel);
             }
             else
             {
@@ -360,65 +418,16 @@ void QEI_calculate_velocity (unsigned char channel)
     }
 }
 
-//********void QEI_interrupt_handle (unsigned char channel)*******************//
-//Description : Function checks motor direction and actualizes QEI values
-//
-//Function prototype : void QEI_interrupt_handle (unsigned char channel)
-//
-//Enter params       : unsigned char channel : QEIx channel
-//
-//Exit params        : None
-//
-//Function call      : QEI_interrupt_handle(QEI1);
-//
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
-//****************************************************************************//
-void QEI_interrupt_handle (unsigned char channel)
+void __attribute__((__interrupt__, no_auto_psv)) _QEI1Interrupt(void)
 {
-    // Forward direction condition : QEI_A is high on low-to-high transition
-    // on QEI_B.
-    // QEI_A  ---___---___---___---___---___---
-    // QEI_B ___---___---___---___---___---___---
+    QEI_struct[QEI_MOT1].tour_getter++;                    // Increm tour cnter
+    QEI_struct[QEI_MOT1].tour_cnter++;
+    if (QEI_struct[QEI_MOT1].tour_cnter >= MAX_TOUR_CNT){QEI_struct[QEI_MOT1].tour_cnter=0;}
+    if (QEI_struct[QEI_MOT1].tour_getter >= MAX_TOUR_CNT){QEI_struct[QEI_MOT1].tour_getter=0;}
+    IFS3bits.QEI1IF = 0;
+}
 
-    // Backward direction condition : QEI_A is low on low-to-high transition
-    // on QEI_B.        
-    // QEI_A  ___---___---___---___---___---___
-    // QEI_B ___---___---___---___---___---___--- 
-    
-    if (channel == QEI_MOT1)
-    {
-        // Forward
-        if (QEI1A_PIN == 1)
-        {
-            QEI_struct[channel].direction = QEI_DIR_FORWARD;
-        }   
-        
-        // Backward 
-        else 
-        {
-            QEI_struct[channel].direction = QEI_DIR_BACKWARD;
-        }            
-    }
-    
-    QEI_struct[channel].pulse_for_tour++;
-    QEI_struct[channel].pulse_cnter++;
-    QEI_struct[channel].pulse_getter++;
-    QEI_struct[channel].pulse_cnter_dist++;
-    
-    if (QEI_struct[channel].pulse_for_tour >= QEI_struct[channel].pulse_per_tour)
-    {
-        QEI_struct[channel].pulse_for_tour = 0;
-        QEI_struct[channel].tour_cnter_dist++;
-    }
-    
-    if (QEI_struct[channel].pulse_cnter >= QEI_struct[channel].pulse_per_tour)      //chaque tour parcouru, forward ou backward
-    { 
-        QEI_struct[channel].pulse_cnter = 0;
-        QEI_struct[channel].tour_getter++;                    // Increm tour cnter
-        QEI_struct[channel].tour_cnter++;
-    }  
-    
-    if (QEI_struct[channel].tour_cnter >= MAX_TOUR_CNT){QEI_struct[channel].tour_cnter=0;}
-    if (QEI_struct[channel].pulse_cnter >= MAX_PULSE_CNT){QEI_struct[channel].pulse_cnter = 0;}
-    QEI_struct[channel].int_event = 1;    
+void __attribute__((__interrupt__, no_auto_psv)) _QEI2Interrupt(void)
+{
+    IFS4bits.QEI2IF = 0;
 }

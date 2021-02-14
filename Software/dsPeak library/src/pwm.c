@@ -25,10 +25,10 @@ STRUCT_PWM PWM_struct[PWM_QTY];
 //
 //
 ///*****************************************************************************
-void PWM_init (unsigned char channel)
+void PWM_init (unsigned char channel, unsigned char type)
 {
     PTCONbits.PTEN = 0;     // Shutdown PWM engine if it was on 
-    
+    PTCON2bits.PCLKDIV = 6; // Clock divide by 64
     switch (channel)
     {
         case PWM_1L:
@@ -43,127 +43,260 @@ void PWM_init (unsigned char channel)
             // The phase is defined in pwm.h for each PWM channel
             SPHASE1 = (unsigned int)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
             SDC1 = (unsigned int)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
-            PWM_struct[PWM_1L].base_value = 0;                 
-            PWM_struct[PWM_1L].end_value = SDC1;                
-            PWM_struct[PWM_1L].range = PWM_struct[PWM_1L].end_value - PWM_struct[PWM_1L].base_value;   
             
-            PWM_change_duty(PWM_1L, 0);
+            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            if (type == PWM_TYPE_LOAD)
+            {
+                PWM_struct[channel].base_value = 0;                 
+                PWM_struct[channel].end_value = SDC1;                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+            }
+            // In servo type, the PWM channel duty cycle depends on the servo type
+            else
+            {
+                PWM_struct[channel].base_value = (unsigned int)(SDC1 * PWM1L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                PWM_struct[channel].end_value = (unsigned int)(SDC1 * PWM1L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+            }            
             break;
             
         case PWM_1H:
             DTR1 = 0;               // No PWM dead time for PWM1
             ALTDTR1 = 0;            //   
-            IOCON1bits.PENH = 1;    // Enable PWM_1L
+            IOCON1bits.PENH = 1;    // Enable PWM_1H
             IOCON1bits.PMOD = 3;    // True independent PWM
             PWMCON1bits.ITB = 1;    // Independent time base for PWM_1L / PWM_1H pair
             FCLCON1bits.FLTMOD = 3; // No PWM fault can occur
             
             TRISEbits.TRISE1 = 0;   // RE1 is an output
             // The phase is defined in pwm.h for each PWM channel
-            PHASE1 = (unsigned int)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
-            PDC1 = (unsigned int)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
-            PWM_struct[PWM_1H].base_value = 0;                 
-            PWM_struct[PWM_1H].end_value = SDC1;                
-            PWM_struct[PWM_1H].range = PWM_struct[PWM_1H].end_value - PWM_struct[PWM_1H].base_value;  
+            PHASE1 = (unsigned int)(FOSC / (PWM1H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC1 = (unsigned int)(FOSC / (PWM1H_PHASE * PWM_CLOCK_PRESCALE));
             
-            PWM_change_duty(PWM_1H, 0);
+            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            if (type == PWM_TYPE_LOAD)
+            {
+                PWM_struct[channel].base_value = 0;                 
+                PWM_struct[channel].end_value = PDC1;                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+            }
+            // In servo type, the PWM channel duty cycle depends on the servo type
+            else
+            {
+                PWM_struct[channel].base_value = (unsigned int)(PDC1 * PWM1H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                PWM_struct[channel].end_value = (unsigned int)(PDC1 * PWM1H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+            }            
             break;
             
         case PWM_2L:
+            DTR2 = 0;               // No PWM dead time for PWM2
+            ALTDTR2 = 0;            //   
+            IOCON2bits.PENL = 1;    // Enable PWM_2L
+            IOCON2bits.PMOD = 3;    // True independent PWM
+            PWMCON2bits.ITB = 1;    // Independent time base for PWM_2L / PWM_2H pair
+            FCLCON2bits.FLTMOD = 3; // No PWM fault can occur
+            
+            TRISEbits.TRISE2 = 0;   // RE2 is an output
+            // The phase is defined in pwm.h for each PWM channel
+            SPHASE2 = (unsigned int)(FOSC / (PWM2L_PHASE * PWM_CLOCK_PRESCALE));
+            SDC2 = (unsigned int)(FOSC / (PWM2L_PHASE * PWM_CLOCK_PRESCALE));
+            
+            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            if (type == PWM_TYPE_LOAD)
+            {
+                PWM_struct[channel].base_value = 0;                 
+                PWM_struct[channel].end_value = SDC2;                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+            }
+            // In servo type, the PWM channel duty cycle depends on the servo type
+            else
+            {
+                PWM_struct[channel].base_value = (unsigned int)(SDC2 * PWM2L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                PWM_struct[channel].end_value = (unsigned int)(SDC2 * PWM2L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+            }            
             break;
             
         case PWM_2H:
+            DTR2 = 0;               // No PWM dead time for PWM2
+            ALTDTR2 = 0;            //   
+            IOCON2bits.PENH = 1;    // Enable PWM_2H
+            IOCON2bits.PMOD = 3;    // True independent PWM
+            PWMCON2bits.ITB = 1;    // Independent time base for PWM_2L / PWM_2H pair
+            FCLCON2bits.FLTMOD = 3; // No PWM fault can occur
+            
+            TRISEbits.TRISE3 = 0;   // RE3 is an output
+            // The phase is defined in pwm.h for each PWM channel
+            PHASE2 = (unsigned int)(FOSC / (PWM2H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC2 = (unsigned int)(FOSC / (PWM2H_PHASE * PWM_CLOCK_PRESCALE));
+            
+            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            if (type == PWM_TYPE_LOAD)
+            {
+                PWM_struct[channel].base_value = 0;                 
+                PWM_struct[channel].end_value = PDC2;                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+            }
+            // In servo type, the PWM channel duty cycle depends on the servo type
+            else
+            {
+                PWM_struct[channel].base_value = (unsigned int)(PDC2 * PWM2H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                PWM_struct[channel].end_value = (unsigned int)(PDC2 * PWM2H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+            }            
             break;
             
         case PWM_4H:
+            DTR4 = 0;               // No PWM dead time for PWM4
+            ALTDTR4 = 0;            //   
+            IOCON4bits.PENH = 1;    // Enable PWM_4H
+            IOCON4bits.PMOD = 3;    // True independent PWM
+            PWMCON4bits.ITB = 1;    // Independent time base for PWM_4L / PWM_4H pair
+            FCLCON4bits.FLTMOD = 3; // No PWM fault can occur
+            
+            TRISEbits.TRISE7 = 0;   // RE7 is an output
+            // The phase is defined in pwm.h for each PWM channel
+            PHASE4 = (unsigned int)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC4 = (unsigned int)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));
+            
+            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            if (type == PWM_TYPE_LOAD)
+            {
+                PWM_struct[channel].base_value = 0;                 
+                PWM_struct[channel].end_value = PDC4;                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+            }
+            // In servo type, the PWM channel duty cycle depends on the servo type
+            else
+            {
+                PWM_struct[channel].base_value = (unsigned int)(PDC4 * PWM4H_SERVO_BASE);                
+                PWM_struct[channel].end_value = (unsigned int)(PDC4 * PWM4H_SERVO_END);               
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+            }            
             break;
             
         case PWM_5L:
+            DTR5 = 0;               // No PWM dead time for PWM5
+            ALTDTR5 = 0;            //   
+            IOCON5bits.PENL = 1;    // Enable PWM_5L
+            IOCON5bits.PMOD = 3;    // True independent PWM
+            PWMCON5bits.ITB = 1;    // Independent time base for PWM_5L / PWM_5H pair
+            FCLCON5bits.FLTMOD = 3; // No PWM fault can occur
+            
+            TRISCbits.TRISC1 = 0;   // RC1 is an output
+            // The phase is defined in pwm.h for each PWM channel
+            SPHASE5 = (unsigned int)(FOSC / (PWM5L_PHASE * PWM_CLOCK_PRESCALE));
+            SDC5 = (unsigned int)(FOSC / (PWM5L_PHASE * PWM_CLOCK_PRESCALE));
+            
+            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            if (type == PWM_TYPE_LOAD)
+            {
+                PWM_struct[channel].base_value = 0;                 
+                PWM_struct[channel].end_value = SDC5;                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+            }
+            // In servo type, the PWM channel duty cycle depends on the servo type
+            else
+            {
+                PWM_struct[channel].base_value = (unsigned int)(SDC5 * PWM5L_SERVO_BASE);                
+                PWM_struct[channel].end_value = (unsigned int)(SDC5 * PWM5L_SERVO_END);               
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+            }               
             break;
             
         case PWM_5H:
+            DTR5 = 0;               // No PWM dead time for PWM5
+            ALTDTR5 = 0;            //   
+            IOCON5bits.PENH = 1;    // Enable PWM_5H
+            IOCON5bits.PMOD = 3;    // True independent PWM
+            PWMCON5bits.ITB = 1;    // Independent time base for PWM_5L / PWM_5H pair
+            FCLCON5bits.FLTMOD = 3; // No PWM fault can occur
+            
+            TRISCbits.TRISC2 = 0;   // RC2 is an output
+            // The phase is defined in pwm.h for each PWM channel
+            PHASE5 = (unsigned int)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC5 = (unsigned int)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE));
+            
+            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            if (type == PWM_TYPE_LOAD)
+            {
+                PWM_struct[channel].base_value = 0;                 
+                PWM_struct[channel].end_value = PDC5;                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+            }
+            // In servo type, the PWM channel duty cycle depends on the servo type
+            else
+            {
+                PWM_struct[channel].base_value = (unsigned int)(PDC5 * PWM5H_SERVO_BASE);                
+                PWM_struct[channel].end_value = (unsigned int)(PDC5 * PWM5H_SERVO_END);               
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+            }                     
             break;
             
         case PWM_6L:
+            DTR6 = 0;               // No PWM dead time for PWM6
+            ALTDTR6 = 0;            //   
+            IOCON6bits.PENL = 1;    // Enable PWM_6L
+            IOCON6bits.PMOD = 3;    // True independent PWM
+            PWMCON6bits.ITB = 1;    // Independent time base for PWM_6L / PWM_6H pair
+            FCLCON6bits.FLTMOD = 3; // No PWM fault can occur
+            
+            TRISCbits.TRISC3 = 0;   // RC3 is an output
+            // The phase is defined in pwm.h for each PWM channel
+            SPHASE6 = (unsigned int)(FOSC / (PWM6L_PHASE * PWM_CLOCK_PRESCALE));
+            SDC6 = (unsigned int)(FOSC / (PWM6L_PHASE * PWM_CLOCK_PRESCALE));
+            
+            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            if (type == PWM_TYPE_LOAD)
+            {
+                PWM_struct[channel].base_value = 0;                 
+                PWM_struct[channel].end_value = SDC6;                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+            }
+            // In servo type, the PWM channel duty cycle depends on the servo type
+            else
+            {
+                PWM_struct[channel].base_value = (unsigned int)(SDC6 * PWM6L_SERVO_BASE);                
+                PWM_struct[channel].end_value = (unsigned int)(SDC6 * PWM6L_SERVO_END);               
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+            }            
             break;
             
         case PWM_6H:
+            DTR6 = 0;               // No PWM dead time for PWM6
+            ALTDTR6 = 0;            //   
+            IOCON6bits.PENH = 1;    // Enable PWM_6H
+            IOCON6bits.PMOD = 3;    // True independent PWM
+            PWMCON6bits.ITB = 1;    // Independent time base for PWM_6L / PWM_6H pair
+            FCLCON6bits.FLTMOD = 3; // No PWM fault can occur
+            
+            TRISCbits.TRISC4 = 0;   // RC4 is an output
+            // The phase is defined in pwm.h for each PWM channel
+            PHASE6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));
+            
+            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            if (type == PWM_TYPE_LOAD)
+            {
+                PWM_struct[channel].base_value = 0;                 
+                PWM_struct[channel].end_value = PDC6;                
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+            }
+            // In servo type, the PWM channel duty cycle depends on the servo type
+            else
+            {
+                PWM_struct[channel].base_value = (unsigned int)(PDC6 * PWM6H_SERVO_BASE);                
+                PWM_struct[channel].end_value = (unsigned int)(PDC6 * PWM6H_SERVO_END);               
+                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+            }             
             break;
             
             default:
             break;
-    }
-    
-//    DTR4 = 0;               // No faults on PWM4 
-//    ALTDTR4 = 0;
-//    IOCON4 = 0xCC00;        // Configure PWM4H and PWM4L independent mode 
-//    PWMCON4 = 0x0200;
-//    FCLCON4 = 0x0003;    
-//    
-//    DTR5 = 0;               // No faults on PWM5
-//    ALTDTR5 = 0; 
-//    IOCON5 = 0xAC00;        // Configure PWM5H independent mode with INVERTED polarity
-//    IOCON5bits.PENH = 1;
-//    IOCON5bits.PENL = 0;
-//    PWMCON5 = 0x0200;
-//    FCLCON5 = 0x0003;
-//
-//    DTR6 = 0;               // No faults on PWM6 
-//    ALTDTR6 = 0;
-//    IOCON6 = 0xFC00;        // Configure PWM6H and PWM6L independent mode with INVERTED polarity
-//    PWMCON6 = 0x0200;
-//    FCLCON6 = 0x0003;
-//  
-//    PTCON2bits.PCLKDIV = 4; // Divide PWM master clock by 16
-//    //PTCON2bits.PCLKDIV = 6; // Divide PWM master clock by 64    
-//
-//    // PWM equations from dsPIC33E datasheet :
-//    // PHASEx = FOSC / (Fpwm * clock prescaler)
-//    // PDCx = (FOSC / (Fpwm * clock prescaler)) * desired_duty (0->100%)
-//
-//    TRISAbits.TRISA7 = 0;   //PWM4L is an output 
-//    SPHASE4 = (unsigned int)(FOSC / (PWM4L_PHASE * PWM_CLOCK_PRESCALE));//Phase of 50Hz (20ms)
-//    SDC4 = (unsigned int)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));//Duty cycle base is 750us
-//    PWM_struct[PWM_4L].base_value = 0;                  //base value at 40 % max 
-//    PWM_struct[PWM_4L].end_value = SDC4;                //end value at 20ms
-//    PWM_struct[PWM_4L].range = PWM_struct[PWM_4L].end_value - PWM_struct[PWM_4L].base_value;
-//
-//    //
-//    TRISAbits.TRISA10 = 0;   //PWM4H is an output 
-//    PHASE4 = (unsigned int)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));//Phase of 50Hz (20ms)
-//    PDC4 = (unsigned int)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));//Duty cycle base is 1ms
-//    PWM_struct[PWM_4H].base_value = 0;               //base value at 40 % max 
-//    PWM_struct[PWM_4H].end_value = PDC4;             //end value at 20ms
-//    PWM_struct[PWM_4H].range = PWM_struct[PWM_4H].end_value - PWM_struct[PWM_4H].base_value;   
-//    
-//    
-//    // RGB LED PWM initialization 
-//    
-//    // RGB BLUE LED initialization
-//    //TRISCbits.TRISC8 = 0;   //PWM5H is an output 
-//    PHASE5 = (unsigned int)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE)); //Phase of 50Hz (20ms)
-//    PDC5 = (unsigned int)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE));   //
-//    PWM_struct[PWM_5H].base_value = 0;      //base value at 0
-//    PWM_struct[PWM_5H].end_value = PDC5;    //end value at 20ms
-//    PWM_struct[PWM_5H].range = PWM_struct[PWM_5H].end_value - PWM_struct[PWM_5H].base_value;
-//    
-//    // RGB GREEN LED initialization
-//    //TRISCbits.TRISC7 = 0;   //PWM6L is an output 
-//    SPHASE6 = (unsigned int)(FOSC / (PWM6L_PHASE * PWM_CLOCK_PRESCALE));//Phase of 50Hz (20ms)
-//    SDC6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));//Duty cycle base is 750us
-//    PWM_struct[PWM_6L].base_value = 0;           //base value at 0
-//    PWM_struct[PWM_6L].end_value = SDC6;         //end value at 20ms
-//    PWM_struct[PWM_6L].range = PWM_struct[PWM_6L].end_value - PWM_struct[PWM_6L].base_value;
-//
-//    // RGB RED LED initialization
-//    //TRISCbits.TRISC6 = 0;   //PWM6H is an output 
-//    PHASE6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));//Phase of 50Hz (20ms)
-//    PDC6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));//Duty cycle base is 1ms
-//    PWM_struct[PWM_6H].base_value = 0;               //base value at 0
-//    PWM_struct[PWM_6H].end_value = PDC6;             //end value at 20ms
-//    PWM_struct[PWM_6H].range = PWM_struct[PWM_6H].end_value - PWM_struct[PWM_6H].base_value;                                  
-    
-    PTCONbits.PTEN = 1; // Enable hardware PWM generator 
+    }    
+    PWM_change_duty(channel, type, 0);  // Initialize the channel at either 0 duty cycle, or base duty cycle if servo    
+    PTCONbits.PTEN = 1;                 // Enable hardware PWM generator 
 }
 
 //**********unsigned char PWM_get_position (unsigned char channel)************//
@@ -177,7 +310,7 @@ void PWM_init (unsigned char channel)
 //
 //Function call      : pwm_pos = PWM_get_position(PWM_1H);
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
+//Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 ///*****************************************************************************
 unsigned char PWM_get_position (unsigned char channel)
 {
@@ -196,47 +329,58 @@ unsigned char PWM_get_position (unsigned char channel)
 //
 //Function call      : PWM_change_duty(PWM_1H, 30);
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
+//Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 ///*****************************************************************************
-void PWM_change_duty (unsigned char channel, unsigned char duty)
+void PWM_change_duty (unsigned char channel, unsigned char type, unsigned char duty)
 {
     if (duty <= 100)
     {
+        if (type == PWM_TYPE_LOAD)
+        {
+            PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].range * (float)duty/100.0));// Change duty percentage;
+        }
+        else
+        {
+            PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].range * ((float)duty/100.0)) + PWM_struct[channel].base_value);// Change duty percentage                     
+        }
+        PWM_struct[channel].value_p = duty;     // Update struct variable with new percentage
+        
         switch (channel)
         {        
-            case PWM_1L:
-                PWM_struct[channel].value_p = duty;
-                PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].range * (float)duty/100.0));// Change duty percentage;
-                SDC1 = PWM_struct[channel].new_duty; // Write the value to duty cycle register 
+            case PWM_1L:               
+                SDC1 = PWM_struct[channel].new_duty;    // Update duty cycle
                 break;  
                 
             case PWM_1H:
-                PWM_struct[channel].value_p = duty;
-                PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].range * (float)duty/100.0));// Change duty percentage;
-                PDC1 = PWM_struct[channel].new_duty; // Write the value to duty cycle register 
+                PDC1 = PWM_struct[channel].new_duty;    // Update duty cycle
                 break;                
 
+            case PWM_2L:               
+                SDC2 = PWM_struct[channel].new_duty;    // Update duty cycle
+                break;  
+                
+            case PWM_2H:
+                PDC2 = PWM_struct[channel].new_duty;    // Update duty cycle
+                break;                
+                
             case PWM_4H:
-                PWM_struct[channel].value_p = duty;
-                PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].range * (float)duty/100.0));// Change duty percentage;
-                PDC4 = PWM_struct[channel].new_duty; // Write the value to duty cycle register 
-                break;            
+                PDC4 = PWM_struct[channel].new_duty;    // Update duty cycle
+                break; 
+
+            case PWM_5L:
+                SDC5 = PWM_struct[channel].new_duty;    // Update duty cycle
+                break;
+                
             case PWM_5H:
-                PWM_struct[channel].value_p = duty;
-                PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].end_value * (float)duty/100.0));// Change duty percentage 
-                PDC5 = PWM_struct[channel].new_duty; // Write the value to duty cycle register 
+                PDC5 = PWM_struct[channel].new_duty;    // Update duty cycle
                 break;
 
             case PWM_6L:
-                PWM_struct[channel].value_p = duty;
-                PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].end_value * (float)duty/100.0));// Change duty percentage 
-                SDC6 = PWM_struct[channel].new_duty; // Write the value to duty cycle register 
+                SDC6 = PWM_struct[channel].new_duty;    // Update duty cycle
                 break;             
 
             case PWM_6H:
-                PWM_struct[channel].value_p = duty;
-                PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].end_value * (float)duty/100.0));// Change duty percentage 
-                PDC6 = PWM_struct[channel].new_duty; // Write the value to duty cycle register 
+                PDC6 = PWM_struct[channel].new_duty;    // Update duty cycle
                 break;
 
             default:    
