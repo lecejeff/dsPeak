@@ -20,6 +20,8 @@
 
 void DSPIC_init (void);
 void hex_to_ascii (unsigned char ucByte, unsigned char *ucByteH, unsigned char *ucByteL);
+int bcd_to_decimal(unsigned char x) ;
+unsigned int dec2bcd(unsigned int num);
 
 #endif	/* GENERAL_H */
 
