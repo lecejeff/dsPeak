@@ -31,7 +31,7 @@ TIMER_STRUCT TIMER_struct[TIMER_QTY];
 //
 //Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
 //****************************************************************************//
-void TIMER_init (unsigned char timer, unsigned long Freq)
+void TIMER_init (unsigned char timer, unsigned char prescaler, unsigned long Freq)
 {
     // 16 bit timers. With 8x prescaler, clock freq is 70MHz / 8 = 8.75MHz
     // Minimum frequency timer : 8.75MHz / Freq <= 65535, Freq >= 133
@@ -43,87 +43,239 @@ void TIMER_init (unsigned char timer, unsigned long Freq)
     switch(timer)
     {
         case TIMER_1:  
-            T1CONbits.TON = 0;      // Stop Timer
-            T1CONbits.TCS = 0;      // Select internal instruction cycle clock
-            T1CONbits.TGATE = 0;    // Disable Gated Timer mode
-            T1CONbits.TCKPS = 1;    // Select 1:8 Prescaler
-            TMR1 = 0x00;            // Clear timer register
-            PR1 = ((FCY / ALL_TIMER_PRESCALER) / Freq);  
+            T1CONbits.TON = 0;          // Stop Timer
+            T1CONbits.TCS = 0;          // Select internal instruction cycle clock
+            T1CONbits.TGATE = 0;        // Disable Gated Timer mode
+            T1CONbits.TCKPS = prescaler;// Apply prescaler
+            TMR1 = 0x00;                // Clear timer register
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR1 = (FCY / Freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR1 = ((FCY / 8) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR1 = ((FCY / 64) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR1 = ((FCY / 256) / Freq);
+                    break;                    
+            }
             break;
             
         case TIMER_2:
-            T2CONbits.TON = 0;      // Stop Timer
-            T2CONbits.TCS = 0;      // Select internal instruction cycle clock
-            T2CONbits.TGATE = 0;    // Disable Gated Timer mode
-            T2CONbits.TCKPS = 1;    // Select 1:8 Prescaler
-            TMR2 = 0x00;            // Clear timer register
-            PR2 = ((FCY / ALL_TIMER_PRESCALER) / Freq); 
+            T2CONbits.TON = 0;      
+            T2CONbits.TCS = 0; 
+            T2CONbits.TGATE = 0;  
+            T2CONbits.TCKPS = prescaler;    
+            TMR2 = 0x00;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR2 = (FCY / Freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR2 = ((FCY / 8) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR2 = ((FCY / 64) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR2 = ((FCY / 256) / Freq);
+                    break;                    
+            }
             break;
             
         case TIMER_3:
-            T3CONbits.TON = 0;      // Stop Timer
-            T3CONbits.TCS = 0;      // Select internal instruction cycle clock
-            T3CONbits.TGATE = 0;    // Disable Gated Timer mode
-            T3CONbits.TCKPS = 1;    // Select 1:8 Prescaler
-            TMR3 = 0x00;            // Clear timer register
-            PR3 = ((FCY / ALL_TIMER_PRESCALER) / Freq);
+            T3CONbits.TON = 0;    
+            T3CONbits.TCS = 0;    
+            T3CONbits.TGATE = 0;    
+            T3CONbits.TCKPS = prescaler;    
+            TMR3 = 0x00;          
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR3 = (FCY / Freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR3 = ((FCY / 8) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR3 = ((FCY / 64) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR3 = ((FCY / 256) / Freq);
+                    break;                    
+            }
             break;
             
         case TIMER_4:
-            T4CONbits.TON = 0;      // Stop Timer
-            T4CONbits.TCS = 0;      // Select internal instruction cycle clock
-            T4CONbits.TGATE = 0;    // Disable Gated Timer mode
-            T4CONbits.TCKPS = 1;    // Select 1:8 Prescaler
-            TMR4 = 0x00;            // Clear timer register
-            PR4 = ((FCY / ALL_TIMER_PRESCALER) / Freq);
+            T4CONbits.TON = 0;     
+            T4CONbits.TCS = 0;     
+            T4CONbits.TGATE = 0;  
+            T4CONbits.TCKPS = prescaler; 
+            TMR4 = 0x00;          
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR4 = (FCY / Freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR4 = ((FCY / 8) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR4 = ((FCY / 64) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR4 = ((FCY / 256) / Freq);
+                    break;                    
+            }
             break;
             
         case TIMER_5:
-            T5CONbits.TON = 0;      // Stop Timer
-            T5CONbits.TCS = 0;      // Select internal instruction cycle clock
-            T5CONbits.TGATE = 0;    // Disable Gated Timer mode
-            T5CONbits.TCKPS = 1;    // Select 1:8 Prescaler
-            TMR5 = 0x00;            // Clear timer register
-            PR5 = ((FCY / ALL_TIMER_PRESCALER) / Freq);            
-            break;  
+            T5CONbits.TON = 0;      
+            T5CONbits.TCS = 0;     
+            T5CONbits.TGATE = 0;    
+            T5CONbits.TCKPS = prescaler; 
+            TMR5 = 0x00;            
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR5 = (FCY / Freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR5 = ((FCY / 8) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR5 = ((FCY / 64) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR5 = ((FCY / 256) / Freq);
+                    break;                    
+            }
+            break;
             
         // PID FS timer
         case TIMER_6:
-            T6CONbits.TON = 0;      // Stop Timer
-            T6CONbits.TCS = 0;      // Select internal instruction cycle clock
-            T6CONbits.TGATE = 0;    // Disable Gated Timer mode
-            T6CONbits.TCKPS = 3;    // Select 1:256 Prescaler
-            TMR6 = 0x00;            // Clear timer register
-            PR6 = ((FCY / 256) / Freq);
+            T6CONbits.TON = 0;      
+            T6CONbits.TCS = 0;     
+            T6CONbits.TGATE = 0;    
+            T6CONbits.TCKPS = prescaler;    
+            TMR6 = 0x00;            
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR6 = (FCY / Freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR6 = ((FCY / 8) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR6 = ((FCY / 64) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR6 = ((FCY / 256) / Freq);
+                    break;                    
+            }
             break;
             
         case TIMER_7:
-            T7CONbits.TON = 0;      // Stop Timer
-            T7CONbits.TCS = 0;      // Select internal instruction cycle clock
-            T7CONbits.TGATE = 0;    // Disable Gated Timer mode
-            T7CONbits.TCKPS = 3;    // Select 1:256 Prescaler
-            TMR7 = 0x00;            // Clear timer register
-            PR7 = ((FCY / 256) / Freq); 
+            T7CONbits.TON = 0;     
+            T7CONbits.TCS = 0;     
+            T7CONbits.TGATE = 0;  
+            T7CONbits.TCKPS = prescaler;   
+            TMR7 = 0x00;           
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR7 = (FCY / Freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR7 = ((FCY / 8) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR7 = ((FCY / 64) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR7 = ((FCY / 256) / Freq);
+                    break;                    
+            }
             break;
             
         case TIMER_8:
-            T8CONbits.TON = 0;      // Stop Timer
-            T8CONbits.TCS = 0;      // Select internal instruction cycle clock
-            T8CONbits.TGATE = 0;    // Disable Gated Timer mode
-            T8CONbits.TCKPS = 3;    // Select 1:256 Prescaler
-            TMR8 = 0x00;            // Clear timer register
-            PR8 = ((FCY / 256) / Freq);           
+            T8CONbits.TON = 0;     
+            T8CONbits.TCS = 0;     
+            T8CONbits.TGATE = 0;   
+            T8CONbits.TCKPS = prescaler;    
+            TMR8 = 0x00;           
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR8 = (FCY / Freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR8 = ((FCY / 8) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR8 = ((FCY / 64) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR8 = ((FCY / 256) / Freq);
+                    break;                    
+            }
             break;
             
-            // HEARTBEAT TIMER, PRESCALER DIFFERS (256)
         case TIMER_9:
-            T9CONbits.TON = 0;      // Stop Timer
-            T9CONbits.TCS = 0;      // Select internal instruction cycle clock
-            T9CONbits.TGATE = 0;    // Disable Gated Timer mode
-            T9CONbits.TCKPS = 3;    // Select 1:256 Prescaler
-            TMR9 = 0x00;            // Clear timer register
-            PR9 = ((FCY / 256) / Freq);               
-            break;              
+            T9CONbits.TON = 0;   
+            T9CONbits.TCS = 0;     
+            T9CONbits.TGATE = 0; 
+            T9CONbits.TCKPS = prescaler; 
+            TMR9 = 0x00;        
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR9 = (FCY / Freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR9 = ((FCY / 8) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR9 = ((FCY / 64) / Freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR9 = ((FCY / 256) / Freq);
+                    break;                    
+            }
+            break;          
     }
 }
 
@@ -141,70 +293,232 @@ void TIMER_init (unsigned char timer, unsigned long Freq)
 //
 //Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
 //****************************************************************************//
-void TIMER_update_freq (unsigned char timer, unsigned long new_freq)
+void TIMER_update_freq (unsigned char timer, unsigned char prescaler, unsigned long new_freq)
 {
     switch (timer)
     {
         case TIMER_1:
             TIMER_stop(TIMER_1);
             TMR1 = 0;
-            PR1 = ((FCY / ALL_TIMER_PRESCALER) / new_freq);    
+            T1CONbits.TCKPS = prescaler;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR1 = (FCY / new_freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR1 = ((FCY / 8) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR1 = ((FCY / 64) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR1 = ((FCY / 256) / new_freq);
+                    break;                    
+            }            
             TIMER_start(TIMER_1);
             break;
             
         case TIMER_2:
             TIMER_stop(TIMER_2);
             TMR2 = 0;
-            PR2 = ((FCY / ALL_TIMER_PRESCALER) / new_freq);
+            T2CONbits.TCKPS = prescaler;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR2 = (FCY / new_freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR2 = ((FCY / 8) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR2 = ((FCY / 64) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR2 = ((FCY / 256) / new_freq);
+                    break;                    
+            } 
             TIMER_start(TIMER_2);
             break;
             
         case TIMER_3:
             TIMER_stop(TIMER_3);
             TMR3 = 0;
-            PR3 = ((FCY / ALL_TIMER_PRESCALER) / new_freq); 
+            T3CONbits.TCKPS = prescaler;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR3 = (FCY / new_freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR3 = ((FCY / 8) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR3 = ((FCY / 64) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR3 = ((FCY / 256) / new_freq);
+                    break;                    
+            } 
             TIMER_start(TIMER_3);
             break;
             
         case TIMER_4:
             TIMER_stop(TIMER_4);
             TMR4 = 0;
-            PR4 = ((FCY / ALL_TIMER_PRESCALER) / new_freq);
+            T4CONbits.TCKPS = prescaler;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR4 = (FCY / new_freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR4 = ((FCY / 8) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR4 = ((FCY / 64) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR4 = ((FCY / 256) / new_freq);
+                    break;                    
+            } 
             TIMER_start(TIMER_4);
             break;
             
         case TIMER_5:
             TIMER_stop(TIMER_5);
             TMR5 = 0;
-            PR5 = ((FCY / ALL_TIMER_PRESCALER) / new_freq);
+            T5CONbits.TCKPS = prescaler;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR5 = (FCY / new_freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR5 = ((FCY / 8) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR5 = ((FCY / 64) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR5 = ((FCY / 256) / new_freq);
+                    break;                    
+            } 
             TIMER_start(TIMER_5);
             break;
             
         case TIMER_6:
             TIMER_stop(TIMER_6);
             TMR6 = 0;
-            PR6 = ((FCY / 256) / new_freq);
+            T6CONbits.TCKPS = prescaler;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR6 = (FCY / new_freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR6 = ((FCY / 8) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR6 = ((FCY / 64) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR6 = ((FCY / 256) / new_freq);
+                    break;                    
+            } 
             TIMER_start(TIMER_6);
             break;
             
         case TIMER_7:
             TIMER_stop(TIMER_7);
             TMR7 = 0;
-            PR7 = ((FCY / 256) / new_freq);
+            T7CONbits.TCKPS = prescaler;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR7 = (FCY / new_freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR7 = ((FCY / 8) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR7 = ((FCY / 64) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR7 = ((FCY / 256) / new_freq);
+                    break;                    
+            } 
             TIMER_start(TIMER_7);
             break;
             
         case TIMER_8:
             TIMER_stop(TIMER_8);
             TMR8 = 0;
-            PR8 = ((FCY / 256) / new_freq);
+            T8CONbits.TCKPS = prescaler;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR8 = (FCY / new_freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR8 = ((FCY / 8) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR8 = ((FCY / 64) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR8 = ((FCY / 256) / new_freq);
+                    break;                    
+            } 
             TIMER_start(TIMER_8);
             break;
             
         case TIMER_9:
             TIMER_stop(TIMER_9);
             TMR9 = 0;
-            PR9 = ((FCY / 256) / new_freq);
+            T9CONbits.TCKPS = prescaler;
+            switch (prescaler)
+            {
+                case TIMER_PRESCALER_1:
+                    PR9 = (FCY / new_freq); 
+                    break;
+                
+                case TIMER_PRESCALER_8:
+                    PR9 = ((FCY / 8) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_64:
+                    PR9 = ((FCY / 64) / new_freq);
+                    break;
+                    
+                case TIMER_PRESCALER_256:
+                    PR9 = ((FCY / 256) / new_freq);
+                    break;                    
+            } 
             TIMER_start(TIMER_9);
             break;            
     }
@@ -285,6 +599,7 @@ void TIMER_start (unsigned char timer)
             
         case TIMER_9:
             TMR9 = 0;
+            IPC13bits.T9IP = 7;     // SW PWM timer, high interrupt priority
             IEC3bits.T9IE = 1;      // Enable timer interrupt
             IFS3bits.T9IF = 0;      // Clear timer flag    
             T9CONbits.TON = 1;      // Start timer

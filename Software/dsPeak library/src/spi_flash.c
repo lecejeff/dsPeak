@@ -1,6 +1,6 @@
 #include "spi_flash.h"
 #include "uart.h"
-SPI_FLASH_MEM flash_state;
+STRUCT_FLASH flash_state;
 
 void SPI_flash_init (void)
 {

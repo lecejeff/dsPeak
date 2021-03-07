@@ -17,11 +17,17 @@
 #include <xc.h>
 #include <libpic30.h>
 #include <dsp.h>
+#include <string.h>
+
+#define RGB_LED_RED     LATBbits.LATB3
+#define RGB_LED_GREEN   LATBbits.LATB4
+#define RGB_LED_BLUE    LATBbits.LATB5
 
 void DSPIC_init (void);
 void hex_to_ascii (unsigned char ucByte, unsigned char *ucByteH, unsigned char *ucByteL);
 int bcd_to_decimal(unsigned char x) ;
 unsigned int dec2bcd(unsigned int num);
+void RGB_LED_set_color (unsigned long color);
 
 #endif	/* GENERAL_H */
 

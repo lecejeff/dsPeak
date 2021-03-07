@@ -44,7 +44,7 @@ void QEI_init (unsigned char channel)
 {
     switch (channel)
     {
-        case QEI_MOT1:
+        case QEI_1:
             QEI1CONbits.QEIEN = 0;      // Disable QEI module counters
             IFS3bits.QEI1IF = 0;        // Clear interrupt flag
             
@@ -53,20 +53,21 @@ void QEI_init (unsigned char channel)
             RPINR14bits.QEB1R = 23;     // RA7 (RPI23) assigned to QEI_1B
             RPINR14bits.QEA1R = 22;     // RA6 (RPI22) assigned to QEI_1A
             
-            QEI1CONbits.PIMOD = 5;      // Reset position counter when poscnt = QEI1GEC
+            QEI1CONbits.PIMOD = 0;      // 
             QEI1GECH = 0;               // Only use 32bit value for the Greather than or equal compare register
-            QEI1GECL = QEI_MOT1_PPR;    // Set default pulse per revolution value
+            QEI1GECL = QEI_MOT1_PPT;    // Set default pulse per revolution value
             QEI1STATbits.PCHEQIEN = 1;  // Enable position counter >= cmp interrupt enable
-            QEI1IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
+            //QEI1IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
             
             QEI_set_gear_derate(channel, QEI_MOT1_GDR);
-            QEI_set_cpr(channel, QEI_MOT1_PPR);
+            QEI_set_cpr(channel, QEI_MOT1_CPR);
+            QEI_set_max_rpm(channel, QEI_MOT1_MAX_RPM);
             
             IEC3bits.QEI1IE = 1;        // Enable QEI1 interrupt
             QEI1CONbits.QEIEN = 1;      // Enable QEI module counters
             break;
             
-        case QEI_MOT2:
+        case QEI_2:
             QEI2CONbits.QEIEN = 0;      // Disable QEI module counters
             IFS4bits.QEI2IF = 0;        // Clear interrupt flag
             
@@ -120,6 +121,21 @@ void QEI_set_fs (unsigned char channel, unsigned int refresh_freq)
     QEI_struct[channel].refresh_freq = refresh_freq;
 }
 
+unsigned int QEI_get_fs (unsigned char channel)
+{
+    return QEI_struct[channel].refresh_freq;
+}
+
+void QEI_set_max_rpm (unsigned char channel, unsigned int max_rpm)
+{
+    QEI_struct[channel].motor_max_rpm = max_rpm;
+}
+
+unsigned int QEI_get_max_rpm (unsigned char channel) 
+{
+    return QEI_struct[channel].motor_max_rpm;
+}
+
 //*************unsigned long QEI_get_pulse (unsigned char channel)************//
 //Description : Function return amount of pulses counted by QEI
 //
@@ -138,14 +154,14 @@ unsigned long QEI_get_pulse (unsigned char channel)
     unsigned long position = 0, hold = 0;
     switch (channel)
     {
-        case QEI_MOT1:
+        case QEI_1:
             position = POS1CNTL;
             //hold = POS1HLD;
             //position |= (hold << 16);
             return position;
             break;
             
-        case QEI_MOT2:
+        case QEI_2:
             position &= POS2CNTL;
             hold = POS2HLD;
             position |= (hold << 16);
@@ -175,12 +191,12 @@ void QEI_reset_pulse (unsigned char channel)
 {
     switch (channel)
     {
-        case QEI_MOT1:
+        case QEI_1:
             POS1HLD = 0;
             POS1CNTL = 0;
             break;
             
-        case QEI_MOT2:
+        case QEI_2:
             POS2HLD = 0;
             POS2CNTL = 0;
             break;
@@ -363,26 +379,19 @@ unsigned char QEI_get_direction (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
+unsigned int QEI_get_speed_rpm (unsigned char channel)
+{
+    return QEI_struct[channel].speed_rpm;
+}
+
+unsigned int QEI_get_speed_rps (unsigned char channel)
+{
+    return QEI_struct[channel].speed_rps;
+}
+
 unsigned int QEI_get_velocity (unsigned char channel)
 {
-    switch (channel)
-    {
-        case QEI_MOT1:
-            return QEI_struct[channel].speed_rpm;
-            break;
-                    
-        case QEI_MOT2:
-            return QEI_struct[channel].speed_rpm;
-            break;
-            
-        case QEI_ROT_ENC:
-            return 0;
-            break;
-            
-        default:
-            return 0;
-            break;
-    }
+    return QEI_struct[channel].velocity;
 }
 
 //*********void QEI_calculate_velocity (unsigned char channel)***********//
@@ -402,29 +411,40 @@ void QEI_calculate_velocity (unsigned char channel)
 {
     switch (channel)
     {
-        case QEI_MOT1:
+        case QEI_1:
             // Update the actual speed
-            QEI_struct[channel].new_pulse = VEL1CNT;
-            if (QEI_struct[channel].new_pulse > 0)
+            QEI_struct[channel].velocity = VEL1CNT;
+            QEI_struct[channel].speed_rps = (unsigned int)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
+            QEI_struct[channel].speed_rpm = (unsigned int)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / QEI_struct[channel].pulse_per_tour);
+            break; 
+            
+        case QEI_2:
+            // Update the actual speed
+            QEI_struct[channel].velocity = VEL2CNT;
+            if (QEI_struct[channel].velocity > 0)
             {
-                // To get speed in RPM             
-                QEI_struct[channel].speed_rpm = (unsigned int)((QEI_struct[channel].new_pulse * 60 * QEI_struct[channel].refresh_freq) / (QEI_struct[channel].pulse_per_tour));
+                // To get speed in RPM 
+                QEI_struct[channel].speed_rps = (unsigned int)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
+                QEI_struct[channel].speed_rpm = (unsigned int)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / (QEI_struct[channel].pulse_per_tour));
             }
             else
             {
                 QEI_struct[channel].speed_rpm = 0;
             }
-            break;     
+            break;          
     }
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _QEI1Interrupt(void)
 {
-    QEI_struct[QEI_MOT1].tour_getter++;                    // Increm tour cnter
-    QEI_struct[QEI_MOT1].tour_cnter++;
-    if (QEI_struct[QEI_MOT1].tour_cnter >= MAX_TOUR_CNT){QEI_struct[QEI_MOT1].tour_cnter=0;}
-    if (QEI_struct[QEI_MOT1].tour_getter >= MAX_TOUR_CNT){QEI_struct[QEI_MOT1].tour_getter=0;}
     IFS3bits.QEI1IF = 0;
+    if (QEI1STATbits.PCHEQIRQ == 1)
+    {       
+        QEI1STATbits.PCHEQIRQ = 0;
+        QEI_reset_pulse(QEI_1);
+        QEI_struct[QEI_1].tour_cnter_dist++;
+        if(QEI_struct[QEI_1].tour_cnter_dist > MAX_TOUR_CNT){QEI_struct[QEI_1].tour_cnter_dist = 0;}
+    }
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _QEI2Interrupt(void)

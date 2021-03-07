@@ -99,7 +99,6 @@
 // CODEC volume defines
 #define DAC_VOLUME_
 
-
 #define SYS_FS_32kHz        0
 #define SYS_FS_44_1kHz      1
 #define SYS_FS_48kHz        2

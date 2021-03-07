@@ -12,8 +12,12 @@
 //****************************************************************************//
 #include "UART.h"
 #include "string.h"
+#include "DMA.h"
 
 STRUCT_UART UART_struct[UART_QTY];
+
+__eds__ unsigned char uart_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
+__eds__ unsigned int uart_dma_rx_buf[UART_MAX_RX] __attribute__((eds,space(dma)));
 
 //void UART_init (unsigned char channel, unsigned long baud, unsigned char buf_length)//
 //Description : Function initialize UART channel at specified baudrate with 
@@ -118,6 +122,12 @@ void UART_init (unsigned char channel, unsigned long baud, unsigned char rx_buf_
             IFS5bits.U3RXIF = 0;            // Clear receive interrupt flag
             IEC5bits.U3EIE = 1;             // Enable error interrupt
             IEC5bits.U3RXIE = 1;            // Enable receive interrupt
+            DMA_init(DMA_CH0);
+            DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
+            DMA0REQ = DMAREQ_U3TX;
+            DMA0PAD = (volatile unsigned int)&U3TXREG;
+            DMA0STAH = __builtin_dmapage(uart_dma_tx_buf);
+            DMA0STAL = __builtin_dmaoffset(uart_dma_tx_buf);
             break; 
             
         default:
@@ -308,6 +318,36 @@ void UART_putbuf (unsigned char channel, unsigned char *buf, unsigned char lengt
         default:
             break;
     }
+}
+
+// Non-blocking function
+// Uses DMA
+void UART_putbuf_dma (unsigned char channel, unsigned char *buf, unsigned char length)
+{
+    unsigned char i = 0;
+    switch (channel)
+    {           
+        case UART_3:  
+                
+            if (DMA_get_txfer_state(DMA_CH0) == DMA_TXFER_DONE)  // If DMA channel is free, fill buffer and transmit
+            {
+                if (U3STAbits.TRMT)         
+                {
+                    for (; i < length; i++)
+                    {
+                        uart_dma_tx_buf[i] = *buf++;
+                    }
+                    DMA0CNT = length - 1;                           // 0 = 1 txfer, so substract 1  
+                    DMA_enable(DMA_CH0);
+                    IEC5bits.U3TXIE = 1;                            // Enable transmission
+                    DMA0REQbits.FORCE = 1;
+                }
+            }
+            break;
+            
+        default:
+            break;
+    }    
 }
 
 //void UART_fill_tx_buffer (unsigned char channel, unsigned char *data, unsigned char length)//

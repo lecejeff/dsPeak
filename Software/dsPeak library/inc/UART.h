@@ -40,6 +40,7 @@ void UART_init (unsigned char channel, unsigned long baud, unsigned char buf_len
 void UART_putc (unsigned char channel, unsigned char data);
 void UART_putstr (unsigned char channel, char *str);
 void UART_putbuf (unsigned char channel, unsigned char *buf, unsigned char length);
+void UART_putbuf_dma (unsigned char channel, unsigned char *buf, unsigned char length);
 void UART_putc_ascii (unsigned char channel, unsigned char data);
 
 void UART_rx_interrupt (unsigned char channel);

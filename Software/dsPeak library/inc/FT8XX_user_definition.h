@@ -31,15 +31,15 @@
 #define MAX_GRADIENT_NB 1
 #define MAX_WINDOW_NB 0
 #define MAX_SLIDER_NB 0
-#define MAX_BUTTON_NB 18
-#define MAX_TEXT_NB 32
-#define MAX_NUMBER_NB 17
-#define MAX_TOGGLE_NB 5
+#define MAX_BUTTON_NB 0
+#define MAX_TEXT_NB 5
+#define MAX_NUMBER_NB 5
+#define MAX_TOGGLE_NB 0
 #define MAX_DIAL_NB 0
 #define MAX_PROGRESS_NB 0
-#define MAX_SCROLLBAR_NB 5
+#define MAX_SCROLLBAR_NB 0
 #define MAX_CLOCK_NB 1
-#define MAX_GAUGE_NB 1
+#define MAX_GAUGE_NB 0
 #define MAX_KEYS_NB 0
 
 #if MAX_GRADIENT_NB > 0
@@ -349,21 +349,21 @@ extern STTouch Touch_data;
 #define FT_PRIM_DIAL 11
 
 // Colors - fully saturated colors defined here
-#define RED       0xFF0000		// Red
-#define GREEN	0x00FF00		// Green
-#define BLUE	0x0000FF		// Blue
-#define WHITE	0xFFFFFF		// White
-#define BLACK      0x000000		// Black
-#define PURPLE    0xFF00FF        // PURPLE
-#define YELLOW    0xFFFF00
-#define ORANGE    0xFF8000
-#define GREY      0x6E6E6E
-#define FOREST    0x25844C
-#define BURNT     0xDFA44C
-#define BROWN     0x5F4B2F
-#define MAROON    0x6D1313
-#define SKIN      0xF8BFBF
-#define PINK      0xFF04C9
-#define CORAL     0x42DB96
+#define RED         0xFF0000		// Red
+#define GREEN       0x00FF00		// Green
+#define BLUE        0x0000FF		// Blue
+#define WHITE       0xFFFFFF		// White
+#define BLACK       0x000000		// Black
+#define PURPLE      0xFF00FF        // PURPLE
+#define YELLOW      0xFFFF00
+#define ORANGE      0xFF8000
+#define GREY        0x6E6E6E
+#define FOREST      0x25844C
+#define BURNT       0xDFA44C
+#define BROWN       0x5F4B2F
+#define MAROON      0x6D1313
+#define SKIN        0xF8BFBF
+#define PINK        0xFF04C9
+#define CORAL       0x42DB96
 
 #endif

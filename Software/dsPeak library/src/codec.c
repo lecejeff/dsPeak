@@ -15,7 +15,7 @@
 
 STRUCT_CODEC CODEC_struct; 
 
-const unsigned int sine_wave_255_65k[256] = {
+const int sine_wave_255_65k[256] = {
 0x8000,0x8327,0x864e,0x8973,0x8c98,0x8fba,0x92da,0x95f7,
 0x9911,0x9c27,0x9f38,0xa244,0xa54c,0xa84d,0xab48,0xae3c,
 0xb12a,0xb40f,0xb6ed,0xb9c2,0xbc8e,0xbf50,0xc209,0xc4b7,
@@ -301,7 +301,6 @@ void DCI_init (unsigned char sys_fs)
     DCICON1bits.CSCKD = 1;  // CSCK pin is an input when DCI module is enabled
     DCICON1bits.COFSD = 1;  // COFS pin is an input when DCI module is enabled
     DCICON2bits.WS = 0xF;   // DCI data word size is 16 bits
-    DCICON3bits.BCG = (FCY / (2 * sys_fs)) - 1;     //
     
     RSCONbits.RSE0 = 1;     // Enable receive time slot 0
     TSCONbits.TSE0 = 1;     // Enable transmit time slot 0
