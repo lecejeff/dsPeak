@@ -70,7 +70,7 @@ unsigned long rgb_r = 0, rgb_g = 0, rgb_b = 0;
 unsigned int counter_ms = 0;
 unsigned int counter_100us = 0;
 unsigned int hour_bcd = 0, minute_bcd = 0, second_bcd = 0;
-unsigned char buf[64] = {0};
+unsigned char buf[128] = {0};
 unsigned char test_spi[8] = {'J', 'e', 't', 'a', 'i', 'm', 'e', '!'};
 char *str = "-- Testing a full 64 bytes transfer from DPSRAM->DMA->USART3!\r\n";
 unsigned int test = 50;
@@ -129,7 +129,7 @@ int main()
     FT8XX_draw_clock(&st_Clock[0]);
     FT8XX_update_screen_dl();         		// Update display list    
     
-    UART_putbuf_dma(UART_3, "dsPeak - UART3 test 12345ABCDEF", strlen("dsPeak - UART3 test 12345ABCDEF"));
+    UART_putbuf_dma(UART_3, (unsigned char *)"dsPeak - UART3 test 12345ABCDEF", strlen("dsPeak - UART3 test 12345ABCDEF"));
     
     RGB_LED_set_color(0x800080);
     
@@ -211,8 +211,6 @@ int main()
                     buf[i] = (unsigned char)*str++;
                 }
                 UART_putbuf_dma(UART_3, buf, 64);
-//              
-//                UART_putstr(UART_3, " Intellitrol dsPeak dev board - 115200 ");  
 //                UART_putc(UART_3, 0x0D);
 //                UART_putc(UART_3, 0x0A); 
 //                UART_putstr(UART_3, "Time : ");  

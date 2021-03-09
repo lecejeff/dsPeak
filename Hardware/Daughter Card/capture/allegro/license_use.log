@@ -1,0 +1,20 @@
+Licenses in Use Report
+
+--------------------------------------------------------------------
+Consumers of license:  "OrCAD_PCB_Designer_Basics"
+    Server:      5280@localhost
+    Available:   1
+    In use:      1
+
+ USER                 SYSTEM               USED  STATUS
+ jeanf                LAPTOP-NDUR73JF        1   Checked out
+
+--------------------------------------------------------------------
+Consumers of license:  "OrCAD_PCB_Editor_Basics"
+    Server:      5280@localhost
+    Available:   1
+    In use:      1
+
+ USER                 SYSTEM               USED  STATUS
+ jeanf                LAPTOP-NDUR73JF        1   Checked out
+

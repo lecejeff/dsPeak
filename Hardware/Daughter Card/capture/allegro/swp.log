@@ -1,0 +1,15 @@
+Loading netlist files ...
+Loading... c:\users\jeanf\desktop\git\dspeak\hardware\daughter card\capture\allegro\pstchip.dat
+
+Loading... c:\users\jeanf\desktop\git\dspeak\hardware\daughter card\capture\allegro\pstxprt.dat
+
+Loading... c:\users\jeanf\desktop\git\dspeak\hardware\daughter card\capture\allegro\pstxnet.dat
+packaging the design view...Loading... c:\users\jeanf\desktop\git\dspeak\hardware\daughter card\capture\allegro/funcview.dat
+Loading... c:\users\jeanf\desktop\git\dspeak\hardware\daughter card\capture\allegro/compview.dat
+Loading... c:\users\jeanf\desktop\git\dspeak\hardware\daughter card\capture\allegro/netview.dat
+Loading... c:\users\jeanf\desktop\git\dspeak\hardware\daughter card\capture\allegro/pinview.dat
+packaging the design view...
+#53 ERROR(SPCODD-53): Packaging cannot be completed because packaging has encountered a null object ID. The design may not have been saved correctly. Save the design before packaging.
+      #53 ERROR(SPCODD-53): Packaging cannot be completed because packaging has encountered a null object ID. The design may not have been saved correctly. Save the design before packaging.
+      #53 ERROR(SPCODD-53): Packaging cannot be completed because packaging has encountered a null object ID. The design may not have been saved correctly. Save the design before packaging.
+      

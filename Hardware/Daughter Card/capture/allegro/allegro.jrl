@@ -1,0 +1,10 @@
+\t (00:00:01) allegro 17.4 S014 Windows SPB 64-bit Edition
+\t (00:00:01)     Journal start - Sat Feb 20 10:52:22 2021
+\t (00:00:01)         Host=LAPTOP-NDUR73JF User=jeanf Pid=10308 CPUs=8
+\t (00:00:01) CmdLine= allegro.exe -proj c:/users/jeanf/desktop/git/dspeak/hardware/daughter card/capture/daughter_card-v1_00-0a.opj C:/Users/jeanf/Desktop/git/dsPeak/Hardware/Daughter Card/capture/allegro/DAUGHTER_CARD-V1_00-0A.brd
+\t (00:00:01) 
+   (00:00:01) Loading axlcore.cxt 
+\e (00:00:02) Retrieval of 'OrCAD_PCB_Editor_Basics' license failed: ''. Report the licenses in use log via the menu item File->Viewlog: license_use.log
+\i (00:00:05) fillin confirm
+\i (00:00:06) fillin menu_cancel
+\t (00:00:06)     Journal end - Sat Feb 20 10:52:27 2021

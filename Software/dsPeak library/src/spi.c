@@ -538,7 +538,7 @@ void SPI_flush_buffer (unsigned char channel)
 }
 
 //**************************SPI1 interrupt function***************************//
-//Description : SPI master interrupt.
+//Description : SPI interrupt.
 //
 //Function prototype : _SPI1Interrupt(void) 
 //
@@ -548,33 +548,32 @@ void SPI_flush_buffer (unsigned char channel)
 //
 //Function call      : Called when interrupt happens
 //
-//Jean-Francois Bilodeau    MPLab X v5.00    09/09/2018
+//Jean-Francois Bilodeau    MPLab X v5.45    03/08/2021
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 {
-    IFS0bits.SPI1IF = 0;                   // clear interrupt flag 
+    IFS0bits.SPI1IF = 0;                   
     spi_struct[SPI_1].spi_tx_cnt++;
-    if (spi_struct[SPI_1].spi_tx_cnt < spi_struct[SPI_1].spi_tx_length)// if write_cnt < write_length 
+    if (spi_struct[SPI_1].spi_tx_cnt < spi_struct[SPI_1].spi_tx_length)
     {
-        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt] = SPI1BUF;  // Get Data 
-        spi_struct[SPI_1].spi_rx_cnt++;                           // Increm RD cnter 
-        SPI1BUF = spi_struct[SPI_1].spi_tx_data[spi_struct[SPI_1].spi_tx_cnt];      // Write new data  
-        //spi_struct[SPI_1].spi_tx_cnt++;                                       // Increm WR cnter 
+        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt] = SPI1BUF; 
+        spi_struct[SPI_1].spi_rx_cnt++;                           
+        SPI1BUF = spi_struct[SPI_1].spi_tx_data[spi_struct[SPI_1].spi_tx_cnt];    
     }
     
-    else // If write_cnt == length, all data was transmitted 
+    else 
     {               
-        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt] = SPI1BUF;// Get last Data 
-        spi_struct[SPI_1].spi_rx_cnt = 0;            // Clear RD cnter   
-        spi_struct[SPI_1].spi_tx_cnt = 0;            // Clear WR_CNT 
-        SPI_master_deassert_cs(spi_struct[SPI_1].spi_chip); // Deassert CS   
-        spi_struct[SPI_1].spi_txfer_done = 1;                 // SPI transaction over
-        IEC0bits.SPI1IE = 0;                            // Disable SPI interrupt  
+        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt] = SPI1BUF;
+        spi_struct[SPI_1].spi_rx_cnt = 0;        
+        spi_struct[SPI_1].spi_tx_cnt = 0;           
+        SPI_master_deassert_cs(spi_struct[SPI_1].spi_chip); 
+        spi_struct[SPI_1].spi_txfer_done = 1;                
+        IEC0bits.SPI1IE = 0;                       
     }
 }
 
-//**************************SPI2 interrupt function***************************//
-//Description : SPI slave interrupt
+//**************************SPI2interrupt function***************************//
+//Description : SPI interrupt.
 //
 //Function prototype : _SPI2Interrupt(void) 
 //
@@ -584,7 +583,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 //
 //Function call      : Called when interrupt happens
 //
-//Jean-Francois Bilodeau    MPLab X v5.45    13/02/2021
+//Jean-Francois Bilodeau    MPLab X v5.45    03/08/2021
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 {
@@ -608,46 +607,72 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
     }
 }
 
+//**************************SPI3 interrupt function***************************//
+//Description : SPI interrupt.
+//
+//Function prototype : _SPI3Interrupt(void) 
+//
+//Enter params       : None
+//
+//Exit params        : None
+//
+//Function call      : Called when interrupt happens
+//
+//Jean-Francois Bilodeau    MPLab X v5.45    03/08/2021
+//****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 {
-    IFS5bits.SPI3IF = 0;                   // clear interrupt flag 
+    IFS5bits.SPI3IF = 0;                  
     spi_struct[SPI_3].spi_tx_cnt++;
-    if (spi_struct[SPI_3].spi_tx_cnt < spi_struct[SPI_3].spi_tx_length)// if write_cnt < write_length 
+    if (spi_struct[SPI_3].spi_tx_cnt < spi_struct[SPI_3].spi_tx_length)
     {
-        spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt] = SPI3BUF;  // Get Data 
-        spi_struct[SPI_3].spi_rx_cnt++;                           // Increm RD cnter 
-        SPI3BUF = spi_struct[SPI_3].spi_tx_data[spi_struct[SPI_3].spi_tx_cnt];      // Write new data  
+        spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt] = SPI3BUF;  
+        spi_struct[SPI_3].spi_rx_cnt++;                           
+        SPI3BUF = spi_struct[SPI_3].spi_tx_data[spi_struct[SPI_3].spi_tx_cnt];  
     }
     
-    else // If write_cnt == length, all data was transmitted 
+    else
     {               
-        spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt] = SPI3BUF;// Get last Data 
-        spi_struct[SPI_3].spi_rx_cnt = 0;            // Clear RD cnter   
-        spi_struct[SPI_3].spi_tx_cnt = 0;            // Clear WR_CNT 
-        SPI_master_deassert_cs(spi_struct[SPI_3].spi_chip); // Deassert CS   
-        spi_struct[SPI_3].spi_txfer_done = 1;                 // SPI transaction over
-        IEC5bits.SPI3IE = 0;                            // Disable SPI interrupt  
+        spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt] = SPI3BUF;
+        spi_struct[SPI_3].spi_rx_cnt = 0;         
+        spi_struct[SPI_3].spi_tx_cnt = 0;       
+        SPI_master_deassert_cs(spi_struct[SPI_3].spi_chip);
+        spi_struct[SPI_3].spi_txfer_done = 1;
+        IEC5bits.SPI3IE = 0;
     }
 }
 
+//**************************SPI4 interrupt function***************************//
+//Description : SPI interrupt.
+//
+//Function prototype : _SPI4Interrupt(void) 
+//
+//Enter params       : None
+//
+//Exit params        : None
+//
+//Function call      : Called when interrupt happens
+//
+//Jean-Francois Bilodeau    MPLab X v5.45    03/08/2021
+//****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI4Interrupt(void)
 {
-    IFS7bits.SPI4IF = 0;                   // clear interrupt flag 
+    IFS7bits.SPI4IF = 0;                 
     spi_struct[SPI_4].spi_tx_cnt++;
-    if (spi_struct[SPI_4].spi_tx_cnt < spi_struct[SPI_4].spi_tx_length)// if write_cnt < write_length 
+    if (spi_struct[SPI_4].spi_tx_cnt < spi_struct[SPI_4].spi_tx_length)
     {
-        spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt] = SPI4BUF;  // Get Data 
-        spi_struct[SPI_4].spi_rx_cnt++;                           // Increm RD cnter 
-        SPI4BUF = spi_struct[SPI_4].spi_tx_data[spi_struct[SPI_4].spi_tx_cnt];      // Write new data  
+        spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt] = SPI4BUF;
+        spi_struct[SPI_4].spi_rx_cnt++;                   
+        SPI4BUF = spi_struct[SPI_4].spi_tx_data[spi_struct[SPI_4].spi_tx_cnt];
     }
     
-    else // If write_cnt == length, all data was transmitted 
+    else
     {               
-        spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt] = SPI4BUF;// Get last Data 
-        spi_struct[SPI_4].spi_rx_cnt = 0;            // Clear RD cnter   
-        spi_struct[SPI_4].spi_tx_cnt = 0;            // Clear WR_CNT 
-        SPI_master_deassert_cs(spi_struct[SPI_4].spi_chip); // Deassert CS   
-        spi_struct[SPI_4].spi_txfer_done = 1;                 // SPI transaction over
-        IEC7bits.SPI4IE = 0;                            // Disable SPI interrupt  
+        spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt] = SPI4BUF;
+        spi_struct[SPI_4].spi_rx_cnt = 0;     
+        spi_struct[SPI_4].spi_tx_cnt = 0;
+        SPI_master_deassert_cs(spi_struct[SPI_4].spi_chip);
+        spi_struct[SPI_4].spi_txfer_done = 1;       
+        IEC7bits.SPI4IE = 0;      
     }
 }
