@@ -51,6 +51,7 @@ void MOTOR_init (unsigned char channel, unsigned int speed_fs);
 void MOTOR_drive_perc (unsigned char channel, unsigned char direction, unsigned char perc);
 void MOTOR_set_rpm (unsigned char channel, unsigned int new_rpm);
 void MOTOR_pid_calc_gains (unsigned char channel);
+double MOTOR_get_error (unsigned char channel);
 unsigned char MOTOR_get_direction (unsigned char channel);
 unsigned int MOTOR_get_speed_rpm (unsigned char channel);
 unsigned char MOTOR_get_speed_perc (unsigned char channel);

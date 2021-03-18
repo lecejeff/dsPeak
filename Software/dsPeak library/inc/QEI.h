@@ -72,13 +72,13 @@ typedef struct
 // Default values
 #define QEI_MOT1_CPR 48                             // Encoder count per revolution
 #define QEI_MOT1_GDR 99                             // Encoder gear derate
-#define QEI_MOT1_MAX_RPM 110                        // Max RPM   
+#define QEI_MOT1_MAX_RPM 130                        // Max RPM   
 #define QEI_MOT1_PPT (QEI_MOT1_CPR * QEI_MOT1_GDR)  // Max pulse per rotation
 
 #define QEI_MOT2_CPR 48                             // Encoder count per revolution
-#define QEI_MOT2_GDR 47                             // Encoder gear derate
-#define QEI_MOT2_MAX_RPM 110                        // Max RPM   
-#define QEI_MOT2_PPT (QEI_MOT1_CPR * QEI_MOT1_GDR)  // Max pulse per rotation
+#define QEI_MOT2_GDR 99                             // Encoder gear derate
+#define QEI_MOT2_MAX_RPM 130                        // Max RPM   
+#define QEI_MOT2_PPT (QEI_MOT2_CPR * QEI_MOT2_GDR)  // Max pulse per rotation
 
 #define QEI_ROT_ENC_CPR 48                             // Encoder count per revolution
 #define QEI_ROT_ENC_GDR 47                             // Encoder gear derate

@@ -167,7 +167,7 @@ typedef struct
     unsigned char dac_vol_right;
 }STRUCT_CODEC;
 
-void DCI_init (unsigned char sys_fs);
+void DCI_init (void);
 void CODEC_init (unsigned char sys_fs);
 unsigned int CODEC_spi_write (unsigned int adr, unsigned int data) ;
 unsigned int CODEC_spi_modify_write (unsigned int adr, unsigned int reg, unsigned int mask, unsigned int data);

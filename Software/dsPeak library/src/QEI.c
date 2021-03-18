@@ -57,7 +57,8 @@ void QEI_init (unsigned char channel)
             QEI1GECH = 0;               // Only use 32bit value for the Greather than or equal compare register
             QEI1GECL = QEI_MOT1_PPT;    // Set default pulse per revolution value
             QEI1STATbits.PCHEQIEN = 1;  // Enable position counter >= cmp interrupt enable
-            //QEI1IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
+            QEI1IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
+            QEI1IOCbits.QFDIV = 1;      // 1/2 clock divide for digital input filter
             
             QEI_set_gear_derate(channel, QEI_MOT1_GDR);
             QEI_set_cpr(channel, QEI_MOT1_CPR);
@@ -76,7 +77,19 @@ void QEI_init (unsigned char channel)
             RPINR16bits.QEB2R = 125;    // RG13 (RP125) assigned to QEI_2B
             RPINR16bits.QEA2R = 124;    // RG12 (RP124) assigned to QEI_2A   
             
-            IEC4bits.QEI2IE = 1;        // Enable QEI2 interrupt
+            QEI2CONbits.PIMOD = 0;      // 
+            QEI2GECH = 0;               // Only use 32bit value for the Greather than or equal compare register
+            QEI2GECL = QEI_MOT2_PPT;    // Set default pulse per revolution value
+            QEI2STATbits.PCHEQIEN = 1;  // Enable position counter >= cmp interrupt enable
+            QEI2IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
+            QEI2IOCbits.QFDIV = 1;      // 1/2 clock divide for digital input filter
+            
+            QEI_set_gear_derate(channel, QEI_MOT2_GDR);
+            QEI_set_cpr(channel, QEI_MOT2_CPR);
+            QEI_set_max_rpm(channel, QEI_MOT2_MAX_RPM);
+            
+            IEC4bits.QEI2IE = 1;        // Enable QEI1 interrupt
+            QEI2CONbits.QEIEN = 1;      // Enable QEI module counters
             break;
             
         case QEI_ROT_ENC:
@@ -162,9 +175,9 @@ unsigned long QEI_get_pulse (unsigned char channel)
             break;
             
         case QEI_2:
-            position &= POS2CNTL;
-            hold = POS2HLD;
-            position |= (hold << 16);
+            position = POS1CNTL;
+            //hold = POS1HLD;
+            //position |= (hold << 16);
             return position;
             break;
             
@@ -421,16 +434,8 @@ void QEI_calculate_velocity (unsigned char channel)
         case QEI_2:
             // Update the actual speed
             QEI_struct[channel].velocity = VEL2CNT;
-            if (QEI_struct[channel].velocity > 0)
-            {
-                // To get speed in RPM 
-                QEI_struct[channel].speed_rps = (unsigned int)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
-                QEI_struct[channel].speed_rpm = (unsigned int)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / (QEI_struct[channel].pulse_per_tour));
-            }
-            else
-            {
-                QEI_struct[channel].speed_rpm = 0;
-            }
+            QEI_struct[channel].speed_rps = (unsigned int)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
+            QEI_struct[channel].speed_rpm = (unsigned int)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / QEI_struct[channel].pulse_per_tour);
             break;          
     }
 }
@@ -450,4 +455,11 @@ void __attribute__((__interrupt__, no_auto_psv)) _QEI1Interrupt(void)
 void __attribute__((__interrupt__, no_auto_psv)) _QEI2Interrupt(void)
 {
     IFS4bits.QEI2IF = 0;
+    if (QEI2STATbits.PCHEQIRQ == 1)
+    {       
+        QEI2STATbits.PCHEQIRQ = 0;
+        QEI_reset_pulse(QEI_2);
+        QEI_struct[QEI_2].tour_cnter_dist++;
+        if(QEI_struct[QEI_2].tour_cnter_dist > MAX_TOUR_CNT){QEI_struct[QEI_2].tour_cnter_dist = 0;}
+    }    
 }

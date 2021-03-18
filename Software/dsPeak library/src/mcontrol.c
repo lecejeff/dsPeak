@@ -20,9 +20,9 @@ void MOTOR_init (unsigned char channel, unsigned int speed_fs)
             m_control[channel].qei_channel = QEI_1;
             
             m_control[channel].pid_fs = QEI_get_fs(QEI_1);
-            m_control[channel].pid_p_gain = 0.55;
-            m_control[channel].pid_i_gain = 5;
-            m_control[channel].pid_d_gain = 0.0000001;
+            m_control[channel].pid_p_gain = 0.95;
+            m_control[channel].pid_i_gain = 3.3;
+            m_control[channel].pid_d_gain = 0;
             m_control[channel].max_rpm = QEI_get_max_rpm(QEI_1);
             m_control[channel].min_rpm = 0;
             m_control[channel].pid_high_limit = 100;        // Max output is 100% ON duty cycle to PWM
@@ -32,14 +32,25 @@ void MOTOR_init (unsigned char channel, unsigned int speed_fs)
         case MOTOR_2:
             PWM_init(PWM_2L, PWM_TYPE_LOAD);    // Configure PWM_2L pin to output and enable PWM
             PWM_init(PWM_2H, PWM_TYPE_LOAD);    // Configure PWM_2H pin to output and enable PWM
-            QEI_init(QEI_2);                    // Configure QEI_1 
+            QEI_init(QEI_2);                    // Configure QEI_2
+            QEI_set_fs(QEI_2, speed_fs);        // Set QEI channel velocity refresh rate
             TRISEbits.TRISE4 = 1;               // RE4 configured as an input (nFAULT2)
+            
             m_control[channel].direction = DIRECTION_FORWARD;
             m_control[channel].speed_perc = 0;    
             m_control[channel].speed_rpm = 0;    
             m_control[channel].pwm_h_channel = PWM_2H;
-            m_control[channel].pwm_l_channel = PWM_2L;  
+            m_control[channel].pwm_l_channel = PWM_2L;
             m_control[channel].qei_channel = QEI_2;
+            
+            m_control[channel].pid_fs = QEI_get_fs(QEI_2);
+            m_control[channel].pid_p_gain = 0.95;
+            m_control[channel].pid_i_gain = 3.3;
+            m_control[channel].pid_d_gain = 0;
+            m_control[channel].max_rpm = QEI_get_max_rpm(QEI_2);
+            m_control[channel].min_rpm = 0;
+            m_control[channel].pid_high_limit = 100;        // Max output is 100% ON duty cycle to PWM
+            MOTOR_pid_calc_gains(MOTOR_2);
             break;
 
     }
@@ -76,7 +87,7 @@ void MOTOR_drive_perc (unsigned char channel, unsigned char direction, unsigned 
         PWM_change_duty(m_control[channel].pwm_l_channel, PWM_TYPE_LOAD,  0);        
     }
 
-    else
+    if (m_control[channel].direction == DIRECTION_BACKWARD)
     {
         PWM_change_duty(m_control[channel].pwm_h_channel, PWM_TYPE_LOAD,  0);
         PWM_change_duty(m_control[channel].pwm_l_channel, PWM_TYPE_LOAD,  m_control[channel].speed_perc);        
@@ -94,6 +105,11 @@ void MOTOR_pid_calc_gains (unsigned char channel)
     m_control[channel].p_calc_gain = m_control[channel].pid_p_gain;
     m_control[channel].i_calc_gain = m_control[channel].pid_i_gain * m_control[channel].pid_T;
     m_control[channel].d_calc_gain = m_control[channel].pid_d_gain / m_control[channel].pid_T;
+}
+
+double MOTOR_get_error (unsigned char channel)
+{
+    return m_control[channel].error_rpm;
 }
 
 unsigned char MOTOR_drive_pid (unsigned char channel)

@@ -28,6 +28,7 @@ void hex_to_ascii (unsigned char ucByte, unsigned char *ucByteH, unsigned char *
 int bcd_to_decimal(unsigned char x) ;
 unsigned int dec2bcd(unsigned int num);
 void RGB_LED_set_color (unsigned long color);
+unsigned char hex_to_dec (unsigned char hex);
 
 #endif	/* GENERAL_H */
 
