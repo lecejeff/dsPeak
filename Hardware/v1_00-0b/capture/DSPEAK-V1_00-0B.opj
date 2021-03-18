@@ -217,8 +217,8 @@
       (Type "COrSchematicDoc")
       (Frame
         (Placement "44 0 1 -1 -1 5 24 5 1329 24 929")
-        (Scroll "0 176")
-        (Zoom "96")
+        (Scroll "-118 -5")
+        (Zoom "48")
         (Occurrence "/"))
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
@@ -239,8 +239,8 @@
       (Type "COrSchematicDoc")
       (Frame
         (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
-        (Scroll "0 0")
-        (Zoom "100")
+        (Scroll "1739 854")
+        (Zoom "200")
         (Occurrence "/P31"))
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
@@ -294,7 +294,7 @@
       (Type "COrSchematicDoc")
       (Frame
         (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
-        (Scroll "0 0")
+        (Scroll "139 0")
         (Zoom "100")
         (Occurrence "/P1"))
       (Path
@@ -333,7 +333,23 @@
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
       (Schematic "MikroBus")
-      (Page "MikroBus")))
+      (Page "MikroBus"))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
+        (Scroll "0 0")
+        (Zoom "100")
+        (Occurrence "/P18"))
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
+        (Scroll "0 0")
+        (Zoom "100")
+        (Occurrence "/P17"))
+      (Path
+         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
+      (Schematic "Motor driver")
+      (Page "MOTOR DRIVE")))
   (MPSSessionName "jeanf")
   (ISPCBBASICLICENSE "true")
   (PartMRUSelector
