@@ -1,6 +1,6 @@
 (ExpressProject ""
   (ProjectVersion "19981106")
-  (SoftwareVersion "17.4-2019 S015 (3921426)  [2/23/2021]-[03/17/21]")
+  (SoftwareVersion "17.4-2019 S015 (3921426)  [2/23/2021]-[03/18/21]")
   (Folder "Design Resources"
     (Folder "Library"
       (File "c:\users\jeanf\google drive\orcad16lib\piece\part.olb"
@@ -217,8 +217,8 @@
       (Type "COrSchematicDoc")
       (Frame
         (Placement "44 0 1 -1 -1 5 24 5 1329 24 929")
-        (Scroll "-118 -5")
-        (Zoom "48")
+        (Scroll "0 160")
+        (Zoom "96")
         (Occurrence "/"))
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
@@ -272,7 +272,7 @@
       (Type "COrSchematicDoc")
       (Frame
         (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
-        (Scroll "-49 0")
+        (Scroll "-49 3")
         (Zoom "123")
         (Occurrence "/P5"))
       (Path
