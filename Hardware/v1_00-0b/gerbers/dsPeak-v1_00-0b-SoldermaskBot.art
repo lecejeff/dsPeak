@@ -3,7 +3,7 @@ G04 Layout Name:  dspeak-v1_00-0b.brd*
 G04 Film Name:    dsPeak-v1_00-0b-SoldermaskBot*
 G04 File Format:  Gerber RS274X*
 G04 File Origin:  Cadence Allegro 17.4-S015*
-G04 Origin Date:  Wed Mar 17 21:14:55 2021*
+G04 Origin Date:  Fri Mar 19 07:40:18 2021*
 G04 *
 G04 Layer:  VIA CLASS/SOLDERMASK_BOTTOM*
 G04 Layer:  PIN/SOLDERMASK_BOTTOM*
@@ -83,8 +83,8 @@ G04 ================== end FILE IDENTIFICATION RECORD ====================*
 %ADD15MACRO15*%
 %ADD21C,.051181*%
 %ADD14R,.067X.067*%
+%ADD24C,.03937*%
 %ADD22C,.07874*%
-%ADD24C,.027559*%
 G75*
 %LPD*%
 G75*

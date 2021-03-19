@@ -27,32 +27,7 @@
 		}
 	],
 	"Pin Property" : [],
-	"Component" : [
-		{
-			"Name" : "R115",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):p7@\\dspeak-v1_00-0b\\.\\rs-485\\(sch_1):ins985148@discrete.\\resistor.normal\\(chips)",
-			"Logical" : "RESISTOR_0805_RES_IPC_60R4",
-			"Physical" : "RESISTOR_0805_RES_IPC_60R0"
-		},
-		{
-			"Name" : "R116",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):p7@\\dspeak-v1_00-0b\\.\\rs-485\\(sch_1):ins985306@discrete.\\resistor.normal\\(chips)",
-			"Logical" : "RESISTOR_0805_RES_IPC_60R4",
-			"Physical" : "RESISTOR_0805_RES_IPC_60R0"
-		},
-		{
-			"Name" : "R59",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):p8@\\dspeak-v1_00-0b\\.can(sch_1):ins983277@discrete.\\resistor.normal\\(chips)",
-			"Logical" : "RESISTOR_0805_RES_IPC_60R4",
-			"Physical" : "RESISTOR_0805_RES_IPC_60R0"
-		},
-		{
-			"Name" : "R60",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):p8@\\dspeak-v1_00-0b\\.can(sch_1):ins983507@discrete.\\resistor.normal\\(chips)",
-			"Logical" : "RESISTOR_0805_RES_IPC_60R4",
-			"Physical" : "RESISTOR_0805_RES_IPC_60R0"
-		}
-	],
+	"Component" : [],
 	"Net" : [],
 	"Connection" : []
 }

@@ -1,6 +1,6 @@
 (ExpressProject ""
   (ProjectVersion "19981106")
-  (SoftwareVersion "17.4-2019 S015 (3921426)  [2/23/2021]-[03/18/21]")
+  (SoftwareVersion "17.4-2019 S015 (3921426)  [2/23/2021]-[03/19/21]")
   (Folder "Design Resources"
     (Folder "Library"
       (File "c:\users\jeanf\google drive\orcad16lib\piece\part.olb"
@@ -206,18 +206,19 @@
          "USER I/O")
       (Path "Layout")
       (Select "Design Resources"
-         "c:\users\jeanf\desktop\git\dspeak\hardware\v1_00-0b\capture\dspeak-v1_00-0b.dsn"))
+         "c:\users\jeanf\desktop\git\dspeak\hardware\v1_00-0b\capture\dspeak-v1_00-0b.dsn"
+         "ANALOG INPUT ±3V3" "ANALOG INPUT ±3V3"))
     (HierarchyView)
     (Doc
       (Type "COrCapturePMDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 0 264 0 888"))
+        (Placement "44 0 1 -1 -1 -1 -1 0 300 0 888"))
       (Tab 0))
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 5 24 5 1329 24 929")
-        (Scroll "0 160")
+        (Placement "44 0 1 -1 -1 5 24 5 1293 24 929")
+        (Scroll "0 20")
         (Zoom "96")
         (Occurrence "/"))
       (Path
@@ -227,7 +228,7 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 5 24 5 1329 24 929")
+        (Placement "44 0 1 -1 -1 5 24 5 1293 24 929")
         (Scroll "0 -5")
         (Zoom "89")
         (Occurrence "/P16"))
@@ -238,8 +239,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
-        (Scroll "1739 854")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
+        (Scroll "1212 1058")
         (Zoom "200")
         (Occurrence "/P31"))
       (Path
@@ -249,7 +250,7 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
         (Scroll "0 0")
         (Zoom "100")
         (Occurrence "/P19"))
@@ -260,8 +261,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
-        (Scroll "-69 -8")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
+        (Scroll "-51 -8")
         (Zoom "119")
         (Occurrence "/P4"))
       (Path
@@ -271,8 +272,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
-        (Scroll "-49 3")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
+        (Scroll "-31 3")
         (Zoom "123")
         (Occurrence "/P5"))
       (Path
@@ -282,7 +283,7 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 5 24 5 1329 24 929")
+        (Placement "44 0 1 -1 -1 5 24 5 1293 24 929")
         (Scroll "0 -5")
         (Zoom "89")
         (Occurrence "/P2"))
@@ -293,8 +294,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
-        (Scroll "139 0")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
+        (Scroll "157 0")
         (Zoom "100")
         (Occurrence "/P1"))
       (Path
@@ -304,7 +305,7 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
         (Scroll "0 31")
         (Zoom "100")
         (Occurrence "/P15"))
@@ -315,8 +316,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
-        (Scroll "-69 -8")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
+        (Scroll "-51 -8")
         (Zoom "119")
         (Occurrence "/P3"))
       (Path
@@ -326,8 +327,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
-        (Scroll "-69 -8")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
+        (Scroll "-51 -8")
         (Zoom "119")
         (Occurrence "/P14"))
       (Path
@@ -337,19 +338,30 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
         (Scroll "0 0")
         (Zoom "100")
         (Occurrence "/P18"))
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1329 24 929")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
         (Scroll "0 0")
         (Zoom "100")
         (Occurrence "/P17"))
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
       (Schematic "Motor driver")
-      (Page "MOTOR DRIVE")))
+      (Page "MOTOR DRIVE"))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1293 24 929")
+        (Scroll "-51 -8")
+        (Zoom "119")
+        (Occurrence "/P13"))
+      (Path
+         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
+      (Schematic "MEMORY")
+      (Page "MEMORY")))
   (MPSSessionName "jeanf")
   (ISPCBBASICLICENSE "true")
   (PartMRUSelector
