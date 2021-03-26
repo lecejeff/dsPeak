@@ -1,5 +1,5 @@
 FILE_TYPE=LIBRARY_PARTS;
-{ Using PSTWRITER 17.4.0 d001Mar-19-2021 at 07:04:27}
+{ Using PSTWRITER 17.4.0 d001Mar-25-2021 at 19:56:35}
 primitive 'CAPACITOR NON-POL_0_0603_CAP_IP';
   pin
     '1':
@@ -1320,6 +1320,21 @@ primitive 'RESISTOR_0805_RES_IPC_60R4';
     VALUE='60R4';
   end_body;
 end_primitive;
+primitive 'RESISTOR_0603_RES_IPC_9K76';
+  pin
+    '1':
+      PIN_NUMBER='(1)';
+      PINUSE='UNSPEC';
+    '2':
+      PIN_NUMBER='(2)';
+      PINUSE='UNSPEC';
+  end_pin;
+  body
+    PART_NAME='RESISTOR';
+    JEDEC_TYPE='0603_res_ipc';
+    VALUE='9k76';
+  end_body;
+end_primitive;
 primitive 'RESISTOR_0603_RES_IPC_120R';
   pin
     '1':
@@ -1413,7 +1428,7 @@ primitive 'RESISTOR_0603_RES_IPC_39R2';
     VALUE='39R2';
   end_body;
 end_primitive;
-primitive 'RESISTOR_0603_RES_IPC_16K5';
+primitive 'RESISTOR_0603_RES_IPC_1K';
   pin
     '1':
       PIN_NUMBER='(1)';
@@ -1425,7 +1440,7 @@ primitive 'RESISTOR_0603_RES_IPC_16K5';
   body
     PART_NAME='RESISTOR';
     JEDEC_TYPE='0603_res_ipc';
-    VALUE='16k5';
+    VALUE='1k';
   end_body;
 end_primitive;
 primitive 'RESISTOR_0603_RES_IPC_10K7';
