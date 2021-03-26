@@ -60,6 +60,12 @@
 #include "qei.h"
 #include "spi_flash.h"
 #include "mcontrol.h"
+#include "CAN.h"
+#include "image_file.h"
+
+#define SCREEN_ENABLE
+
+CAN_struct CAN_native;
 
 unsigned char i = 0;
 unsigned char state = 0;
@@ -75,8 +81,8 @@ unsigned char test_spi[8] = {'J', 'e', 't', 'a', 'i', 'm', 'e', '!'};
 char *str = "-- Testing a full 64 bytes transfer from DPSRAM->DMA->USART3!\r\n";
 unsigned int test = 50;
 unsigned char speed = 20;
-char new_pid_out = 0;
-unsigned int speed_rpm_table[5] = {66, 32, 105, 27, 84};
+char new_pid_out1 = 0, new_pid_out2 = 0;
+unsigned int speed_rpm_table[5] = {30, 30, 30, 30, 30};
 
 RTCC_time clock;
 unsigned char hour, minute, second;
@@ -84,14 +90,15 @@ int error_rpm;
 unsigned int setpoint_rpm;
 unsigned int actual_rpm;
 unsigned char high, low;
-
+unsigned char rs485_state = 0;
+unsigned char pid_out = 0;
 int main() 
 {
     DSPIC_init();
     RTCC_init();
     RTCC_write_time(clock);
     UART_init(UART_1, 115200, 16);
-    UART_init(UART_2, 115200, 2);
+    UART_init(UART_2, 115200, 16);
     UART_init(UART_3, 115200, 1);
     
     MOTOR_init(MOTOR_1, 30);
@@ -107,43 +114,67 @@ int main()
     SPI_flash_erase(CMD_BLOCK_ERASE_4k, 0);
     SPI_flash_write(0x100, test_spi, 8);
     
-//    
-//    QEI_init(QEI_MOT1);
-//    QEI_set_fs(QEI_MOT1, 1000);
+    CAN_native.bus_freq = 500000;
+    CAN_native.channel = CAN_1;
+    CAN_native.SID = 0x0123;
+    CAN_native.SRR = 0;
+    CAN_native.IDE = 0;
+    CAN_native.EID = 0;
+    CAN_native.RTR = 0;
+    CAN_native.RB1 = 0;
+    CAN_native.RB0 = 0;
+    CAN_native.DLC = 8;
+    CAN_native.can_payload[0] = 'd';
+    CAN_native.can_payload[1] = 's';
+    CAN_native.can_payload[2] = 'P';
+    CAN_native.can_payload[3] = 'e';
+    CAN_native.can_payload[4] = 'a';
+    CAN_native.can_payload[5] = 'k';
+    CAN_native.can_payload[6] = '!';
+    CAN_native.can_payload[7] = '-';
+    CAN_native.RX_MASK = 0x0300;
+    CAN_native.RX_SID = CAN_native.RX_MASK;   
     
-//    FT8XX_init();
-//    FT8XX_CMD_text(0, 60, 20, 22, OPT_CENTER,  "# of tour ");
-//    FT8XX_CMD_number(0, 130, 20, 22, OPT_CENTER, QEI_get_tour(QEI_1));
-//    FT8XX_CMD_text(1, 60, 40, 22, OPT_CENTER,  "RPM setp ");
-//    FT8XX_CMD_number(1, 130, 40, 22, OPT_CENTER, MOTOR_get_setpoint_rpm(MOTOR_1));
-//    FT8XX_CMD_text(2, 60, 60, 22, OPT_CENTER,  "Raw velcnt ");
-//    FT8XX_CMD_number(2, 130, 60, 22, OPT_CENTER, QEI_get_velocity(QEI_1));
-//    FT8XX_CMD_text(3, 60, 80, 22, OPT_CENTER,  "Nb pulses ");
-//    FT8XX_CMD_number(3, 130, 80, 22, OPT_CENTER, QEI_get_pulse(QEI_1));
-//    FT8XX_CMD_text(4, 60, 100, 22, OPT_CENTER, "Speed rpm ");
-//    FT8XX_CMD_number(4, 130, 100, 22, OPT_CENTER, QEI_get_speed_rpm(QEI_1));
-//    
-//    FT8XX_CMD_text(5, 360, 20, 22, OPT_CENTER,  "# of tour ");
-//    FT8XX_CMD_number(5, 430, 20, 22, OPT_CENTER, QEI_get_tour(QEI_2));
-//    FT8XX_CMD_text(6, 360, 40, 22, OPT_CENTER,  "RPM setp ");
-//    FT8XX_CMD_number(6, 430, 40, 22, OPT_CENTER, MOTOR_get_setpoint_rpm(MOTOR_2));
-//    FT8XX_CMD_text(7, 360, 60, 22, OPT_CENTER,  "Raw velcnt ");
-//    FT8XX_CMD_number(7, 430, 60, 22, OPT_CENTER, QEI_get_velocity(QEI_2));
-//    FT8XX_CMD_text(8, 360, 80, 22, OPT_CENTER,  "Nb pulses ");
-//    FT8XX_CMD_number(8, 430, 80, 22, OPT_CENTER, QEI_get_pulse(QEI_2));
-//    FT8XX_CMD_text(9, 360, 100, 22, OPT_CENTER, "Speed rpm ");
-//    FT8XX_CMD_number(9, 430, 100, 22, OPT_CENTER, QEI_get_speed_rpm(QEI_2));    
-//    FT8XX_CMD_gradient(0, 0, 0, 0x00AA00, 480, 272, 0x5555FF);  
-//    FT8XX_CMD_clock(0, 240, 136, 70, OPT_FLAT | OPT_NOBACK, 16, 20, 0, 0);  
-//    
-//    FT8XX_start_new_dl();					// Start a new display list, reset ring buffer and ring pointer
-//    FT8XX_write_dl_long(CLEAR(1, 1, 1));
-//    FT8XX_write_dl_long(TAG_MASK(1));    
-//    FT8XX_write_dl_long(TAG(st_Gradient[0].touch_tag));
-//    FT8XX_draw_gradient(&st_Gradient[0]);
-//    FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
-//    FT8XX_draw_clock(&st_Clock[0]);
-//    FT8XX_update_screen_dl();         		// Update display list    
+    CAN_init(&CAN_native);
+    CAN_set_mode(&CAN_native, CAN_MODE_NORMAL);
+    
+#ifdef SCREEN_ENABLE
+    FT8XX_init();
+    FT8XX_CMD_text(0, 60, 20, 22, OPT_CENTER,  "# of tour ");
+    FT8XX_CMD_number(0, 130, 20, 22, OPT_CENTER, QEI_get_tour(QEI_1));
+    FT8XX_CMD_text(1, 60, 40, 22, OPT_CENTER,  "RPM setp ");
+    FT8XX_CMD_number(1, 130, 40, 22, OPT_CENTER, MOTOR_get_setpoint_rpm(MOTOR_1));
+    FT8XX_CMD_text(2, 60, 60, 22, OPT_CENTER,  "Raw velcnt ");
+    FT8XX_CMD_number(2, 130, 60, 22, OPT_CENTER, QEI_get_velocity(QEI_1));
+    FT8XX_CMD_text(3, 60, 80, 22, OPT_CENTER,  "Nb pulses ");
+    FT8XX_CMD_number(3, 130, 80, 22, OPT_CENTER, QEI_get_pulse(QEI_1));
+    FT8XX_CMD_text(4, 60, 100, 22, OPT_CENTER, "Speed rpm ");
+    FT8XX_CMD_number(4, 130, 100, 22, OPT_CENTER, QEI_get_speed_rpm(QEI_1));
+    
+    FT8XX_CMD_text(5, 360, 20, 22, OPT_CENTER,  "# of tour ");
+    FT8XX_CMD_number(5, 430, 20, 22, OPT_CENTER, QEI_get_tour(QEI_2));
+    FT8XX_CMD_text(6, 360, 40, 22, OPT_CENTER,  "RPM setp ");
+    FT8XX_CMD_number(6, 430, 40, 22, OPT_CENTER, MOTOR_get_setpoint_rpm(MOTOR_2));
+    FT8XX_CMD_text(7, 360, 60, 22, OPT_CENTER,  "Raw velcnt ");
+    FT8XX_CMD_number(7, 430, 60, 22, OPT_CENTER, QEI_get_velocity(QEI_2));
+    FT8XX_CMD_text(8, 360, 80, 22, OPT_CENTER,  "Nb pulses ");
+    FT8XX_CMD_number(8, 430, 80, 22, OPT_CENTER, QEI_get_pulse(QEI_2));
+    FT8XX_CMD_text(9, 360, 100, 22, OPT_CENTER, "Speed rpm ");
+    FT8XX_CMD_number(9, 430, 100, 22, OPT_CENTER, QEI_get_speed_rpm(QEI_2));    
+    FT8XX_CMD_gradient(0, 0, 0, 0x00AA00, 480, 272, 0x5555FF);  
+    FT8XX_CMD_clock(0, 240, 136, 70, OPT_FLAT | OPT_NOBACK, 16, 20, 0, 0);  
+    
+    FT8XX_start_new_dl();					// Start a new display list, reset ring buffer and ring pointer
+    FT8XX_write_dl_long(CLEAR(1, 1, 1));
+    FT8XX_write_dl_long(TAG_MASK(1));    
+    FT8XX_write_dl_long(TAG(st_Gradient[0].touch_tag));
+    FT8XX_draw_gradient(&st_Gradient[0]);
+    FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
+    FT8XX_draw_clock(&st_Clock[0]);
+    FT8XX_update_screen_dl();         		// Update display list    
+    
+    FT8XX_write_bitmap(image, image_lut, 8160, 0);
+#endif
     
     //UART_putbuf_dma(UART_3, (unsigned char *)"dsPeak - UART3 test 12345ABCDEF", strlen("dsPeak - UART3 test 12345ABCDEF"));
     
@@ -156,6 +187,7 @@ int main()
     TIMER_init(TIMER_1, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER_2, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER_3, TIMER_PRESCALER_256, 60);
+    TIMER_init(TIMER_4, TIMER_PRESCALER_256, 60);
     TIMER_init(TIMER_7, TIMER_PRESCALER_256, QEI_get_fs(QEI_2));
     TIMER_init(TIMER_8, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
     TIMER_init(TIMER_9, TIMER_PRESCALER_256, 20000);
@@ -163,6 +195,7 @@ int main()
     TIMER_start(TIMER_1);
     TIMER_start(TIMER_2);
     TIMER_start(TIMER_3);
+    TIMER_start(TIMER_4);
     TIMER_start(TIMER_7);
     TIMER_start(TIMER_8);
     TIMER_start(TIMER_9);
@@ -181,71 +214,82 @@ int main()
             buf[5] = error_rpm&0x00FF;    
             buf[6] = ((actual_rpm & 0xFF00)>>8);
             buf[7] = actual_rpm&0x00FF; 
+            buf[8] = 0;
+            buf[9] = new_pid_out1;
             setpoint_rpm = MOTOR_get_setpoint_rpm(MOTOR_2);
             actual_rpm = QEI_get_speed_rpm(QEI_2);
             error_rpm = setpoint_rpm - actual_rpm;            
-            buf[8] = ((setpoint_rpm & 0xFF00)>>8);
-            buf[9] = setpoint_rpm&0x00FF;    
-            buf[10] = ((error_rpm & 0xFF00)>>8);
-            buf[11] = error_rpm&0x00FF;    
-            buf[12] = ((actual_rpm & 0xFF00)>>8);
-            buf[13] = actual_rpm&0x00FF;             
-            UART_putbuf_dma(UART_3, buf, 14);
+            buf[10] = ((setpoint_rpm & 0xFF00)>>8);
+            buf[11] = setpoint_rpm&0x00FF;    
+            buf[12] = ((error_rpm & 0xFF00)>>8);
+            buf[13] = error_rpm&0x00FF;    
+            buf[14] = ((actual_rpm & 0xFF00)>>8);
+            buf[15] = actual_rpm&0x00FF; 
+            buf[16] = 0;
+            buf[17] = new_pid_out2;            
+            UART_putbuf_dma(UART_3, buf, 18);
         }     
         
         if (TIMER_get_state(TIMER_2, TIMER_INT_STATE) == 1)
         {      
-//            FT8XX_modify_number(&st_Number[0], NUMBER_VAL, QEI_get_tour(QEI_1));
-//            FT8XX_modify_number(&st_Number[1], NUMBER_VAL, MOTOR_get_setpoint_rpm(MOTOR_1));
-//            FT8XX_modify_number(&st_Number[2], NUMBER_VAL, QEI_get_velocity(QEI_1));
-//            FT8XX_modify_number(&st_Number[3], NUMBER_VAL, QEI_get_pulse(QEI_1));
-//            FT8XX_modify_number(&st_Number[4], NUMBER_VAL, QEI_get_speed_rpm(QEI_1));
-//            
-//            FT8XX_modify_number(&st_Number[5], NUMBER_VAL, QEI_get_tour(QEI_2));
-//            FT8XX_modify_number(&st_Number[6], NUMBER_VAL, MOTOR_get_setpoint_rpm(MOTOR_2));
-//            FT8XX_modify_number(&st_Number[7], NUMBER_VAL, QEI_get_velocity(QEI_2));
-//            FT8XX_modify_number(&st_Number[8], NUMBER_VAL, QEI_get_pulse(QEI_2));
-//            FT8XX_modify_number(&st_Number[9], NUMBER_VAL, QEI_get_speed_rpm(QEI_2));            
-//            
-//            
-//            FT8XX_start_new_dl();                               // Start a new display list, reset ring buffer and ring pointer
-//
-//            FT8XX_write_dl_long(CLEAR(1, 1, 1));
-//            FT8XX_write_dl_long(TAG_MASK(1));    
-//            FT8XX_write_dl_long(TAG(st_Gradient[0].touch_tag));
-//            FT8XX_draw_gradient(&st_Gradient[0]);
-//            FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
-//            FT8XX_draw_clock(&st_Clock[0]);
-//            
-//            FT8XX_draw_text(&st_Text[0]);
-//            FT8XX_draw_text(&st_Text[1]);
-//            FT8XX_draw_text(&st_Text[2]);
-//            FT8XX_draw_text(&st_Text[3]);
-//            FT8XX_draw_text(&st_Text[4]);
-//            FT8XX_draw_text(&st_Text[5]);
-//            FT8XX_draw_text(&st_Text[6]);
-//            FT8XX_draw_text(&st_Text[7]);
-//            FT8XX_draw_text(&st_Text[8]);
-//            FT8XX_draw_text(&st_Text[9]);            
-//            
-//            FT8XX_draw_number(&st_Number[0]);
-//            FT8XX_draw_number(&st_Number[1]);
-//            FT8XX_draw_number(&st_Number[2]);
-//            FT8XX_draw_number(&st_Number[3]);
-//            FT8XX_draw_number(&st_Number[4]);                        
-//            FT8XX_draw_number(&st_Number[5]);
-//            FT8XX_draw_number(&st_Number[6]);
-//            FT8XX_draw_number(&st_Number[7]);
-//            FT8XX_draw_number(&st_Number[8]);
-//            FT8XX_draw_number(&st_Number[9]);
-//            
-//            FT8XX_update_screen_dl();                           // Update display list      
+#ifdef SCREEN_ENABLE    
+            FT8XX_modify_number(&st_Number[0], NUMBER_VAL, QEI_get_tour(QEI_1));
+            FT8XX_modify_number(&st_Number[1], NUMBER_VAL, MOTOR_get_setpoint_rpm(MOTOR_1));
+            FT8XX_modify_number(&st_Number[2], NUMBER_VAL, QEI_get_velocity(QEI_1));
+            FT8XX_modify_number(&st_Number[3], NUMBER_VAL, QEI_get_pulse(QEI_1));
+            FT8XX_modify_number(&st_Number[4], NUMBER_VAL, QEI_get_speed_rpm(QEI_1));
+            
+            FT8XX_modify_number(&st_Number[5], NUMBER_VAL, QEI_get_tour(QEI_2));
+            FT8XX_modify_number(&st_Number[6], NUMBER_VAL, MOTOR_get_setpoint_rpm(MOTOR_2));
+            FT8XX_modify_number(&st_Number[7], NUMBER_VAL, QEI_get_velocity(QEI_2));
+            FT8XX_modify_number(&st_Number[8], NUMBER_VAL, QEI_get_pulse(QEI_2));
+            FT8XX_modify_number(&st_Number[9], NUMBER_VAL, QEI_get_speed_rpm(QEI_2));            
+            
+            
+            FT8XX_start_new_dl();                               // Start a new display list, reset ring buffer and ring pointer
+            FT8XX_write_dl_long(CLEAR(1, 1, 1));
+            FT8XX_write_dl_long(BITMAP_HANDLE(0));
+            FT8XX_write_dl_long(BITMAP_SOURCE(0));
+            FT8XX_write_dl_long(BITMAP_LAYOUT(PALETTED, 120, 68));
+            FT8XX_write_dl_long(BITMAP_SIZE(NEAREST, BORDER, BORDER, 120, 68));
+            FT8XX_write_dl_long(BEGIN(BITMAPS));
+            FT8XX_write_dl_long(VERTEX2II(178, 102, 0, 0));            
+            FT8XX_write_dl_long(TAG_MASK(1));    
+            FT8XX_write_dl_long(TAG(st_Gradient[0].touch_tag));
+            //FT8XX_draw_gradient(&st_Gradient[0]);
+            FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
+            FT8XX_draw_clock(&st_Clock[0]);
+            
+            FT8XX_draw_text(&st_Text[0]);
+            FT8XX_draw_text(&st_Text[1]);
+            FT8XX_draw_text(&st_Text[2]);
+            FT8XX_draw_text(&st_Text[3]);
+            FT8XX_draw_text(&st_Text[4]);
+            FT8XX_draw_text(&st_Text[5]);
+            FT8XX_draw_text(&st_Text[6]);
+            FT8XX_draw_text(&st_Text[7]);
+            FT8XX_draw_text(&st_Text[8]);
+            FT8XX_draw_text(&st_Text[9]);            
+            
+            FT8XX_draw_number(&st_Number[0]);
+            FT8XX_draw_number(&st_Number[1]);
+            FT8XX_draw_number(&st_Number[2]);
+            FT8XX_draw_number(&st_Number[3]);
+            FT8XX_draw_number(&st_Number[4]);                        
+            FT8XX_draw_number(&st_Number[5]);
+            FT8XX_draw_number(&st_Number[6]);
+            FT8XX_draw_number(&st_Number[7]);
+            FT8XX_draw_number(&st_Number[8]);
+            FT8XX_draw_number(&st_Number[9]);
+            
+            FT8XX_update_screen_dl();                           // Update display list 
+#endif
         }
         
         if (TIMER_get_state(TIMER_3, TIMER_INT_STATE) == 1)
         {
             if (++counter_5sec >= 300)
-            {
+            {               
                 counter_5sec = 0;
                 state++;
                 if (state > 4){state = 0;}
@@ -253,30 +297,59 @@ int main()
                 MOTOR_set_rpm(MOTOR_2, speed_rpm_table[state]);
             }
             if (++counter_sec >= 60)
-            {       
+            {    
+                CAN_tx_msg(&CAN_native);
+                LATHbits.LATH8 = !LATHbits.LATH8;
                 RTCC_read_time();
                 hour = RTCC_get_time_parameter(RTC_HOUR);
                 minute = RTCC_get_time_parameter(RTC_MINUTE);
-                second = RTCC_get_time_parameter(RTC_SECOND);     
-                //FT8XX_modify_clock_hms(&st_Clock[0], hour, minute, second);
+                second = RTCC_get_time_parameter(RTC_SECOND);
+#ifdef SCREEN_ENABLE
+                FT8XX_modify_clock_hms(&st_Clock[0], hour, minute, second);
+#endif
                 counter_sec = 0; 
             }
         }
 
+        // MikroBus RS-485 click test ------------------------------------------
+        if (TIMER_get_state(TIMER_4, TIMER_INT_STATE) == 1)
+        {   
+            if (rs485_state == 0)
+            {
+                UART_putstr(UART_2, "Test RS-485$%?&*");
+                if (UART_rx_done(UART_1) == 1)
+                {
+                    rs485_state = 1;
+                    LATHbits.LATH11 = 1;
+                    //UART_putstr(UART_2, "Test RS-485$%?&*");
+                }
+            }
+            else
+            {
+                UART_putstr(UART_1, "Test RS-485$%?&*");
+                if (UART_rx_done(UART_2) == 1)
+                {
+                    rs485_state = 0;
+                    LATHbits.LATH11 = 0;
+                    //UART_putstr(UART_2, "Test RS-485$%?&*");
+                }                
+            }
+        }         
+        
         // QEI velocity refresh rate
         if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
         {           
             QEI_calculate_velocity(QEI_2);  
-            new_pid_out = MOTOR_drive_pid(MOTOR_2);
-            MOTOR_drive_perc(MOTOR_2, MOTOR_get_direction(MOTOR_2), new_pid_out);
+            new_pid_out2 = MOTOR_drive_pid(MOTOR_2);
+            MOTOR_drive_perc(MOTOR_2, MOTOR_get_direction(MOTOR_2), new_pid_out2);
         }        
         
         // QEI velocity refresh rate
         if (TIMER_get_state(TIMER_8, TIMER_INT_STATE) == 1)
         {           
             QEI_calculate_velocity(QEI_1);  
-            new_pid_out = MOTOR_drive_pid(MOTOR_1);
-            MOTOR_drive_perc(MOTOR_1, MOTOR_get_direction(MOTOR_1), new_pid_out);
+            new_pid_out1 = MOTOR_drive_pid(MOTOR_1);
+            MOTOR_drive_perc(MOTOR_1, MOTOR_get_direction(MOTOR_1), new_pid_out1);
         }
         
         // SWPWM RGB LED timer

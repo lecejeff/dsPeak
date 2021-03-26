@@ -58,7 +58,7 @@ void QEI_init (unsigned char channel)
             QEI1GECL = QEI_MOT1_PPT;    // Set default pulse per revolution value
             QEI1STATbits.PCHEQIEN = 1;  // Enable position counter >= cmp interrupt enable
             QEI1IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
-            QEI1IOCbits.QFDIV = 1;      // 1/2 clock divide for digital input filter
+            QEI1IOCbits.QFDIV = 3;      // 1/8 clock divide for digital input filter
             
             QEI_set_gear_derate(channel, QEI_MOT1_GDR);
             QEI_set_cpr(channel, QEI_MOT1_CPR);
@@ -82,7 +82,7 @@ void QEI_init (unsigned char channel)
             QEI2GECL = QEI_MOT2_PPT;    // Set default pulse per revolution value
             QEI2STATbits.PCHEQIEN = 1;  // Enable position counter >= cmp interrupt enable
             QEI2IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
-            QEI2IOCbits.QFDIV = 1;      // 1/2 clock divide for digital input filter
+            QEI2IOCbits.QFDIV = 3;      // 1/8 clock divide for digital input filter
             
             QEI_set_gear_derate(channel, QEI_MOT2_GDR);
             QEI_set_cpr(channel, QEI_MOT2_CPR);

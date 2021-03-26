@@ -49,7 +49,7 @@ void UART_init (unsigned char channel, unsigned long baud, unsigned char rx_buf_
             
             // UART1 peripheral pin mapping
             RPOR4bits.RP79R = 0x01;         // RD15 (RP79) assigned to UART1_TX
-            RPINR19bits.U2RXR = 78;         // RD14 (RPI78) assigned to UART1_RX
+            RPINR18bits.U1RXR = 78;         // RD14 (RPI78) assigned to UART1_RX
             RPOR9bits.RP100R = 0x02;        // RF4 (RP100) assigned to UART1_RTS
             RPINR18bits.U1CTSR = 101;       // RF5 (RP101) assigned to UART1_CTS
             
@@ -61,7 +61,7 @@ void UART_init (unsigned char channel, unsigned long baud, unsigned char rx_buf_
             
             U1BRG = ((FCY / (16 * baud))-1);// Set baudrate
             U1MODE = 0x8A00;                // Reset UART to 8-n-1, TX/RX/RTS/CTS used, RTSMD = 1
-            U1STA  = 0x0440;                // Reset status register and enable TX & RX
+            U1STA = 0x0440;                 // Reset status register and enable TX & RX
             IPC16bits.U1EIP = 3;            // Error interrupt priority
             IPC2bits.U1RXIP = 4;            // RX interrupt priority
             IFS4bits.U1EIF = 0;             // Clear error interrupt flag
@@ -75,6 +75,14 @@ void UART_init (unsigned char channel, unsigned long baud, unsigned char rx_buf_
             // UART2 input/output pin mapping
             TRISFbits.TRISF1 = 0;           // RF1 configured as an output (UART2_TX)           
             TRISGbits.TRISG1 = 1;           // RG1 configured as an input (UART2_RX)
+            
+            // MikroBus RS-485 click test --------------------------------------
+            // RE pin is MKB1_nCS
+            TRISHbits.TRISH15 = 0;  // RE, receiver enable
+            TRISDbits.TRISD0 = 0;   // DE, driver enable                       
+            LATHbits.LATH15 = 0;    // By default, pull the 485 transceiver in listen mode
+            LATDbits.LATD0 = 0;         
+            // -----------------------------------------------------------------
             
             // UART2 peripheral pin mapping
             RPOR7bits.RP97R = 0x03;         // RF1 (RP97) assigned to UART2_TX
@@ -122,6 +130,7 @@ void UART_init (unsigned char channel, unsigned long baud, unsigned char rx_buf_
             IFS5bits.U3RXIF = 0;            // Clear receive interrupt flag
             IEC5bits.U3EIE = 1;             // Enable error interrupt
             IEC5bits.U3RXIE = 1;            // Enable receive interrupt
+            
             DMA_init(DMA_CH0);
             DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
             DMA0REQ = DMAREQ_U3TX;
@@ -236,12 +245,17 @@ void UART_putstr (unsigned char channel, char *str)
             
         case UART_2:
             while(!U2STAbits.TRMT);
+            // MikroBus RS-485 click test ------------------------------------------
+            // Put the transceiver in transmit mode
+            LATHbits.LATH15 = 1;    // RE = 1
+            LATDbits.LATD0 = 1;     // DE = 1
+            //----------------------------------------------------------------------               
             for (; i < length; i++)
             {
                 UART_struct[channel].UART_tx_data[i] = *str++;
             }               
             UART_struct[channel].UART_tx_length = length;
-            UART_struct[channel].UART_tx_done = 0;
+            UART_struct[channel].UART_tx_done = 0;         
             IEC1bits.U2TXIE = 1;              
             break;
             
@@ -300,7 +314,7 @@ void UART_putbuf (unsigned char channel, unsigned char *buf, unsigned char lengt
                 UART_struct[channel].UART_tx_data[i] = *buf++; 
             }               
             UART_struct[channel].UART_tx_length = length;      
-            UART_struct[channel].UART_tx_done = 0;            
+            UART_struct[channel].UART_tx_done = 0;                 
             IEC1bits.U2TXIE = 1;                                               
             break;
             
@@ -327,8 +341,7 @@ void UART_putbuf_dma (unsigned char channel, unsigned char *buf, unsigned char l
     unsigned char i = 0;
     switch (channel)
     {           
-        case UART_3:  
-                
+        case UART_3:                  
             if (DMA_get_txfer_state(DMA_CH0) == DMA_TXFER_DONE)  // If DMA channel is free, fill buffer and transmit
             {
                 if (U3STAbits.TRMT)         
@@ -675,7 +688,13 @@ void UART_tx_interrupt(unsigned char channel)
                     {
                         UART_struct[channel].UART_tx_done = 1;     
                         UART_struct[channel].UART_tx_counter = 0;  
-                        IEC1bits.U2TXIE = 0;                   
+                        IEC1bits.U2TXIE = 0; 
+                        while(!U2STAbits.TRMT);
+                        // MikroBus RS-485 click test ------------------------------------------
+                        // Put the transceiver in receive mode
+                        LATHbits.LATH15 = 0;    // RE = 0
+                        LATDbits.LATD0 = 0;     // DE = 0
+                        //----------------------------------------------------------------------                        
                     }               
                 }           
             }            
