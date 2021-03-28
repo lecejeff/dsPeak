@@ -1,5 +1,5 @@
 FILE_TYPE=LIBRARY_PARTS;
-{ Using PSTWRITER 17.4.0 d001Mar-25-2021 at 19:56:35}
+{ Using PSTWRITER 17.4.0 d001Mar-28-2021 at 14:15:18}
 primitive 'CAPACITOR NON-POL_0_0603_CAP_IP';
   pin
     '1':
@@ -163,21 +163,6 @@ primitive 'CAPACITOR NON-POL_0_0603_CAP__6';
     PART_NAME='CAPACITOR NON-POL_0';
     JEDEC_TYPE='0603_cap_ipc';
     VALUE='1uF';
-  end_body;
-end_primitive;
-primitive 'CAP NP_0_0603_CAP_IPC_1NF';
-  pin
-    '1':
-      PIN_NUMBER='(1)';
-      PINUSE='UNSPEC';
-    '2':
-      PIN_NUMBER='(2)';
-      PINUSE='UNSPEC';
-  end_pin;
-  body
-    PART_NAME='CAP NP_0';
-    JEDEC_TYPE='0603_cap_ipc';
-    VALUE='1nF';
   end_body;
 end_primitive;
 primitive 'CAP NP_0_1206_CAP_10UF';

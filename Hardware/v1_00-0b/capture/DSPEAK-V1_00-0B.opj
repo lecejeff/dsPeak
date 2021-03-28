@@ -1,6 +1,6 @@
 (ExpressProject ""
   (ProjectVersion "19981106")
-  (SoftwareVersion "17.4-2019 S015 (3921426)  [2/23/2021]-[03/25/21]")
+  (SoftwareVersion "17.4-2019 S015 (3921426)  [2/23/2021]-[03/28/21]")
   (Folder "Design Resources"
     (Folder "Library"
       (File "c:\users\jeanf\google drive\orcad16lib\piece\part.olb"
@@ -211,13 +211,13 @@
     (Doc
       (Type "COrCapturePMDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 0 428 0 888"))
+        (Placement "44 0 1 -1 -1 -1 -1 0 366 0 888"))
       (Tab 0))
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 5 24 5 1165 24 929")
-        (Scroll "540 38")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
+        (Scroll "0 0")
         (Zoom "96")
         (Occurrence "/"))
       (Path
@@ -227,20 +227,9 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 5 24 5 1165 24 929")
-        (Scroll "0 -5")
-        (Zoom "89")
-        (Occurrence "/P16"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "Audio codec")
-      (Page "Audio codec"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 -5")
-        (Zoom "89")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
+        (Scroll "0 0")
+        (Zoom "100")
         (Occurrence "/P31"))
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
@@ -249,129 +238,19 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 -5")
-        (Zoom "89")
-        (Occurrence "/P19"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "USER I/O")
-      (Page "USER I/O"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 -8")
-        (Zoom "119")
-        (Occurrence "/P4"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "CAN")
-      (Page "CAN"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 3")
-        (Zoom "123")
-        (Occurrence "/P5"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "RS-485")
-      (Page "RS-485"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 5 24 5 1165 24 929")
-        (Scroll "0 -5")
-        (Zoom "89")
-        (Occurrence "/P2"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "MCU")
-      (Page "MCU - POWER / OSC / PICKIT"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 0")
-        (Zoom "100")
-        (Occurrence "/P1"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "MCU I/Os")
-      (Page "MCU I/Os"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 0")
-        (Zoom "100")
-        (Occurrence "/P15"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "Servo motor")
-      (Page "SERVO"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 5 24 5 1165 24 929")
-        (Scroll "0 -8")
-        (Zoom "119")
-        (Occurrence "/P3"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "USB-UART")
-      (Page "USB-UART"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 -8")
-        (Zoom "119")
-        (Occurrence "/P14"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "MikroBus")
-      (Page "MikroBus"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 0")
-        (Zoom "100")
-        (Occurrence "/P18"))
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 0")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
+        (Scroll "39 0")
         (Zoom "100")
         (Occurrence "/P17"))
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
+        (Scroll "39 0")
+        (Zoom "100")
+        (Occurrence "/P18"))
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
       (Schematic "Motor driver")
-      (Page "MOTOR DRIVE"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 659")
-        (Zoom "238")
-        (Occurrence "/P13"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "MEMORY")
-      (Page "MEMORY"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1165 24 929")
-        (Scroll "0 -8")
-        (Zoom "119")
-        (Occurrence "/P12"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "RIVERDI FT8XX")
-      (Page "RIVERDI TFT")))
+      (Page "MOTOR DRIVE")))
   (MPSSessionName "jeanf")
   (ISPCBBASICLICENSE "true")
   (PartMRUSelector

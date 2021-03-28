@@ -1,5 +1,5 @@
 FILE_TYPE = EXPANDEDPARTLIST;
-{ Using PSTWRITER 17.4.0 d001Mar-25-2021 at 19:56:35 }
+{ Using PSTWRITER 17.4.0 d001Mar-28-2021 at 14:15:18 }
 DIRECTIVES
  PST_VERSION='PST_HDL_CENTRIC_VERSION_0';
  ROOT_DRAWING='DSPEAK-V1_00-0B';
@@ -614,16 +614,6 @@ SECTION_NUMBER 1
  '@DSPEAK-V1_00-0B.TOP SCHEMATIC(SCH_1):P31@DSPEAK-V1_00-0B.POWER SUPPLY(SCH_1):INS1021101@DSPEAK-V1_00-0B.CAP NP_0.NORMAL(CHIPS)':
  C_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):p31@\dspeak-v1_00-0b\.\power supply\(sch_1):ins1021101@\dspeak-v1_00-0b\.\cap np_0.normal\(chips)',
  P_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):page1_p31@\dspeak-v1_00-0b\.\power supply\(sch_1):page16_ins1021101@\dspeak-v1_00-0b\.\cap np_0.normal\(chips)',
- PRIM_FILE='.\pstchip.dat',
- SECTION='';
-
-PART_NAME
- C158 'CAP NP_0_0603_CAP_IPC_1NF':;
-
-SECTION_NUMBER 1
- '@DSPEAK-V1_00-0B.TOP SCHEMATIC(SCH_1):P31@DSPEAK-V1_00-0B.POWER SUPPLY(SCH_1):INS1021217@DSPEAK-V1_00-0B.CAP NP_0.NORMAL(CHIPS)':
- C_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):p31@\dspeak-v1_00-0b\.\power supply\(sch_1):ins1021217@\dspeak-v1_00-0b\.\cap np_0.normal\(chips)',
- P_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):page1_p31@\dspeak-v1_00-0b\.\power supply\(sch_1):page16_ins1021217@\dspeak-v1_00-0b\.\cap np_0.normal\(chips)',
  PRIM_FILE='.\pstchip.dat',
  SECTION='';
 
@@ -2064,6 +2054,16 @@ SECTION_NUMBER 1
  '@DSPEAK-V1_00-0B.TOP SCHEMATIC(SCH_1):P31@DSPEAK-V1_00-0B.POWER SUPPLY(SCH_1):INS1032520@DSPEAK-V1_00-0B.LED_0.NORMAL(CHIPS)':
  C_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):p31@\dspeak-v1_00-0b\.\power supply\(sch_1):ins1032520@\dspeak-v1_00-0b\.\led_0.normal\(chips)',
  P_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):page1_p31@\dspeak-v1_00-0b\.\power supply\(sch_1):page16_ins1032520@\dspeak-v1_00-0b\.\led_0.normal\(chips)',
+ PRIM_FILE='.\pstchip.dat',
+ SECTION='';
+
+PART_NAME
+ D57 'DIODE SCHOTTKY_0_DO-214AA_SCHOT':;
+
+SECTION_NUMBER 1
+ '@DSPEAK-V1_00-0B.TOP SCHEMATIC(SCH_1):INS1579791@DSPEAK-V1_00-0B.DIODE SCHOTTKY_0.NORMAL(CHIPS)':
+ C_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):ins1579791@\dspeak-v1_00-0b\.\diode schottky_0.normal\(chips)',
+ P_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):page1_ins1579791@\dspeak-v1_00-0b\.\diode schottky_0.normal\(chips)',
  PRIM_FILE='.\pstchip.dat',
  SECTION='';
 

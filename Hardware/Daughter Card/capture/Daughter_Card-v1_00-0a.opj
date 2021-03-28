@@ -1,6 +1,6 @@
 (ExpressProject "Daughter_Card-v1_00-0a"
   (ProjectVersion "19981106")
-  (SoftwareVersion "17.4-2019 S014 (3914599)  [1/24/2021]-[02/23/21]")
+  (SoftwareVersion "17.4-2019 S015 (3921426)  [2/23/2021]-[02/23/21]")
   (ProjectType "PCB")
   (Folder "Design Resources"
     (Folder "Library"
@@ -178,37 +178,15 @@
   (GlobalState
     (FileView
       (Path "Design Resources")
-      (Path "Design Resources" "Library")
-      (Path "Design Resources" "Library"
-         "c:\users\jeanf\google drive\orcad16lib\piece\part.olb")
       (Path "Layout")
       (Path "Outputs")
       (Path "Logs")
-      (Select "Design Resources" "Library"
-         "c:\users\jeanf\google drive\orcad16lib\piece\part.olb" "S2EB_L2_12V"))
+      (Select "Design Resources" ".\daughter_card-v1_00-0a.dsn"))
     (HierarchyView)
     (Doc
       (Type "COrCapturePMDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 0 263 0 888"))
-      (Tab 0))
-    (Doc
-      (Type "COrPrmBrowserDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1330 24 929"))
-      (Path "C:\USERS\JEANF\GOOGLE DRIVE\ORCAD16LIB\PIECE\PART.OLB")
-      (Package "TITLEBLOCKINTELLITROL")
-      (PartType "0"))
-    (Doc
-      (Type "COrSchematicDoc")
-      (Frame
-        (Placement "44 0 1 -1 -1 5 24 5 1330 24 929")
-        (Scroll "0 -5")
-        (Zoom "89")
-        (Occurrence "/"))
-      (Path
-         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\DAUGHTER CARD\CAPTURE\DAUGHTER_CARD-V1_00-0A.DSN")
-      (Schematic "SCHEMATIC1")
-      (Page "Daughter Card")))
+        (Placement "44 0 1 -1 -1 -1 -1 0 366 0 888"))
+      (Tab 0)))
   (MPSSessionName "jeanf")
   (ISPCBBASICLICENSE "true"))
