@@ -35,7 +35,7 @@
 
 // FPOR
 #pragma config FPWRT = PWR128           // Power-on Reset Timer Value Select bits (128ms)
-#pragma config BOREN = OFF              // Brown-out Reset (BOR) Detection Enable bit (BOR is disabled)
+#pragma config BOREN = ON               // Brown-out Reset (BOR) Detection Enable bit (BOR is enabled)
 #pragma config ALTI2C1 = ON             // Alternate I2C pins for I2C1 (ASDA1/ASCK1 pins are selected as the I/O pins for I2C1)
 #pragma config ALTI2C2 = ON             // Alternate I2C pins for I2C2 (I2C2 mapped to ASDA2/ASCL2 pins)
 
@@ -62,6 +62,7 @@
 #include "mcontrol.h"
 #include "CAN.h"
 #include "image_file.h"
+#include "ST7735s.h"
 
 #define SCREEN_ENABLE
 
@@ -79,7 +80,7 @@ unsigned int hour_bcd = 0, minute_bcd = 0, second_bcd = 0;
 unsigned char buf[128] = {0};
 unsigned char test_spi[8] = {'J', 'e', 't', 'a', 'i', 'm', 'e', '!'};
 char *str = "-- Testing a full 64 bytes transfer from DPSRAM->DMA->USART3!\r\n";
-unsigned int test = 50;
+unsigned int test = 1;
 unsigned char speed = 20;
 char new_pid_out1 = 0, new_pid_out2 = 0;
 unsigned int speed_rpm_table[5] = {30, 30, 30, 30, 30};
@@ -92,6 +93,16 @@ unsigned int actual_rpm;
 unsigned char high, low;
 unsigned char rs485_state = 0;
 unsigned char pid_out = 0;
+unsigned int color = 0;
+unsigned char color_counter = 0;
+unsigned long color_888 = 0;
+
+unsigned int RGB_PWM_frequency = 60;
+unsigned char RGB_PWM_counter = 0;
+unsigned char RGB_R_duty = 0;
+unsigned char RGB_G_duty = 0;
+unsigned char RGB_B_duty = 0;
+unsigned char RGB_test = 0;
 int main() 
 {
     DSPIC_init();
@@ -178,7 +189,7 @@ int main()
     
     //UART_putbuf_dma(UART_3, (unsigned char *)"dsPeak - UART3 test 12345ABCDEF", strlen("dsPeak - UART3 test 12345ABCDEF"));
     
-    RGB_LED_set_color(0x800080);
+    RGB_LED_set_color(0xFFFFFF);
     
     MOTOR_set_rpm(MOTOR_1, speed_rpm_table[0]);
     MOTOR_set_rpm(MOTOR_2, speed_rpm_table[0]);
@@ -188,14 +199,30 @@ int main()
     TIMER_init(TIMER_2, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER_3, TIMER_PRESCALER_256, 60);
     TIMER_init(TIMER_4, TIMER_PRESCALER_256, 60);
+    TIMER_init(TIMER_5, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER_7, TIMER_PRESCALER_256, QEI_get_fs(QEI_2));
     TIMER_init(TIMER_8, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
-    TIMER_init(TIMER_9, TIMER_PRESCALER_256, 20000);
+    TIMER_init(TIMER_9, TIMER_PRESCALER_256, 60000);
+
+    ST7735_init();
+    color = RGB888_to_RGB565(0x00FF00);
+    ST7735_Clear(color);
     
+    PMP_write(PMP_MODE_SRAM, 0x0001, 0x009C);
+    if (PMP_read(PMP_MODE_SRAM, 0x0001) != 0x009C)
+    {
+        LATHbits.LATH9 = !LATHbits.LATH9;
+    }   
+    else
+    {
+        LATHbits.LATH10 = !LATHbits.LATH10;
+    }
+        
     TIMER_start(TIMER_1);
     TIMER_start(TIMER_2);
     TIMER_start(TIMER_3);
     TIMER_start(TIMER_4);
+    TIMER_start(TIMER_5);
     TIMER_start(TIMER_7);
     TIMER_start(TIMER_8);
     TIMER_start(TIMER_9);
@@ -231,7 +258,7 @@ int main()
         }     
         
         if (TIMER_get_state(TIMER_2, TIMER_INT_STATE) == 1)
-        {      
+        {           
 #ifdef SCREEN_ENABLE    
             FT8XX_modify_number(&st_Number[0], NUMBER_VAL, QEI_get_tour(QEI_1));
             FT8XX_modify_number(&st_Number[1], NUMBER_VAL, MOTOR_get_setpoint_rpm(MOTOR_1));
@@ -287,9 +314,11 @@ int main()
         }
         
         if (TIMER_get_state(TIMER_3, TIMER_INT_STATE) == 1)
-        {
+        { 
+            RGB_LED_set_color(RGB_test);
+            if (++RGB_test > 255){RGB_test = 0;}            
             if (++counter_5sec >= 300)
-            {               
+            {                  
                 counter_5sec = 0;
                 state++;
                 if (state > 4){state = 0;}
@@ -297,7 +326,7 @@ int main()
                 MOTOR_set_rpm(MOTOR_2, speed_rpm_table[state]);
             }
             if (++counter_sec >= 60)
-            {    
+            {                    
                 CAN_tx_msg(&CAN_native);
                 LATHbits.LATH8 = !LATHbits.LATH8;
                 RTCC_read_time();
@@ -314,6 +343,7 @@ int main()
         // MikroBus RS-485 click test ------------------------------------------
         if (TIMER_get_state(TIMER_4, TIMER_INT_STATE) == 1)
         {   
+            
             if (rs485_state == 0)
             {
                 UART_putstr(UART_2, "Test RS-485$%?&*");
@@ -334,7 +364,40 @@ int main()
                     //UART_putstr(UART_2, "Test RS-485$%?&*");
                 }                
             }
-        }         
+        } 
+
+        if (TIMER_get_state(TIMER_5, TIMER_INT_STATE) == 1)
+        {
+            switch(color_counter)
+            {
+                case 0:
+                    color = RGB888_to_RGB565(0x000000);
+                    break;
+                case 1:
+                    color = RGB888_to_RGB565(0x0000FF);
+                    break; 
+                case 2:
+                    color = RGB888_to_RGB565(0x00FF00);
+                    break;
+                case 3:
+                    color = RGB888_to_RGB565(0x00FFFF);
+                    break;      
+                case 4:
+                    color = RGB888_to_RGB565(0xFF0000);
+                    break;
+                case 5:
+                    color = RGB888_to_RGB565(0xFF00FF);
+                    break;      
+                case 6:
+                    color = RGB888_to_RGB565(0xFFFF00);
+                    break;
+                case 7:
+                    color = RGB888_to_RGB565(0xFFFFFF);
+                    break;                          
+            }
+            if (++color_counter > 7){color_counter = 0;}
+            ST7735_Clear(color); 
+        }
         
         // QEI velocity refresh rate
         if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
@@ -354,18 +417,19 @@ int main()
         
         // SWPWM RGB LED timer
         if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
-        {            
-            if (counter_ms >= rgb_r){RGB_LED_RED = 1;}
-            if (counter_ms >= rgb_g){RGB_LED_GREEN = 1;}
-            if (counter_ms >= rgb_b){RGB_LED_BLUE = 1;}
-            
-            if (++counter_ms >= test)
-            {           
-                if (rgb_r > 0){RGB_LED_RED = 0;}
-                if (rgb_g > 0){RGB_LED_GREEN = 0;}
-                if (rgb_b > 0){RGB_LED_BLUE = 0;}
-                counter_ms = 0;
-            }            
+        {                   
+            if (RGB_PWM_counter > RGB_R_duty){RGB_LED_RED = 1;}
+            if (RGB_PWM_counter > RGB_G_duty){RGB_LED_GREEN = 1;}
+            if (RGB_PWM_counter > RGB_B_duty){RGB_LED_BLUE = 1;}
+ 
+            if (RGB_PWM_counter >= RGB_PWM_frequency)
+            {
+                if (RGB_R_duty > 0){RGB_LED_RED = 0;}
+                if (RGB_G_duty > 0){RGB_LED_GREEN = 0;}
+                if (RGB_B_duty > 0){RGB_LED_BLUE = 0;}
+                RGB_PWM_counter = 0;
+            }
+            RGB_PWM_counter++;       
         }        
     }
     return 0;
@@ -435,13 +499,13 @@ void DSPIC_init (void)
 
 void RGB_LED_set_color (unsigned long color)
 {
-    unsigned long R = ((color & 0xFF0000)>>16);
-    unsigned long G = ((color & 0x00FF00)>>8);
-    unsigned long B = color & 0x0000FF;
+    unsigned char R = ((color & 0xFF0000)>>16);
+    unsigned char G = ((color & 0x00FF00)>>8);
+    unsigned char B = color & 0x0000FF;
     
-    rgb_r = (unsigned long)((R * test)/255.0);
-    rgb_g = (unsigned long)((G * test)/255.0);
-    rgb_b = (unsigned long)((B * test)/255.0);
+    RGB_R_duty = (R * (RGB_PWM_frequency/255.0));
+    RGB_G_duty = (G * (RGB_PWM_frequency/255.0));
+    RGB_B_duty = (B * (RGB_PWM_frequency/255.0));
 }
 
 void hex_to_ascii (unsigned char ucByte, unsigned char *ucByteH, unsigned char *ucByteL)

@@ -28,6 +28,7 @@
 
 typedef struct
 {
+    unsigned int value;
     unsigned char state;
     unsigned char mode;
     unsigned char resolution;
