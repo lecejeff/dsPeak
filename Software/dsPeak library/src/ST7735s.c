@@ -2,7 +2,6 @@
 
 void ST7735_init (void)
 {
-    PMP_init(PMP_MODE_TFT);
     LCD_RESET_LATCH = 1;
     __delay_ms(50);
     LCD_RESET_LATCH = 0;
@@ -105,25 +104,25 @@ void ST7735_init (void)
 	ST7735_write_command(0x2C);    
 }
 
-void ST7735_write_data (unsigned char data)
+void ST7735_write_data (uint8_t data)
 {
     LCD_DAT_CMD_LATCH = 1;
-    PMP_write(PMP_MODE_TFT, 0, data);
+    PMP_write_single(PMP_MODE_TFT, 0, data);
 }
 
-void ST7735_write_command (unsigned char command)
+void ST7735_write_command (uint8_t command)
 {
     LCD_DAT_CMD_LATCH = 0;
-    PMP_write(PMP_MODE_TFT, 0, command);
+    PMP_write_single(PMP_MODE_TFT, 0, command);
 }
 
-void ST7735_write_two_data (unsigned int y)
+void ST7735_write_two_data (uint16_t y)
 {
     ST7735_write_data((y & 0xFF00)>>8);
     ST7735_write_data(y);
 }
 
-void ST7735_SetPos(unsigned char x0,unsigned char x1,unsigned char y0,unsigned char y1)
+void ST7735_SetPos(uint8_t x0,uint8_t x1,uint8_t y0,uint8_t y1)
 {
 	x0+=2;x1+=2;y0+=67;y1+=67;
 
@@ -140,9 +139,9 @@ void ST7735_SetPos(unsigned char x0,unsigned char x1,unsigned char y0,unsigned c
 	ST7735_write_command(0x2C);//LCD_WriteCMD(GRAMWR);    
 }
 
-void ST7735_Clear(unsigned int bColor)
+void ST7735_Clear(uint16_t bColor)
 {
-    unsigned char i, j;
+    uint8_t i, j;
     ST7735_SetPos(0, 127, 0, 63);
     for (i=0;i<64;i++)
     {
@@ -153,13 +152,13 @@ void ST7735_Clear(unsigned int bColor)
     }
 }    
 
-unsigned int RGB888_to_RGB565 (unsigned long color)
+uint16_t RGB888_to_RGB565 (uint32_t color)
 {
-    //unsigned char red = ((color & 0xFF0000) >> 16);
-    //unsigned char green = ((color & 0x00FF00) >> 8);
-    //unsigned char blue = color;
-    //unsigned int RGB565 = 0;
+    //uint8_t red = ((color & 0xFF0000) >> 16);
+    //uint8_t green = ((color & 0x00FF00) >> 8);
+    //uint8_t blue = color;
+    //uint16_t RGB565 = 0;
     //RGB565 = (((((color & 0xFF0000) >> 16) & 0xf8)<<8) + ((((color & 0x00FF00) >> 8) & 0xfc)<<3)+(color>>3));
-    return (unsigned int)((((color & 0xF80000) >> 16)<<8) + (((color & 0x00FC00) >> 8)<<3)+(color>>3));
+    return (uint16_t)((((color & 0xF80000) >> 16)<<8) + (((color & 0x00FC00) >> 8)<<3)+(color>>3));
     //return RGB565;
 }

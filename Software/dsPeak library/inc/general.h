@@ -14,6 +14,7 @@
 #define FOSC 140000000
 #define FCY (FOSC/2)    // FCY of 70MIPS
 
+#include <stdint.h>
 #include <xc.h>
 #include <libpic30.h>
 #include <dsp.h>
@@ -24,11 +25,11 @@
 #define RGB_LED_BLUE    LATBbits.LATB5
 
 void DSPIC_init (void);
-void hex_to_ascii (unsigned char ucByte, unsigned char *ucByteH, unsigned char *ucByteL);
-int bcd_to_decimal(unsigned char x) ;
-unsigned int dec2bcd(unsigned int num);
-void RGB_LED_set_color (unsigned long color);
-unsigned char hex_to_dec (unsigned char hex);
+void hex_to_ascii (uint8_t ucByte, uint8_t *ucByteH, uint8_t *ucByteL);
+int bcd_to_decimal(uint8_t x) ;
+uint16_t dec2bcd(uint16_t num);
+void RGB_LED_set_color (uint32_t color);
+uint8_t hex_to_dec (uint8_t hex);
 
 #endif	/* GENERAL_H */
 

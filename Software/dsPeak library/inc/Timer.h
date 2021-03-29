@@ -1,11 +1,11 @@
 //****************************************************************************//
 // File      : Timer.h
 //
-// Functions :  void TIMER_init (unsigned char timer, unsigned long freq);
-//              void TIMER_update_freq (unsigned char timer, unsigned long new_freq);
-//              void TIMER_start (unsigned char timer);
-//              void TIMER_stop (unsigned char timer);
-//              unsigned char TIMER_get_state (unsigned char timer);
+// Functions :  void TIMER_init (uint8_t timer, uint32_t freq);
+//              void TIMER_update_freq (uint8_t timer, uint32_t new_freq);
+//              void TIMER_start (uint8_t timer);
+//              void TIMER_stop (uint8_t timer);
+//              uint8_t TIMER_get_state (uint8_t timer);
 //
 // Includes  : general.h
 //
@@ -40,16 +40,16 @@
 
 typedef struct
 {
-    unsigned char int_state;
-    unsigned char run_state;
-    unsigned long freq;
-    unsigned char prescaler;
+    uint8_t int_state;
+    uint8_t run_state;
+    uint32_t freq;
+    uint8_t prescaler;
 }TIMER_STRUCT;
 
-void TIMER_init (unsigned char timer, unsigned char prescaler, unsigned long freq);
-void TIMER_update_freq (unsigned char timer, unsigned char prescaler, unsigned long new_freq);
-void TIMER_start (unsigned char timer);
-void TIMER_stop (unsigned char timer);
-unsigned char TIMER_get_state (unsigned char timer, unsigned char type);
+void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq);
+void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq);
+void TIMER_start (uint8_t timer);
+void TIMER_stop (uint8_t timer);
+uint8_t TIMER_get_state (uint8_t timer, uint8_t type);
 #endif	/* TIMER_H */
 

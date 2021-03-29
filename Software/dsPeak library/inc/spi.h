@@ -1,15 +1,15 @@
 //***************************************************************************//
 // File      : spi.h
 //
-// Functions :  void SPI_init (unsigned char mode, unsigned char ppre, unsigned char spre, unsigned char channel); 
-//              void SPI_master_write (unsigned char *data, unsigned char length, unsigned char chip, unsigned char channel);
-//              void SPI_fill_transmit_buffer (unsigned char * data, unsigned char length, unsigned char channel);
-//              unsigned char SPI_rx_done (unsigned char channel);
-//              unsigned char * SPI_get_rx_buffer (unsigned char channel);
-//              void SPI_master_deassert_cs (unsigned char chip);
-//              void SPI_master_assert_cs (unsigned char chip);
+// Functions :  void SPI_init (uint8_t mode, uint8_t ppre, uint8_t spre, uint8_t channel); 
+//              void SPI_master_write (uint8_t *data, uint8_t length, uint8_t chip, uint8_t channel);
+//              void SPI_fill_transmit_buffer (uint8_t * data, uint8_t length, uint8_t channel);
+//              uint8_t SPI_rx_done (uint8_t channel);
+//              uint8_t * SPI_get_rx_buffer (uint8_t channel);
+//              void SPI_master_deassert_cs (uint8_t chip);
+//              void SPI_master_assert_cs (uint8_t chip);
 //              void SPI_slave_initiate (void);
-//              void SPI_clear_rx_buffer (unsigned char channel);
+//              void SPI_clear_rx_buffer (uint8_t channel);
 //
 // Includes  :  general.h
 //           
@@ -60,23 +60,23 @@
 
 typedef struct
 {
-    unsigned char spi_chip;
-    unsigned char spi_tx_data[SPI_BUF_LENGTH];
-    unsigned char spi_rx_data[SPI_BUF_LENGTH];
-    unsigned char spi_tx_length;
-    unsigned char spi_state;
-    unsigned char spi_txfer_done;
-    unsigned char spi_rx_cnt;
-    unsigned char spi_tx_cnt;
+    uint8_t spi_chip;
+    uint8_t spi_tx_data[SPI_BUF_LENGTH];
+    uint8_t spi_rx_data[SPI_BUF_LENGTH];
+    uint8_t spi_tx_length;
+    uint8_t spi_state;
+    uint8_t spi_txfer_done;
+    uint8_t spi_rx_cnt;
+    uint8_t spi_tx_cnt;
 }SPI_struct;
 
-void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, unsigned char spre); 
-void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char length, unsigned char chip);
-unsigned char SPI_txfer_done (unsigned char channel);
-unsigned char * SPI_get_rx_buffer (unsigned char channel);
-unsigned char SPI_get_rx_buffer_index (unsigned char channel, unsigned char index);
-void SPI_master_deassert_cs (unsigned char chip);
-void SPI_master_assert_cs (unsigned char chip);
-void SPI_flush_buffer (unsigned char channel);
+void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre); 
+void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip);
+uint8_t SPI_txfer_done (uint8_t channel);
+uint8_t * SPI_get_rx_buffer (uint8_t channel);
+uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index);
+void SPI_master_deassert_cs (uint8_t chip);
+void SPI_master_assert_cs (uint8_t chip);
+void SPI_flush_buffer (uint8_t channel);
 #endif
 

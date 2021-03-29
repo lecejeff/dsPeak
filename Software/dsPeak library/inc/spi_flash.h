@@ -6,12 +6,12 @@
 
 typedef struct
 {
-    unsigned char state;
-    unsigned char prev_state;
-    unsigned char busy;
-    unsigned char write_length;
-    unsigned long read_length;
-    unsigned long erase_length;
+    uint8_t state;
+    uint8_t prev_state;
+    uint8_t busy;
+    uint8_t write_length;
+    uint32_t read_length;
+    uint32_t erase_length;
 }STRUCT_FLASH;
 
 #define SPI_FLASH_STATE_INIT    0
@@ -68,11 +68,11 @@ typedef struct
 #define PAGE_PROGRAM            0xFF
 
 void SPI_flash_init (void);
-void SPI_flash_write (unsigned long adr, unsigned char *ptr, unsigned char length);
-unsigned char * SPI_flash_read (unsigned long adr, unsigned char length);
-void SPI_flash_erase (unsigned char type, unsigned long adr);
+void SPI_flash_write (uint32_t adr, uint8_t *ptr, uint8_t length);
+uint8_t * SPI_flash_read (uint32_t adr, uint8_t length);
+void SPI_flash_erase (uint8_t type, uint32_t adr);
 void SPI_flash_write_enable (void);
 void SPI_flash_write_disable (void);
-unsigned char SPI_flash_busy (void);
-unsigned char SPI_flash_get_state (void);
+uint8_t SPI_flash_busy (void);
+uint8_t SPI_flash_get_state (void);
 #endif

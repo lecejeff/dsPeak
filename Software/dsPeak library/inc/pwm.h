@@ -2,8 +2,8 @@
 // File      : PWM.h
 //
 // Functions :  void PWM_init (void);
-//              void PWM_change_duty (unsigned char channel, unsigned char duty);
-//              unsigned char PWM_get_position (unsigned char channel);
+//              void PWM_change_duty (uint8_t channel, uint8_t duty);
+//              uint8_t PWM_get_position (uint8_t channel);
 //
 // Includes  : general.h
 //
@@ -69,15 +69,15 @@
 
 typedef struct
 {
-    unsigned int range;
-    unsigned int base_value;
-    unsigned int end_value;
-    unsigned char value_p;  
-    unsigned int new_duty;
-    unsigned char pwm_type;
+    uint16_t range;
+    uint16_t base_value;
+    uint16_t end_value;
+    uint8_t value_p;  
+    uint16_t new_duty;
+    uint8_t pwm_type;
 }STRUCT_PWM;
 
-void PWM_init (unsigned char channel, unsigned char type);
-void PWM_change_duty (unsigned char channel, unsigned char type, unsigned char duty);
-unsigned char PWM_get_position (unsigned char channel);
+void PWM_init (uint8_t channel, uint8_t type);
+void PWM_change_duty (uint8_t channel, uint8_t type, uint8_t duty);
+uint8_t PWM_get_position (uint8_t channel);
 #endif

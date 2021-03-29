@@ -2,8 +2,8 @@
 // File      : PWM.c
 //
 // Functions :  void PWM_init (void);
-//              void PWM_change_duty (unsigned char channel, unsigned char duty);
-//              unsigned char PWM_get_position (unsigned char channel);
+//              void PWM_change_duty (uint8_t channel, uint8_t duty);
+//              uint8_t PWM_get_position (uint8_t channel);
 //
 // Includes  : pwm.h
 //
@@ -25,7 +25,7 @@ STRUCT_PWM PWM_struct[PWM_QTY];
 //
 //
 ///*****************************************************************************
-void PWM_init (unsigned char channel, unsigned char type)
+void PWM_init (uint8_t channel, uint8_t type)
 {
     PTCONbits.PTEN = 0;     // Shutdown PWM engine if it was on 
     PTCON2bits.PCLKDIV = 6; // Clock divide by 64
@@ -41,8 +41,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             
             TRISEbits.TRISE0 = 0;   // RE0 is an output
             // The phase is defined in pwm.h for each PWM channel
-            SPHASE1 = (unsigned int)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
-            SDC1 = (unsigned int)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
+            SPHASE1 = (uint16_t)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
+            SDC1 = (uint16_t)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
@@ -54,8 +54,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (unsigned int)(SDC1 * PWM1L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
-                PWM_struct[channel].end_value = (unsigned int)(SDC1 * PWM1L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                PWM_struct[channel].base_value = (uint16_t)(SDC1 * PWM1L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                PWM_struct[channel].end_value = (uint16_t)(SDC1 * PWM1L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
                 PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
             }            
             break;
@@ -70,8 +70,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             
             TRISEbits.TRISE1 = 0;   // RE1 is an output
             // The phase is defined in pwm.h for each PWM channel
-            PHASE1 = (unsigned int)(FOSC / (PWM1H_PHASE * PWM_CLOCK_PRESCALE));
-            PDC1 = (unsigned int)(FOSC / (PWM1H_PHASE * PWM_CLOCK_PRESCALE));
+            PHASE1 = (uint16_t)(FOSC / (PWM1H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC1 = (uint16_t)(FOSC / (PWM1H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
@@ -83,8 +83,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (unsigned int)(PDC1 * PWM1H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
-                PWM_struct[channel].end_value = (unsigned int)(PDC1 * PWM1H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                PWM_struct[channel].base_value = (uint16_t)(PDC1 * PWM1H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                PWM_struct[channel].end_value = (uint16_t)(PDC1 * PWM1H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
                 PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
             }            
             break;
@@ -99,8 +99,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             
             TRISEbits.TRISE2 = 0;   // RE2 is an output
             // The phase is defined in pwm.h for each PWM channel
-            SPHASE2 = (unsigned int)(FOSC / (PWM2L_PHASE * PWM_CLOCK_PRESCALE));
-            SDC2 = (unsigned int)(FOSC / (PWM2L_PHASE * PWM_CLOCK_PRESCALE));
+            SPHASE2 = (uint16_t)(FOSC / (PWM2L_PHASE * PWM_CLOCK_PRESCALE));
+            SDC2 = (uint16_t)(FOSC / (PWM2L_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
@@ -112,8 +112,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (unsigned int)(SDC2 * PWM2L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
-                PWM_struct[channel].end_value = (unsigned int)(SDC2 * PWM2L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                PWM_struct[channel].base_value = (uint16_t)(SDC2 * PWM2L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                PWM_struct[channel].end_value = (uint16_t)(SDC2 * PWM2L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
                 PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
             }            
             break;
@@ -128,8 +128,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             
             TRISEbits.TRISE3 = 0;   // RE3 is an output
             // The phase is defined in pwm.h for each PWM channel
-            PHASE2 = (unsigned int)(FOSC / (PWM2H_PHASE * PWM_CLOCK_PRESCALE));
-            PDC2 = (unsigned int)(FOSC / (PWM2H_PHASE * PWM_CLOCK_PRESCALE));
+            PHASE2 = (uint16_t)(FOSC / (PWM2H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC2 = (uint16_t)(FOSC / (PWM2H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
@@ -141,8 +141,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (unsigned int)(PDC2 * PWM2H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
-                PWM_struct[channel].end_value = (unsigned int)(PDC2 * PWM2H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                PWM_struct[channel].base_value = (uint16_t)(PDC2 * PWM2H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                PWM_struct[channel].end_value = (uint16_t)(PDC2 * PWM2H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
                 PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
             }            
             break;
@@ -157,8 +157,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             
             TRISEbits.TRISE7 = 0;   // RE7 is an output
             // The phase is defined in pwm.h for each PWM channel
-            PHASE4 = (unsigned int)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));
-            PDC4 = (unsigned int)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));
+            PHASE4 = (uint16_t)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC4 = (uint16_t)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
@@ -170,8 +170,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (unsigned int)(PDC4 * PWM4H_SERVO_BASE);                
-                PWM_struct[channel].end_value = (unsigned int)(PDC4 * PWM4H_SERVO_END);               
+                PWM_struct[channel].base_value = (uint16_t)(PDC4 * PWM4H_SERVO_BASE);                
+                PWM_struct[channel].end_value = (uint16_t)(PDC4 * PWM4H_SERVO_END);               
                 PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
             }            
             break;
@@ -186,8 +186,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             
             TRISCbits.TRISC1 = 0;   // RC1 is an output
             // The phase is defined in pwm.h for each PWM channel
-            SPHASE5 = (unsigned int)(FOSC / (PWM5L_PHASE * PWM_CLOCK_PRESCALE));
-            SDC5 = (unsigned int)(FOSC / (PWM5L_PHASE * PWM_CLOCK_PRESCALE));
+            SPHASE5 = (uint16_t)(FOSC / (PWM5L_PHASE * PWM_CLOCK_PRESCALE));
+            SDC5 = (uint16_t)(FOSC / (PWM5L_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
@@ -199,8 +199,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (unsigned int)(SDC5 * PWM5L_SERVO_BASE);                
-                PWM_struct[channel].end_value = (unsigned int)(SDC5 * PWM5L_SERVO_END);               
+                PWM_struct[channel].base_value = (uint16_t)(SDC5 * PWM5L_SERVO_BASE);                
+                PWM_struct[channel].end_value = (uint16_t)(SDC5 * PWM5L_SERVO_END);               
                 PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
             }               
             break;
@@ -215,8 +215,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             
             TRISCbits.TRISC2 = 0;   // RC2 is an output
             // The phase is defined in pwm.h for each PWM channel
-            PHASE5 = (unsigned int)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE));
-            PDC5 = (unsigned int)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE));
+            PHASE5 = (uint16_t)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC5 = (uint16_t)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
@@ -228,8 +228,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (unsigned int)(PDC5 * PWM5H_SERVO_BASE);                
-                PWM_struct[channel].end_value = (unsigned int)(PDC5 * PWM5H_SERVO_END);               
+                PWM_struct[channel].base_value = (uint16_t)(PDC5 * PWM5H_SERVO_BASE);                
+                PWM_struct[channel].end_value = (uint16_t)(PDC5 * PWM5H_SERVO_END);               
                 PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
             }                     
             break;
@@ -244,8 +244,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             
             TRISCbits.TRISC3 = 0;   // RC3 is an output
             // The phase is defined in pwm.h for each PWM channel
-            SPHASE6 = (unsigned int)(FOSC / (PWM6L_PHASE * PWM_CLOCK_PRESCALE));
-            SDC6 = (unsigned int)(FOSC / (PWM6L_PHASE * PWM_CLOCK_PRESCALE));
+            SPHASE6 = (uint16_t)(FOSC / (PWM6L_PHASE * PWM_CLOCK_PRESCALE));
+            SDC6 = (uint16_t)(FOSC / (PWM6L_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
@@ -257,8 +257,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (unsigned int)(SDC6 * PWM6L_SERVO_BASE);                
-                PWM_struct[channel].end_value = (unsigned int)(SDC6 * PWM6L_SERVO_END);               
+                PWM_struct[channel].base_value = (uint16_t)(SDC6 * PWM6L_SERVO_BASE);                
+                PWM_struct[channel].end_value = (uint16_t)(SDC6 * PWM6L_SERVO_END);               
                 PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
             }            
             break;
@@ -273,8 +273,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             
             TRISCbits.TRISC4 = 0;   // RC4 is an output
             // The phase is defined in pwm.h for each PWM channel
-            PHASE6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));
-            PDC6 = (unsigned int)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));
+            PHASE6 = (uint16_t)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));
+            PDC6 = (uint16_t)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
@@ -286,8 +286,8 @@ void PWM_init (unsigned char channel, unsigned char type)
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (unsigned int)(PDC6 * PWM6H_SERVO_BASE);                
-                PWM_struct[channel].end_value = (unsigned int)(PDC6 * PWM6H_SERVO_END);               
+                PWM_struct[channel].base_value = (uint16_t)(PDC6 * PWM6H_SERVO_BASE);                
+                PWM_struct[channel].end_value = (uint16_t)(PDC6 * PWM6H_SERVO_END);               
                 PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
             }             
             break;
@@ -299,31 +299,31 @@ void PWM_init (unsigned char channel, unsigned char type)
     PTCONbits.PTEN = 1;                 // Enable hardware PWM generator 
 }
 
-//**********unsigned char PWM_get_position (unsigned char channel)************//
+//**********uint8_t PWM_get_position (uint8_t channel)************//
 //Description : Function returns actual duty cycle percentage of PWMx channel
 //
-//Function prototype : unsigned char PWM_get_position (unsigned char channel)
+//Function prototype : uint8_t PWM_get_position (uint8_t channel)
 //
-//Enter params       : unsigned char channel : PWMx channel
+//Enter params       : uint8_t channel : PWMx channel
 //
-//Exit params        : unsigned char : actual position in percentage 
+//Exit params        : uint8_t : actual position in percentage 
 //
 //Function call      : pwm_pos = PWM_get_position(PWM_1H);
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 ///*****************************************************************************
-unsigned char PWM_get_position (unsigned char channel)
+uint8_t PWM_get_position (uint8_t channel)
 {
     return PWM_struct[channel].value_p;
 }
 
-//*******void PWM_change_duty (unsigned char channel, unsigned char duty)*****//
+//*******void PWM_change_duty (uint8_t channel, uint8_t duty)*****//
 //Description : Function changes the duty cycle of the selected PWM channel
 //
-//Function prototype : void PWM_change_duty (unsigned char channel, unsigned char duty)
+//Function prototype : void PWM_change_duty (uint8_t channel, uint8_t duty)
 //
-//Enter params       : unsigned char channel : PWMx channel
-//                     unsigned char duty : new duty cycle
+//Enter params       : uint8_t channel : PWMx channel
+//                     uint8_t duty : new duty cycle
 //
 //Exit params        : None 
 //
@@ -331,17 +331,17 @@ unsigned char PWM_get_position (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 ///*****************************************************************************
-void PWM_change_duty (unsigned char channel, unsigned char type, unsigned char duty)
+void PWM_change_duty (uint8_t channel, uint8_t type, uint8_t duty)
 {
     if (duty <= 100)
     {
         if (type == PWM_TYPE_LOAD)
         {
-            PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].range * (float)duty/100.0));// Change duty percentage;
+            PWM_struct[channel].new_duty = (uint16_t)((PWM_struct[channel].range * (float)duty/100.0));// Change duty percentage;
         }
         else
         {
-            PWM_struct[channel].new_duty = (unsigned int)((PWM_struct[channel].range * ((float)duty/100.0)) + PWM_struct[channel].base_value);// Change duty percentage                     
+            PWM_struct[channel].new_duty = (uint16_t)((PWM_struct[channel].range * ((float)duty/100.0)) + PWM_struct[channel].base_value);// Change duty percentage                     
         }
         PWM_struct[channel].value_p = duty;     // Update struct variable with new percentage
         

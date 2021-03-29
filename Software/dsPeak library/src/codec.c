@@ -14,7 +14,7 @@
 #include "spi.h"
 
 STRUCT_CODEC CODEC_struct; 
-unsigned char sine_counter = 0;
+uint8_t sine_counter = 0;
 const int sine_wave_255_65k[256] = {
 0x8000,0x8327,0x864e,0x8973,0x8c98,0x8fba,0x92da,0x95f7,
 0x9911,0x9c27,0x9f38,0xa244,0xa54c,0xa84d,0xab48,0xae3c,
@@ -49,11 +49,11 @@ const int sine_wave_255_65k[256] = {
 0x51c3,0x54b7,0x57b2,0x5ab3,0x5dbb,0x60c7,0x63d8,0x66ee,
 0x6a08,0x6d25,0x7045,0x7367,0x768c,0x79b1,0x7cd8,0x8000};
 
-void CODEC_init (unsigned char sys_fs)
+void CODEC_init (uint8_t sys_fs)
 {
-    unsigned long pll_out_freq = 0;
-    unsigned int pll_int_divisor = 0;
-    unsigned int pll_frac_divisor = 0;
+    uint32_t pll_out_freq = 0;
+    uint16_t pll_int_divisor = 0;
+    uint16_t pll_frac_divisor = 0;
     DCI_init();
     SPI_init(SPI_3, SPI_MODE0, 2, 0);   // PPRE = 3, primary prescale 1:4
                                         // SPRE = 0, Secondary prescale 1:8
@@ -134,8 +134,8 @@ void CODEC_init (unsigned char sys_fs)
     {
         pll_out_freq = 196608000;
     }
-    pll_int_divisor = (unsigned int)(pll_out_freq / SYS_MCLK);
-    pll_frac_divisor = (unsigned int)(((pll_out_freq / SYS_MCLK)-pll_int_divisor)*2048);
+    pll_int_divisor = (uint16_t)(pll_out_freq / SYS_MCLK);
+    pll_frac_divisor = (uint16_t)(((pll_out_freq / SYS_MCLK)-pll_int_divisor)*2048);
     
     // Write PLL dividers to CODEC
     CODEC_struct.CHIP_PLL_CTRL = CODEC_spi_modify_write(CODEC_CHIP_PLL_CTRL, CODEC_struct.CHIP_PLL_CTRL, 0x07FF, pll_int_divisor<<11);
@@ -216,23 +216,23 @@ void CODEC_init (unsigned char sys_fs)
     //CODEC_unmute(HEADPHONE_MUTE);
 }
 
-unsigned int CODEC_spi_write (unsigned int adr, unsigned int data) 
+uint16_t CODEC_spi_write (uint16_t adr, uint16_t data) 
 {
-    unsigned char buf[4] = {((adr & 0xFF00)>>8), adr, ((data & 0xFF00)>>8), data};
+    uint8_t buf[4] = {((adr & 0xFF00)>>8), adr, ((data & 0xFF00)>>8), data};
     SPI_master_write(SPI_3, buf, 4, AUDIO_CODEC_CS);
     return data;
 }
 
-unsigned int CODEC_spi_modify_write (unsigned int adr, unsigned int reg, unsigned int mask, unsigned int data)
+uint16_t CODEC_spi_modify_write (uint16_t adr, uint16_t reg, uint16_t mask, uint16_t data)
 {
     reg &= mask;
     reg |= data;
-    unsigned char buf[4] = {((adr & 0xFF00)>>8), adr, ((reg & 0xFF00)>>8), reg};
+    uint8_t buf[4] = {((adr & 0xFF00)>>8), adr, ((reg & 0xFF00)>>8), reg};
     SPI_master_write(SPI_3, buf, 4, AUDIO_CODEC_CS); 
     return reg;
 }
 
-void CODEC_mic_config (unsigned char bias_res, unsigned char bias_volt, unsigned char gain)
+void CODEC_mic_config (uint8_t bias_res, uint8_t bias_volt, uint8_t gain)
 {
     // Set microphone bias impedance
     CODEC_struct.CHIP_MIC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_MIC_CTRL, CODEC_struct.CHIP_MIC_CTRL, 0xFCFF, bias_res << 8);
@@ -245,7 +245,7 @@ void CODEC_mic_config (unsigned char bias_res, unsigned char bias_volt, unsigned
 // Set DAC volume
 // Min is 0dB, max is -90dB, in 0.5dB step
 // 0 <= dac_vol_right <= 180, where 180 * 0.5 = -90dB
-void CODEC_set_dac_volume (unsigned char dac_vol_right, unsigned char dac_vol_left)
+void CODEC_set_dac_volume (uint8_t dac_vol_right, uint8_t dac_vol_left)
 {
     if ((dac_vol_right >= 0) && (dac_vol_right <= 180))
     {
@@ -258,7 +258,7 @@ void CODEC_set_dac_volume (unsigned char dac_vol_right, unsigned char dac_vol_le
     CODEC_struct.CHIP_DAC_VOL = CODEC_spi_write(CODEC_CHIP_DAC_VOL, ((CODEC_struct.dac_vol_right << 8) | CODEC_struct.dac_vol_left)); 
 }
 
-void CODEC_mute (unsigned char channel)
+void CODEC_mute (uint8_t channel)
 {
     switch(channel)
     {
@@ -283,7 +283,7 @@ void CODEC_mute (unsigned char channel)
     }
 }
 
-void CODEC_unmute (unsigned char channel)
+void CODEC_unmute (uint8_t channel)
 {
     switch(channel)
     {

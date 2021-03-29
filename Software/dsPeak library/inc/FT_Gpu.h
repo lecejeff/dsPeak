@@ -27,7 +27,7 @@ Author : FTDI
 
 #ifndef FT8XX_H
 #define  FT8XX_H
-#endif  /* FT8XX_H */
+
 
 // FT800 Memory Commands - use with ft800memWritexx and ft800memReadxx
 #define MEM_WRITE 0x80      // FT800 Host Memory Write
@@ -718,7 +718,7 @@ Author : FTDI
 #define FT_GPU_FONT_TABLE_SIZE (148)
 
 
-
+#endif  /* FT8XX_H */
 
 
 /* Nothing beyond this */

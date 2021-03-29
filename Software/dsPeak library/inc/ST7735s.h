@@ -43,12 +43,12 @@
 
 
 void ST7735_init (void);
-void ST7735_write_data (unsigned char data);
-void ST7735_write_two_data (unsigned int y);
-void ST7735_write_command (unsigned char command);
-void ST7735_SetPos(unsigned char x0,unsigned char x1,unsigned char y0,unsigned char y1);
-void ST7735_Clear(unsigned int bColor);
-unsigned int RGB888_to_RGB565 (unsigned long color);
+void ST7735_write_data (uint8_t data);
+void ST7735_write_two_data (uint16_t y);
+void ST7735_write_command (uint8_t command);
+void ST7735_SetPos(uint8_t x0,uint8_t x1,uint8_t y0,uint8_t y1);
+void ST7735_Clear(uint16_t bColor);
+uint16_t RGB888_to_RGB565 (uint32_t color);
 
 
 

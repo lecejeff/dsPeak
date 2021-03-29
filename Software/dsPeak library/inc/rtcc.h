@@ -5,13 +5,13 @@
 
 typedef struct
 {
-    unsigned char second;
-    unsigned char minute;
-    unsigned char hour;
-    unsigned char weekday;
-    unsigned char date;    
-    unsigned char month;
-    unsigned int year;
+    uint8_t second;
+    uint8_t minute;
+    uint8_t hour;
+    uint8_t weekday;
+    uint8_t date;    
+    uint8_t month;
+    uint16_t year;
 }RTCC_time;
 
 #define RTC_SECOND      1
@@ -25,6 +25,6 @@ typedef struct
 void RTCC_init (void);
 void RTCC_write_time (RTCC_time t);
 void RTCC_read_time (void);
-unsigned char RTCC_get_time_parameter (unsigned char type);
+uint8_t RTCC_get_time_parameter (uint8_t type);
 
 #endif

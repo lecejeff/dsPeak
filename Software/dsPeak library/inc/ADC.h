@@ -9,8 +9,8 @@
 // Functions : void ADC_init (void);
 //             void ADC_start (void);
 //             void ADC_stop (void);
-//             unsigned char ADC_sample_status (void);
-//             unsigned int ADC_get_channel (unsigned char channel);
+//             uint8_t ADC_sample_status (void);
+//             uint16_t ADC_get_channel (uint8_t channel);
 //
 // Includes  : general.h
 //           
@@ -28,18 +28,18 @@
 
 typedef struct
 {
-    unsigned int value;
-    unsigned char state;
-    unsigned char mode;
-    unsigned char resolution;
-    unsigned char output_format;
+    uint16_t value;
+    uint8_t state;
+    uint8_t mode;
+    uint8_t resolution;
+    uint8_t output_format;
 }ADC_struct;
 
 void ADC_init (void);
 void ADC_start (void);
 void ADC_stop (void);
-unsigned char ADC_sample_status (void);
-unsigned int ADC_get_channel (unsigned char channel);
+uint8_t ADC_sample_status (void);
+uint16_t ADC_get_channel (uint8_t channel);
 
 #endif	
 

@@ -25,33 +25,33 @@
 
 typedef struct
 {
-    unsigned char UART_operation;
-    unsigned char UART_tx_length;
-    unsigned char UART_tx_data[UART_MAX_TX];
-    unsigned char UART_rx_length;
-    unsigned char UART_rx_data[UART_MAX_RX];
-    unsigned char UART_rx_done;
-    unsigned char UART_tx_done;
-    unsigned char UART_rx_counter;
-    unsigned char UART_tx_counter;
+    uint8_t UART_operation;
+    uint8_t UART_tx_length;
+    uint8_t UART_tx_data[UART_MAX_TX];
+    uint8_t UART_rx_length;
+    uint8_t UART_rx_data[UART_MAX_RX];
+    uint8_t UART_rx_done;
+    uint8_t UART_tx_done;
+    uint8_t UART_rx_counter;
+    uint8_t UART_tx_counter;
 }STRUCT_UART;
 
-void UART_init (unsigned char channel, unsigned long baud, unsigned char buf_length);
-void UART_putc (unsigned char channel, unsigned char data);
-void UART_putstr (unsigned char channel, char *str);
-void UART_putbuf (unsigned char channel, unsigned char *buf, unsigned char length);
-void UART_putbuf_dma (unsigned char channel, unsigned char *buf, unsigned char length);
-void UART_putc_ascii (unsigned char channel, unsigned char data);
+void UART_init (uint8_t channel, uint32_t baud, uint8_t buf_length);
+void UART_putc (uint8_t channel, uint8_t data);
+void UART_putstr (uint8_t channel, char *str);
+void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length);
+void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length);
+void UART_putc_ascii (uint8_t channel, uint8_t data);
 
-void UART_rx_interrupt (unsigned char channel);
-void UART_tx_interrupt (unsigned char channel);
+void UART_rx_interrupt (uint8_t channel);
+void UART_tx_interrupt (uint8_t channel);
 
-unsigned char UART_rx_done (unsigned char channel);
-unsigned char UART_tx_done (unsigned char channel);
-unsigned char * UART_get_rx_buffer (unsigned char channel);
-void UART_clear_rx_buffer (unsigned char channel);
-void UART_send_tx_buffer (unsigned char channel);
-void UART_fill_tx_buffer (unsigned char channel, unsigned char *data, unsigned char length);
+uint8_t UART_rx_done (uint8_t channel);
+uint8_t UART_tx_done (uint8_t channel);
+uint8_t * UART_get_rx_buffer (uint8_t channel);
+void UART_clear_rx_buffer (uint8_t channel);
+void UART_send_tx_buffer (uint8_t channel);
+void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length);
 
 
 

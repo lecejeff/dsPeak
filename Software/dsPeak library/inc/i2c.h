@@ -1,16 +1,16 @@
 //***************************************************************************//
 // File      : I2C.h
 //
-// Functions :  void I2C_init (unsigned char port, unsigned char mode, unsigned char address);
-//              void I2C_fill_transmit_buffer (unsigned char port, unsigned char *ptr, unsigned char length);
-//              void I2C_master_write (unsigned char port, unsigned char *data, unsigned char length);
-//              void I2C_master_read (unsigned char port, unsigned char *data, unsigned char w_length, unsigned char r_length);
-//              unsigned char I2C_wait (unsigned char port);
-//              unsigned char I2C_read_state (unsigned char port);
-//              unsigned char * I2C_get_rx_buffer (unsigned char port);
-//              unsigned char I2C_rx_done (unsigned char port);
-//              void I2C_change_address (unsigned char adr);
-//              void I2C_clear_rx_buffer (unsigned char port);
+// Functions :  void I2C_init (uint8_t port, uint8_t mode, uint8_t address);
+//              void I2C_fill_transmit_buffer (uint8_t port, uint8_t *ptr, uint8_t length);
+//              void I2C_master_write (uint8_t port, uint8_t *data, uint8_t length);
+//              void I2C_master_read (uint8_t port, uint8_t *data, uint8_t w_length, uint8_t r_length);
+//              uint8_t I2C_wait (uint8_t port);
+//              uint8_t I2C_read_state (uint8_t port);
+//              uint8_t * I2C_get_rx_buffer (uint8_t port);
+//              uint8_t I2C_rx_done (uint8_t port);
+//              void I2C_change_address (uint8_t adr);
+//              void I2C_clear_rx_buffer (uint8_t port);
 //
 // Includes  : general.h
 //
@@ -36,27 +36,27 @@
 
 #define I2C_MODULE_QTY 2
 
-void I2C_init (unsigned char port, unsigned char mode, unsigned char address);
-void I2C_fill_transmit_buffer (unsigned char port, unsigned char *ptr, unsigned char length);
-void I2C_master_write (unsigned char port, unsigned char *data, unsigned char length);
-void I2C_master_read (unsigned char port, unsigned char *data, unsigned char w_length, unsigned char r_length);
-unsigned char I2C_wait (unsigned char port);
-unsigned char I2C_read_state (unsigned char port);
-unsigned char * I2C_get_rx_buffer (unsigned char port);
-unsigned char I2C_rx_done (unsigned char port);
-void I2C_change_address (unsigned char adr);
-void I2C_clear_rx_buffer (unsigned char port);
+void I2C_init (uint8_t port, uint8_t mode, uint8_t address);
+void I2C_fill_transmit_buffer (uint8_t port, uint8_t *ptr, uint8_t length);
+void I2C_master_write (uint8_t port, uint8_t *data, uint8_t length);
+void I2C_master_read (uint8_t port, uint8_t *data, uint8_t w_length, uint8_t r_length);
+uint8_t I2C_wait (uint8_t port);
+uint8_t I2C_read_state (uint8_t port);
+uint8_t * I2C_get_rx_buffer (uint8_t port);
+uint8_t I2C_rx_done (uint8_t port);
+void I2C_change_address (uint8_t adr);
+void I2C_clear_rx_buffer (uint8_t port);
 
 typedef struct
 {   
-    unsigned char i2c_tx_counter;
-    unsigned char i2c_rx_counter;
-    unsigned char i2c_tx_data[EEPROM_TX_LENGTH];
-    unsigned char i2c_rx_data[EEPROM_RX_LENGTH];
-    unsigned char i2c_int_counter;
-    unsigned char i2c_write_length;
-    unsigned char i2c_read_length;
-    unsigned char i2c_done;
-    unsigned char i2c_message_mode;
+    uint8_t i2c_tx_counter;
+    uint8_t i2c_rx_counter;
+    uint8_t i2c_tx_data[EEPROM_TX_LENGTH];
+    uint8_t i2c_rx_data[EEPROM_RX_LENGTH];
+    uint8_t i2c_int_counter;
+    uint8_t i2c_write_length;
+    uint8_t i2c_read_length;
+    uint8_t i2c_done;
+    uint8_t i2c_message_mode;
 }STRUCT_I2C;
 #endif	/* I2C_H */

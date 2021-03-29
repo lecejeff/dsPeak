@@ -1,15 +1,15 @@
 //***************************************************************************//
 // File      : spi.c
 //
-// Functions :  void SPI_init (unsigned char mode, unsigned char ppre, unsigned char spre, unsigned char channel); 
-//              void SPI_master_write (unsigned char *data, unsigned char length, unsigned char chip, unsigned char channel);
-//              void SPI_fill_transmit_buffer (unsigned char * data, unsigned char length, unsigned char channel);
-//              unsigned char SPI_rx_done (unsigned char channel);
-//              unsigned char * SPI_get_rx_buffer (unsigned char channel);
-//              void SPI_master_deassert_cs (unsigned char chip);
-//              void SPI_master_assert_cs (unsigned char chip);
+// Functions :  void SPI_init (uint8_t mode, uint8_t ppre, uint8_t spre, uint8_t channel); 
+//              void SPI_master_write (uint8_t *data, uint8_t length, uint8_t chip, uint8_t channel);
+//              void SPI_fill_transmit_buffer (uint8_t * data, uint8_t length, uint8_t channel);
+//              uint8_t SPI_rx_done (uint8_t channel);
+//              uint8_t * SPI_get_rx_buffer (uint8_t channel);
+//              void SPI_master_deassert_cs (uint8_t chip);
+//              void SPI_master_assert_cs (uint8_t chip);
 //              void SPI_slave_initiate (void);
-//              void SPI_clear_rx_buffer (unsigned char channel);
+//              void SPI_clear_rx_buffer (uint8_t channel);
 //
 // Includes  :  spi.h
 //           
@@ -21,18 +21,18 @@
 
 SPI_struct spi_struct[SPI_QTY];
 
-//void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, unsigned char spre)//
+//void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)//
 //Description : Function initializes SPI module on selected MODE with Prim and
 //              secondary prescalers to scale down the clock.
 //              Max Fclk (Write only) -> 15MHz
 //              Full duplex           -> 8MHz
 //
-//Function prototype :  void SPI_init (unsigned char mode, unsigned char ppre, unsigned char spre, unsigned char channel) 
+//Function prototype :  void SPI_init (uint8_t mode, uint8_t ppre, uint8_t spre, uint8_t channel) 
 //
-//Enter params       :  unsigned char mode : SPI MODE (0...3)
-//                      unsigned char ppre : Primary clock prescaler
-//                      unsigned char spre : Secondary clock prescaler
-//                      unsigned char channel : SPI channel
+//Enter params       :  uint8_t mode : SPI MODE (0...3)
+//                      uint8_t ppre : Primary clock prescaler
+//                      uint8_t spre : Secondary clock prescaler
+//                      uint8_t channel : SPI channel
 //
 //Exit params        : None
 //
@@ -40,7 +40,7 @@ SPI_struct spi_struct[SPI_QTY];
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
 //****************************************************************************//
-void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, unsigned char spre) 
+void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre) 
 {    
     switch (channel)
     {
@@ -291,17 +291,17 @@ void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, un
     spi_struct[channel].spi_tx_length = 0;  // 
 }
 
-//void SPI_write (unsigned char *data, unsigned char length, unsigned char chip, unsigned char channel)//
+//void SPI_write (uint8_t *data, uint8_t length, uint8_t chip, uint8_t channel)//
 //Description : Function write specified array of data, of specified length, to
 //              specified chip (define it in SPI.h)
 //              This function is to be used with a MASTER SPI only
 //
-//Function prototype : void SPI_write (unsigned char *data, unsigned char length, unsigned char chip, unsigned char channel)
+//Function prototype : void SPI_write (uint8_t *data, uint8_t length, uint8_t chip, uint8_t channel)
 //
-//Enter params       :  unsigned char *data  : Array of data to write
-//                      unsigned char length : Array length
-//                      unsigned char chip : spi chip to select
-//                      unsigned char channel : SPI_x channel
+//Enter params       :  uint8_t *data  : Array of data to write
+//                      uint8_t length : Array length
+//                      uint8_t chip : spi chip to select
+//                      uint8_t channel : SPI_x channel
 //
 //Exit params        : None
 //
@@ -309,9 +309,9 @@ void SPI_init (unsigned char channel, unsigned char mode, unsigned char ppre, un
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
 //****************************************************************************//
-void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char length, unsigned char chip)
+void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip)
 {
-    unsigned char i = 0;
+    uint8_t i = 0;
     if (channel == SPI_1)                   
     {
         while(IEC0bits.SPI1IE);             // Wait for previous int to be done 
@@ -381,12 +381,12 @@ void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char
     }    
 }
 
-//*****************void SPI_deassert_cs (unsigned char chip)******************//
+//*****************void SPI_deassert_cs (uint8_t chip)******************//
 //Description : Function deassert spi /CS to specified chip
 //
-//Function prototype : void SPI_deassert_cs (unsigned char chip)
+//Function prototype : void SPI_deassert_cs (uint8_t chip)
 //
-//Enter params       : unsigned char chip : chip to deassert /CS
+//Enter params       : uint8_t chip : chip to deassert /CS
 //
 //Exit params        : None
 //
@@ -394,7 +394,7 @@ void SPI_master_write (unsigned char channel, unsigned char *data, unsigned char
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
 //****************************************************************************//
-void SPI_master_deassert_cs (unsigned char chip)
+void SPI_master_deassert_cs (uint8_t chip)
 {
    switch (chip)            // Upon switch case 
    {
@@ -424,12 +424,12 @@ void SPI_master_deassert_cs (unsigned char chip)
    }    
 }
 
-//*********************void SPI_assert_cs (unsigned char chip)****************//
+//*********************void SPI_assert_cs (uint8_t chip)****************//
 //Description : Function assert spi /CS to specified chip
 //
-//Function prototype : void SPI_assert_cs (unsigned char chip)
+//Function prototype : void SPI_assert_cs (uint8_t chip)
 //
-//Enter params       : unsigned char chip : chip to assert /CS
+//Enter params       : uint8_t chip : chip to assert /CS
 //
 //Exit params        : None
 //
@@ -437,7 +437,7 @@ void SPI_master_deassert_cs (unsigned char chip)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
 //****************************************************************************//
-void SPI_master_assert_cs (unsigned char chip)
+void SPI_master_assert_cs (uint8_t chip)
 {
    switch (chip)            // Upon switch case 
    {
@@ -467,44 +467,44 @@ void SPI_master_assert_cs (unsigned char chip)
    }    
 }
 
-//**********unsigned char * SPI_get_rx_buffer (unsigned char channel)************//
+//**********uint8_t * SPI_get_rx_buffer (uint8_t channel)************//
 //Description : Function returns a pointer to the 1st element of the spi rx buffer
 //
-//Function prototype : unsigned char * SPI_get_rx_buffer (unsigned char channel)
+//Function prototype : uint8_t * SPI_get_rx_buffer (uint8_t channel)
 //
-//Enter params       : unsigned char channel : SPI_x channel                   
+//Enter params       : uint8_t channel : SPI_x channel                   
 //
-//Exit params        : unsigned char * : pointer to 1st element location
+//Exit params        : uint8_t * : pointer to 1st element location
 //
-//Function call      : unsigned char * = SPI_get_rx_buffer(SPI_2); 
+//Function call      : uint8_t * = SPI_get_rx_buffer(SPI_2); 
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
 //****************************************************************************//
-unsigned char * SPI_get_rx_buffer (unsigned char channel)
+uint8_t * SPI_get_rx_buffer (uint8_t channel)
 {
     return(&spi_struct[channel].spi_rx_data[0]);// Return array pointer on 1st element
 }
 
-unsigned char SPI_get_rx_buffer_index (unsigned char channel, unsigned char index)
+uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index)
 {
     return spi_struct[channel].spi_rx_data[index];
 }
 
-//*********unsigned char SPI_rx_done (unsigned char channel)************//
+//*********uint8_t SPI_rx_done (uint8_t channel)************//
 //Description : Function check is SPI transfer is over, meaning the SPI bus is free 
 //
-//Function prototype : unsigned char SPI_rx_done (unsigned char channel)
+//Function prototype : uint8_t SPI_rx_done (uint8_t channel)
 //
-//Enter params       : unsigned char channel : SPI_x channel
+//Enter params       : uint8_t channel : SPI_x channel
 //
-//Exit params        : unsigned char 0 : Bus is BUSY
+//Exit params        : uint8_t 0 : Bus is BUSY
 //                                   1 : Bus is FREE
 //
-//Function call      : unsigned char = SPI_rx_done(SPI_1); 
+//Function call      : uint8_t = SPI_rx_done(SPI_1); 
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
 //****************************************************************************//
-unsigned char SPI_txfer_done (unsigned char channel)
+uint8_t SPI_txfer_done (uint8_t channel)
 {
     if (spi_struct[channel].spi_txfer_done)
     {
@@ -514,12 +514,12 @@ unsigned char SPI_txfer_done (unsigned char channel)
     else return 0;
 }
 
-//************void SPI_clear_rx_buffer (unsigned char channel)****************//
+//************void SPI_clear_rx_buffer (uint8_t channel)****************//
 //Description : Function clears the RX buffer of the specified SPI channel
 //
-//Function prototype : void SPI_clear_rx_buffer (unsigned char channel)
+//Function prototype : void SPI_clear_rx_buffer (uint8_t channel)
 //
-//Enter params       : unsigned char channel : SPI_x channel
+//Enter params       : uint8_t channel : SPI_x channel
 //
 //Exit params        : None
 //
@@ -527,9 +527,9 @@ unsigned char SPI_txfer_done (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
 //****************************************************************************//
-void SPI_flush_buffer (unsigned char channel)
+void SPI_flush_buffer (uint8_t channel)
 {
-    unsigned char i = 0;
+    uint8_t i = 0;
     for (; i < SPI_BUF_LENGTH; i++)
     {
         spi_struct[channel].spi_rx_data[i] = 0;

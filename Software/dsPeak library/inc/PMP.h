@@ -18,20 +18,20 @@
 #define PMP_CS2_STROBE      LATKbits.LATK12
 #define PMP_PMBE_STROBE     LATKbits.LATK13
 #define PMP_WR_STROBE       LATKbits.LATK14
-#define PMP_RD_STROBE       LATKbits.LATK13
+#define PMP_RD_STROBE       LATKbits.LATK15
 
 typedef struct
 {
-    unsigned char old_cmd;
-    unsigned char new_cmd;
-    unsigned int address;
-    unsigned char state;
-    unsigned char chip_select;
+    uint8_t old_cmd;
+    uint8_t new_cmd;
+    uint16_t address;
+    uint8_t state;
+    uint8_t chip_select;
 }STRUCT_PMP;
 
-void PMP_init (unsigned char mode);
-void PMP_write (unsigned char mode, unsigned int adr, unsigned int data);
-unsigned int PMP_read (unsigned char mode, unsigned int adr);
+void PMP_init (uint8_t mode);
+void PMP_write_single (uint8_t mode, uint16_t adr, uint16_t data);
+uint16_t PMP_read_single (uint8_t mode, uint16_t adr);
 void PMP_pins_init (void);
 void PMP_set_bus_output (void);
 void PMP_set_bus_input (void);

@@ -1,16 +1,16 @@
 //***************************************************************************//
 // File      : I2C.c
 //
-// Functions :  void I2C_init (unsigned char port, unsigned char mode, unsigned char address);
-//              void I2C_fill_transmit_buffer (unsigned char port, unsigned char *ptr, unsigned char length);
-//              void I2C_master_write (unsigned char port, unsigned char *data, unsigned char length);
-//              void I2C_master_read (unsigned char port, unsigned char *data, unsigned char w_length, unsigned char r_length);
-//              unsigned char I2C_wait (unsigned char port);
-//              unsigned char I2C_read_state (unsigned char port);
-//              unsigned char * I2C_get_rx_buffer (unsigned char port);
-//              unsigned char I2C_rx_done (unsigned char port);
-//              void I2C_change_address (unsigned char adr);
-//              void I2C_clear_rx_buffer (unsigned char port);
+// Functions :  void I2C_init (uint8_t port, uint8_t mode, uint8_t address);
+//              void I2C_fill_transmit_buffer (uint8_t port, uint8_t *ptr, uint8_t length);
+//              void I2C_master_write (uint8_t port, uint8_t *data, uint8_t length);
+//              void I2C_master_read (uint8_t port, uint8_t *data, uint8_t w_length, uint8_t r_length);
+//              uint8_t I2C_wait (uint8_t port);
+//              uint8_t I2C_read_state (uint8_t port);
+//              uint8_t * I2C_get_rx_buffer (uint8_t port);
+//              uint8_t I2C_rx_done (uint8_t port);
+//              void I2C_change_address (uint8_t adr);
+//              void I2C_clear_rx_buffer (uint8_t port);
 //
 // Includes  :  i2c.h
 //           
@@ -25,16 +25,16 @@
 STRUCT_I2C i2c_struct[I2C_MODULE_QTY];
 
 
-//void I2C_init (unsigned char port, unsigned char mode, unsigned char address)//
+//void I2C_init (uint8_t port, uint8_t mode, uint8_t address)//
 //Description : Function initializes the i2c module in slave or master mode
 //              Since there are 2 I2C modules in the dsPIC, 2 instances of a
 //              structure holding all the variables for each module are created
 //
-//Function prototype : void I2C_init (unsigned char port, unsigned char mode, unsigned char address)
+//Function prototype : void I2C_init (uint8_t port, uint8_t mode, uint8_t address)
 //
-//Enter params       : unsigned char port : Specify the I2C port to initialize
-//                   : unsigned char mode : Specify the working mode for the I2C port, slave or master
-//                   : unsigned char address : Specify the slave address if using the slave mode, otherwise put 0
+//Enter params       : uint8_t port : Specify the I2C port to initialize
+//                   : uint8_t mode : Specify the working mode for the I2C port, slave or master
+//                   : uint8_t address : Specify the slave address if using the slave mode, otherwise put 0
 //
 //Exit params        : None
 //
@@ -42,7 +42,7 @@ STRUCT_I2C i2c_struct[I2C_MODULE_QTY];
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-void I2C_init (unsigned char port, unsigned char mode, unsigned char address)
+void I2C_init (uint8_t port, uint8_t mode, uint8_t address)
 {   
     // Slave initialization
     if (port == I2C_port_1)
@@ -124,20 +124,20 @@ void I2C_init (unsigned char port, unsigned char mode, unsigned char address)
 }
 
 
-//************unsigned char I2C_rx_done (unsigned char port)******************//
+//************uint8_t I2C_rx_done (uint8_t port)******************//
 //Description : Function returns I2C bus state
 //
-//Function prototype : unsigned char I2C_rx_done (unsigned char port)
+//Function prototype : uint8_t I2C_rx_done (uint8_t port)
 //
-//Enter params       : unsigned char port : I2C port number
+//Enter params       : uint8_t port : I2C port number
 //
-//Exit params        : unsigned char : bus state
+//Exit params        : uint8_t : bus state
 //
 //Function call      : int_state = I2C_rx_done(I2C_port_2);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-unsigned char I2C_rx_done (unsigned char port)
+uint8_t I2C_rx_done (uint8_t port)
 {
     if (i2c_struct[port].i2c_done)      // A transaction was successfully managed
     {
@@ -147,12 +147,12 @@ unsigned char I2C_rx_done (unsigned char port)
     else return 0;
 }
 
-//****************void I2C_clear_rx_buffer (unsigned char port)******************//
+//****************void I2C_clear_rx_buffer (uint8_t port)******************//
 //Description : Function clears I2C receive buffer from specified I2C port
 //
-//Function prototype : void I2C_clear_rx_buffer (unsigned char port)
+//Function prototype : void I2C_clear_rx_buffer (uint8_t port)
 //
-//Enter params       : unsigned char port : I2C port number
+//Enter params       : uint8_t port : I2C port number
 //
 //Exit params        : None
 //
@@ -160,23 +160,23 @@ unsigned char I2C_rx_done (unsigned char port)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-void I2C_clear_rx_buffer (unsigned char port)
+void I2C_clear_rx_buffer (uint8_t port)
 {
-    unsigned char i = 0;
+    uint8_t i = 0;
     for (i=0; i<I2C_MSG_LENGTH; i++)
     {
         i2c_struct[port].i2c_rx_data[i] = 0;
     }   
 }
 
-//void I2C_fill_transmit_buffer (unsigned char port, unsigned char *ptr, unsigned char length)//
+//void I2C_fill_transmit_buffer (uint8_t port, uint8_t *ptr, uint8_t length)//
 //Description : Function fills the I2C transmit buffer on SLAVE ONLY operations 
 //
-//Function prototype : void I2C_fill_transmit_buffer (unsigned char port, unsigned char *ptr, unsigned char length)
+//Function prototype : void I2C_fill_transmit_buffer (uint8_t port, uint8_t *ptr, uint8_t length)
 //
-//Enter params       : unsigned char port : I2C port number
-//                   : unsigned char *ptr : pointer to data array
-//                   : unsigned char length : data length in bytes
+//Enter params       : uint8_t port : I2C port number
+//                   : uint8_t *ptr : pointer to data array
+//                   : uint8_t length : data length in bytes
 //
 //Exit params        : None
 //
@@ -184,10 +184,10 @@ void I2C_clear_rx_buffer (unsigned char port)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-void I2C_fill_transmit_buffer (unsigned char port, unsigned char *ptr, unsigned char length)
+void I2C_fill_transmit_buffer (uint8_t port, uint8_t *ptr, uint8_t length)
 {
     // Use this function on slave-only transmission
-    unsigned char i = 0;
+    uint8_t i = 0;
     if (length <= I2C_MSG_LENGTH)       // - 1 since the 1st byte is always the address (slave-only)
     {
         ptr++;                          // skip the 1st byte since its the address (slave-only)
@@ -199,14 +199,14 @@ void I2C_fill_transmit_buffer (unsigned char port, unsigned char *ptr, unsigned 
     }
 }
 
-//void I2C_master_write (unsigned char port, unsigned char *data, unsigned char length)//
+//void I2C_master_write (uint8_t port, uint8_t *data, uint8_t length)//
 //Description : Function writes an I2C message on the specified port
 //              This is an I2C MASTER-only function
 //              This is a blocking function
 //
-//Enter params       : unsigned char port : I2C port number
-//                   : unsigned char *data : pointer to data array
-//                   : unsigned char length : data length in bytes
+//Enter params       : uint8_t port : I2C port number
+//                   : uint8_t *data : pointer to data array
+//                   : uint8_t length : data length in bytes
 //
 //Exit params        : None
 //
@@ -214,9 +214,9 @@ void I2C_fill_transmit_buffer (unsigned char port, unsigned char *ptr, unsigned 
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-void I2C_master_write (unsigned char port, unsigned char *data, unsigned char length)
+void I2C_master_write (uint8_t port, uint8_t *data, uint8_t length)
 {
-    unsigned char i = 0;
+    uint8_t i = 0;
     while(I2C_wait(port));      // Check for disabled interrupt
     for (i=0; i<length; i++)
     {
@@ -242,15 +242,15 @@ void I2C_master_write (unsigned char port, unsigned char *data, unsigned char le
     }
 }
 
-//void I2C_master_read (unsigned char port, unsigned char *data, unsigned char w_length, unsigned char r_length)//
+//void I2C_master_read (uint8_t port, uint8_t *data, uint8_t w_length, uint8_t r_length)//
 //Description : Function reads an I2C message on the specified port
 //              This is an I2C MASTER-only function
 //              This is a blocking function
 //
-//Enter params       : unsigned char port : I2C port number
-//                   : unsigned char *data : pointer to data array
-//                   : unsigned char w_length : write length in bytes
-//                   : unsigned char r_length : read length in bytes
+//Enter params       : uint8_t port : I2C port number
+//                   : uint8_t *data : pointer to data array
+//                   : uint8_t w_length : write length in bytes
+//                   : uint8_t r_length : read length in bytes
 //
 //Exit params        : None
 //
@@ -258,9 +258,9 @@ void I2C_master_write (unsigned char port, unsigned char *data, unsigned char le
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-void I2C_master_read (unsigned char port, unsigned char *data, unsigned char w_length, unsigned char r_length)
+void I2C_master_read (uint8_t port, uint8_t *data, uint8_t w_length, uint8_t r_length)
 {
-    unsigned char i = 0;
+    uint8_t i = 0;
     while(I2C_wait(port));                          // Wait until previous transaction is over
     for (i=0; i<w_length; i++)
     {
@@ -290,20 +290,20 @@ void I2C_master_read (unsigned char port, unsigned char *data, unsigned char w_l
 }
 
 
-//************unsigned char I2C_wait (unsigned char port)*********************//
+//************uint8_t I2C_wait (uint8_t port)*********************//
 //Description : Wait for I2C interrupt to flag down (bus unused))
 //
-//Function prototype : unsigned char I2C_wait (unsigned char port)
+//Function prototype : uint8_t I2C_wait (uint8_t port)
 //
-//Enter params       : unsigned char port : I2C port number
+//Enter params       : uint8_t port : I2C port number
 //
-//Exit params        : unsigned char : bus state
+//Exit params        : uint8_t : bus state
 //
 //Function call      : int_state = I2C_wait(I2C_port_2);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-unsigned char I2C_wait (unsigned char port)
+uint8_t I2C_wait (uint8_t port)
 {
     if (port == I2C_port_1)
     {
@@ -318,20 +318,20 @@ unsigned char I2C_wait (unsigned char port)
     else return 0;
 }
 
-//************unsigned char * I2C_get_rx_buffer (unsigned char port)***************//
+//************uint8_t * I2C_get_rx_buffer (uint8_t port)***************//
 //Description : Return I2C array address (1st element)
 //
-//Function prototype : unsigned char * I2C_get_rx_buffer (void)
+//Function prototype : uint8_t * I2C_get_rx_buffer (void)
 //
 //Enter params       : None
 //
-//Exit params        : unsigned char * : address of 1st element
+//Exit params        : uint8_t * : address of 1st element
 //
 //Function call      : ptr = I2C_get_rx_buffer();
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-unsigned char * I2C_get_rx_buffer (unsigned char port)
+uint8_t * I2C_get_rx_buffer (uint8_t port)
 {
     return &i2c_struct[port].i2c_rx_data[0];
 }
@@ -341,7 +341,7 @@ unsigned char * I2C_get_rx_buffer (unsigned char port)
 // Uncomment this section if I2C1 is used as a slave
 void __attribute__((__interrupt__, no_auto_psv)) _SI2C1Interrupt(void)
 {   
-    unsigned char temp = 0;
+    uint8_t temp = 0;
 
     // Address + W received, write data to slave
     if ((!I2C1STATbits.D_A) && (!I2C1STATbits.R_W))

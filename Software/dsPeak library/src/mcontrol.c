@@ -2,7 +2,7 @@
 STRUCT_MCONTROL m_control[MOTOR_QTY];
 
 
-void MOTOR_init (unsigned char channel, unsigned int speed_fs)
+void MOTOR_init (uint8_t channel, uint16_t speed_fs)
 {
     switch (channel)
     {
@@ -56,27 +56,27 @@ void MOTOR_init (unsigned char channel, unsigned int speed_fs)
     }
 }
 
-unsigned char MOTOR_get_direction (unsigned char channel)
+uint8_t MOTOR_get_direction (uint8_t channel)
 {
     return m_control[channel].direction;
 }
 
-unsigned int MOTOR_get_speed_rpm (unsigned char channel)
+uint16_t MOTOR_get_speed_rpm (uint8_t channel)
 {
     return m_control[channel].actual_rpm;
 }
 
-unsigned int MOTOR_get_setpoint_rpm (unsigned char channel)
+uint16_t MOTOR_get_setpoint_rpm (uint8_t channel)
 {
     return m_control[channel].speed_rpm;
 }
 
-unsigned char MOTOR_get_speed_perc (unsigned char channel)
+uint8_t MOTOR_get_speed_perc (uint8_t channel)
 {
     return m_control[channel].speed_perc;
 }
 
-void MOTOR_drive_perc (unsigned char channel, unsigned char direction, unsigned char perc)
+void MOTOR_drive_perc (uint8_t channel, uint8_t direction, uint8_t perc)
 {
     m_control[channel].direction = direction;
     m_control[channel].speed_perc = perc;     
@@ -94,12 +94,12 @@ void MOTOR_drive_perc (unsigned char channel, unsigned char direction, unsigned 
     }
 }
 
-void MOTOR_set_rpm (unsigned char channel, unsigned int new_rpm)
+void MOTOR_set_rpm (uint8_t channel, uint16_t new_rpm)
 {
     m_control[channel].speed_rpm = new_rpm;
 }
 
-void MOTOR_pid_calc_gains (unsigned char channel)
+void MOTOR_pid_calc_gains (uint8_t channel)
 {
     m_control[channel].pid_T = 1.0 / (double)m_control[channel].pid_fs;
     m_control[channel].p_calc_gain = m_control[channel].pid_p_gain;
@@ -107,12 +107,12 @@ void MOTOR_pid_calc_gains (unsigned char channel)
     m_control[channel].d_calc_gain = m_control[channel].pid_d_gain / m_control[channel].pid_T;
 }
 
-double MOTOR_get_error (unsigned char channel)
+double MOTOR_get_error (uint8_t channel)
 {
     return m_control[channel].error_rpm;
 }
 
-unsigned char MOTOR_drive_pid (unsigned char channel)
+uint8_t MOTOR_drive_pid (uint8_t channel)
 {
     if (m_control[channel].speed_rpm > 0)
     {           
@@ -150,7 +150,7 @@ unsigned char MOTOR_drive_pid (unsigned char channel)
         m_control[channel].d_value = m_control[channel].d_calc_gain * m_control[channel].d_input;
 
         // Compute PID output
-        m_control[channel].pid_out = (unsigned char)(m_control[channel].p_value + m_control[channel].i_term - m_control[channel].d_value);   
+        m_control[channel].pid_out = (uint8_t)(m_control[channel].p_value + m_control[channel].i_term - m_control[channel].d_value);   
            
         if (m_control[channel].pid_out > m_control[channel].pid_high_limit)
         {

@@ -8,6 +8,8 @@
 #ifndef __FT8XX_user_definition_H_
 #define __FT8XX_user_definition_H_
 
+#include <stdint.h>
+
 // Physical mapping of the FT8XX GPIOs excluding the SPI port
 #define FT8XX_nPD_PIN LATBbits.LATB10
 #define FT8XX_nINT_PIN PORTBbits.RB9
@@ -51,13 +53,13 @@
 #define GRADIENT_RGB1   5
 typedef struct
 {
-    unsigned int x0;
-    unsigned int y0;
-    unsigned long rgb0;
-    unsigned int x1;
-    unsigned int y1;
-    unsigned long rgb1;
-    unsigned char touch_tag;
+    uint16_t x0;
+    uint16_t y0;
+    uint32_t rgb0;
+    uint16_t x1;
+    uint16_t y1;
+    uint32_t rgb1;
+    uint8_t touch_tag;
 }STGradient;
 extern STGradient st_Gradient[MAX_GRADIENT_NB];
 #endif
@@ -65,14 +67,14 @@ extern STGradient st_Gradient[MAX_GRADIENT_NB];
 #if MAX_KEYS_NB > 0
 typedef struct
 {
-    unsigned int x;
-    unsigned int y;
-    unsigned int w;
-    unsigned int h;
-    unsigned int f;
-    unsigned int opt;
-    unsigned char len;
-    unsigned char touch_tag;
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+    uint16_t f;
+    uint16_t opt;
+    uint8_t len;
+    uint8_t touch_tag;
     char str[MAX_STR_LEN];
 }STKeys;
 extern STKeys st_Keys[MAX_KEYS_NB];
@@ -89,15 +91,15 @@ extern STKeys st_Keys[MAX_KEYS_NB];
 #define SCROLLBAR_RANGE     7
 typedef struct
 {
-   unsigned int x;
-   unsigned int y;
-   unsigned int w;
-   unsigned int h;
-   unsigned int opt;
-   unsigned int val;
-   unsigned int size;
-   unsigned int range;
-   unsigned char touch_tag;
+   uint16_t x;
+   uint16_t y;
+   uint16_t w;
+   uint16_t h;
+   uint16_t opt;
+   uint16_t val;
+   uint16_t size;
+   uint16_t range;
+   uint8_t touch_tag;
 }STScrollbar;
 extern STScrollbar st_Scrollbar[MAX_SCROLLBAR_NB]; // scroller struct initialization
 #endif
@@ -105,12 +107,12 @@ extern STScrollbar st_Scrollbar[MAX_SCROLLBAR_NB]; // scroller struct initializa
 #if MAX_DIAL_NB > 0
 typedef struct
 {
-   unsigned int x;
-   unsigned int y;
-   unsigned int r;
-   unsigned int opt;
-   unsigned int val;
-   unsigned char touch_tag;
+   uint16_t x;
+   uint16_t y;
+   uint16_t r;
+   uint16_t opt;
+   uint16_t val;
+   uint8_t touch_tag;
 }STDial;
 extern STDial st_Dial[MAX_DIAL_NB]; // dial struct initialization
 #endif
@@ -126,15 +128,15 @@ extern STDial st_Dial[MAX_DIAL_NB]; // dial struct initialization
 #define GAUGE_RANGE     7
 typedef struct
 {
-   unsigned int x;
-   unsigned int y;
-   unsigned int r;
-   unsigned int opt;
-   unsigned int maj;
-   unsigned int min;
-   unsigned int val;
-   unsigned int range;
-   unsigned char touch_tag;
+   uint16_t x;
+   uint16_t y;
+   uint16_t r;
+   uint16_t opt;
+   uint16_t maj;
+   uint16_t min;
+   uint16_t val;
+   uint16_t range;
+   uint8_t touch_tag;
 }STGauge;
 extern STGauge st_Gauge[MAX_GAUGE_NB]; // gauge struct initialization
 #endif
@@ -142,14 +144,14 @@ extern STGauge st_Gauge[MAX_GAUGE_NB]; // gauge struct initialization
 #if MAX_PROGRESS_NB > 0
 typedef struct
 {
-   unsigned int x;
-   unsigned int y;
-   unsigned int w;
-   unsigned int h;
-   unsigned int opt;
-   unsigned int val;
-   unsigned int range;
-   unsigned char touch_tag;
+   uint16_t x;
+   uint16_t y;
+   uint16_t w;
+   uint16_t h;
+   uint16_t opt;
+   uint16_t val;
+   uint16_t range;
+   uint8_t touch_tag;
 }STProgress; 
 extern STProgress st_Progress[MAX_PROGRESS_NB]; // progress struct initialization
 #endif
@@ -157,15 +159,15 @@ extern STProgress st_Progress[MAX_PROGRESS_NB]; // progress struct initializatio
 #if MAX_CLOCK_NB > 0
 typedef struct
 {
-   unsigned int x;
-   unsigned int y;
-   unsigned int r;
-   unsigned int opt;
-   unsigned char h;
-   unsigned char m;
-   unsigned char s;
-   unsigned char ms;
-   unsigned char touch_tag;
+   uint16_t x;
+   uint16_t y;
+   uint16_t r;
+   uint16_t opt;
+   uint8_t h;
+   uint8_t m;
+   uint8_t s;
+   uint8_t ms;
+   uint8_t touch_tag;
 }STClock;
 extern STClock st_Clock[MAX_CLOCK_NB]; // clock struct initialization 
 #endif   
@@ -173,15 +175,15 @@ extern STClock st_Clock[MAX_CLOCK_NB]; // clock struct initialization
 #if MAX_TOGGLE_NB > 0
 typedef struct
 {
-   unsigned int x1;
-   unsigned int y1;
-   unsigned int w;
-   unsigned int f;
-   unsigned int opt;
-   unsigned char len;
+   uint16_t x1;
+   uint16_t y1;
+   uint16_t w;
+   uint16_t f;
+   uint16_t opt;
+   uint8_t len;
    char str[MAX_STR_LEN];
-   unsigned int state;
-   unsigned char touch_tag;
+   uint16_t state;
+   uint8_t touch_tag;
 }STToggle;
 extern STToggle st_Toggle[MAX_TOGGLE_NB]; // toggle struct initialization
 #endif  
@@ -189,12 +191,12 @@ extern STToggle st_Toggle[MAX_TOGGLE_NB]; // toggle struct initialization
 #if MAX_RECT_NB > 0
 typedef struct
 {
-    unsigned int x1;
-    unsigned int y1;
-    unsigned int x2;
-    unsigned int y2;
-    unsigned int w;
-    unsigned char touch_tag;
+    uint16_t x1;
+    uint16_t y1;
+    uint16_t x2;
+    uint16_t y2;
+    uint16_t w;
+    uint8_t touch_tag;
 }STRectangle;
 extern STRectangle st_Rectangle[MAX_RECT_NB]; // rectangle struct initialization 
 #endif
@@ -208,16 +210,16 @@ extern STRectangle st_Rectangle[MAX_RECT_NB]; // rectangle struct initialization
 #define BUTTON_OPT      5
 typedef struct
 {
-    unsigned int x;
-    unsigned int y;
-    unsigned int w;
-    unsigned int h;
-    unsigned int font;
-    unsigned int opt;
-    unsigned char len;
-    unsigned char state;
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+    uint16_t font;
+    uint16_t opt;
+    uint8_t len;
+    uint8_t state;
     char str[MAX_STR_LEN];
-    unsigned char touch_tag;
+    uint8_t touch_tag;
 }STButton;
 extern STButton st_Button[MAX_BUTTON_NB]; // button struct initialization
 #endif
@@ -230,12 +232,12 @@ extern STButton st_Button[MAX_BUTTON_NB]; // button struct initialization
 #define NUMBER_VAL      4
 typedef struct
 {
-    unsigned int x;
-    unsigned int y;
-    unsigned int font;
-    unsigned int opt;
-    unsigned long num;
-    unsigned char touch_tag;
+    uint16_t x;
+    uint16_t y;
+    uint16_t font;
+    uint16_t opt;
+    uint32_t num;
+    uint8_t touch_tag;
 }STNumber;
 extern STNumber st_Number[MAX_NUMBER_NB]; // number struct initialization
 #endif
@@ -243,13 +245,13 @@ extern STNumber st_Number[MAX_NUMBER_NB]; // number struct initialization
 #if MAX_TEXT_NB > 0
 typedef struct
 {
-    unsigned int x;
-    unsigned int y;
-    unsigned int font;
-    unsigned int opt;
-    unsigned char len;
+    uint16_t x;
+    uint16_t y;
+    uint16_t font;
+    uint16_t opt;
+    uint8_t len;
     char str[MAX_STR_LEN];
-    unsigned char touch_tag;
+    uint8_t touch_tag;
 }STText;
 extern STText st_Text[MAX_TEXT_NB]; // text struct initialization
 #endif
@@ -264,14 +266,14 @@ extern STText st_Text[MAX_TEXT_NB]; // text struct initialization
 #define SLIDER_RANGE    6
 typedef struct
 {
-    unsigned int x;
-    unsigned int y;
-    unsigned int w;
-    unsigned int h;
-    unsigned int opt;
-    unsigned int val;
-    unsigned int range;
-    unsigned char touch_tag;
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+    uint16_t opt;
+    uint16_t val;
+    uint16_t range;
+    uint8_t touch_tag;
 }STSlider;
 extern STSlider st_Slider[MAX_SLIDER_NB]; // slider struct initialization
 #endif
@@ -279,33 +281,33 @@ extern STSlider st_Slider[MAX_SLIDER_NB]; // slider struct initialization
 #if MAX_WINDOW_NB > 0
 typedef struct
 {
-   unsigned char ucNewState;
-   unsigned char ucOldState;
-   unsigned char ucCntr;
-   unsigned char ucTouchGood;
-   unsigned int x1;
-   unsigned int y1;
-   unsigned int x2;
-   unsigned int y2; 
-   unsigned char ucReadOK; 
-   unsigned char one_touch;
-   unsigned char touch_tag;
+   uint8_t ucNewState;
+   uint8_t ucOldState;
+   uint8_t ucCntr;
+   uint8_t ucTouchGood;
+   uint16_t x1;
+   uint16_t y1;
+   uint16_t x2;
+   uint16_t y2; 
+   uint8_t ucReadOK; 
+   uint8_t one_touch;
+   uint8_t touch_tag;
 }STWindow;
 extern STWindow st_Window[MAX_WINDOW_NB]; // window struct initialization
 #endif
 
 typedef struct
 {
-    unsigned int X0;
-    unsigned int Y0;
-    unsigned int X1;
-    unsigned int Y1;
-    unsigned int X2;
-    unsigned int Y2;
-    unsigned int X3;
-    unsigned int Y3;
-    unsigned int X4;
-    unsigned int Y4;    
+    uint16_t X0;
+    uint16_t Y0;
+    uint16_t X1;
+    uint16_t Y1;
+    uint16_t X2;
+    uint16_t Y2;
+    uint16_t X3;
+    uint16_t Y3;
+    uint16_t X4;
+    uint16_t Y4;    
 }STTouch;
 extern STTouch Touch_data;
 //

@@ -1,13 +1,13 @@
 #include "CAN.h"
 #include "DMA.h"
 
-__eds__ unsigned int CAN_MSG_BUFFER[32][8] __attribute__((eds, space(dma), aligned(32*16)));
+__eds__ uint16_t CAN_MSG_BUFFER[32][8] __attribute__((eds, space(dma), aligned(32*16)));
 
 // Return 0 on successful configuration
 // Return 1 on error
-unsigned char CAN_init (CAN_struct *node)
+uint8_t CAN_init (CAN_struct *node)
 {
-    unsigned char i = 0;
+    uint8_t i = 0;
     for (; i < 8; i++)
     {
         CAN_MSG_BUFFER[0][i] = 0;
@@ -62,7 +62,7 @@ unsigned char CAN_init (CAN_struct *node)
             DMA_init(DMA_CH1);
             DMA1CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
             DMA1REQ = DMAREQ_ECAN1TX;
-            DMA1PAD = (volatile unsigned int)&C1TXD;
+            DMA1PAD = (volatile uint16_t)&C1TXD;
             DMA1STAH = __builtin_dmapage(CAN_MSG_BUFFER);
             DMA1STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
             DMA1CNT = 0x7;        // 8 word transfers 
@@ -95,7 +95,7 @@ unsigned char CAN_init (CAN_struct *node)
 
 // Returns 0 on successful execution
 // Returns 0xFF on error
-unsigned char CAN_set_mode (CAN_struct *node, unsigned char mode)
+uint8_t CAN_set_mode (CAN_struct *node, uint8_t mode)
 {
     node->old_mode = node->mode;
     node->mode = mode;  
@@ -119,7 +119,7 @@ unsigned char CAN_set_mode (CAN_struct *node, unsigned char mode)
 
 // Returns 0,1,2,3,4 or 7 in case of successful operation
 // Returns 0xFF on error
-unsigned char CAN_get_mode (CAN_struct *node)
+uint8_t CAN_get_mode (CAN_struct *node)
 {
     switch (node->channel)
     {
@@ -137,7 +137,7 @@ unsigned char CAN_get_mode (CAN_struct *node)
     }
 }
 
-unsigned char CAN_tx_msg (CAN_struct *node)
+uint8_t CAN_tx_msg (CAN_struct *node)
 {
     if (CAN_get_mode(node)!=CAN_MODE_NORMAL)
     {
@@ -148,10 +148,10 @@ unsigned char CAN_tx_msg (CAN_struct *node)
     CAN_MSG_BUFFER[0][1] = node->EID & 0x3FFC0;
     CAN_MSG_BUFFER[0][2] = (((node->EID & 0x0003F) << 10) | (node->RTR << 9)
                             | (node->RB1 << 8) | (node->RB0 << 4) | (node->DLC));
-    CAN_MSG_BUFFER[0][3] = (unsigned int)((node->can_payload[1]<<8) | node->can_payload[0]);
-    CAN_MSG_BUFFER[0][4] = (unsigned int)((node->can_payload[3]<<8) | node->can_payload[2]);
-    CAN_MSG_BUFFER[0][5] = (unsigned int)((node->can_payload[5]<<8) | node->can_payload[4]);
-    CAN_MSG_BUFFER[0][6] = (unsigned int)((node->can_payload[7]<<8) | node->can_payload[6]);
+    CAN_MSG_BUFFER[0][3] = (uint16_t)((node->can_payload[1]<<8) | node->can_payload[0]);
+    CAN_MSG_BUFFER[0][4] = (uint16_t)((node->can_payload[3]<<8) | node->can_payload[2]);
+    CAN_MSG_BUFFER[0][5] = (uint16_t)((node->can_payload[5]<<8) | node->can_payload[4]);
+    CAN_MSG_BUFFER[0][6] = (uint16_t)((node->can_payload[7]<<8) | node->can_payload[6]);
     CAN_MSG_BUFFER[0][7] = 0;
                  
     C1TR01CONbits.TXREQ0 = 0x1; 
@@ -159,7 +159,7 @@ unsigned char CAN_tx_msg (CAN_struct *node)
     return 0;
 }
 
-unsigned int CAN_get_tx_err_cnt (CAN_struct *node)
+uint16_t CAN_get_tx_err_cnt (CAN_struct *node)
 {
     switch (node->channel)
     {
@@ -177,7 +177,7 @@ unsigned int CAN_get_tx_err_cnt (CAN_struct *node)
     }
 }
 
-unsigned int CAN_get_rx_err_cnt (CAN_struct *node)
+uint16_t CAN_get_rx_err_cnt (CAN_struct *node)
 {
     switch (node->channel)
     {

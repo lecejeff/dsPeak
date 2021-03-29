@@ -4,8 +4,8 @@
 // Functions :  void ADC_init (void);
 //              void ADC_start (void);
 //              void ADC_stop (void);
-//              unsigned char ADC_sample_status (void);
-//              unsigned int ADC_get_channel (unsigned char channel);
+//              uint8_t ADC_sample_status (void);
+//              uint16_t ADC_get_channel (uint8_t channel);
 //
 // Includes  :  ADC.h
 //           
@@ -72,7 +72,7 @@ void ADC_init (void)
     // Initialize ADC1 core logic for 12-bits
     // and automatic sequential sampling of the 4 inputs
 //    AD1CON1bits.AD12B = 1;  // Select 12 bits resolution
-//    AD1CON1bits.FORM = 0;   // Select unsigned integer format
+//    AD1CON1bits.FORM = 0;   // Select uint16_teger format
 //    AD1CON1bits.SSRC = 7;   // Internal counter ends conversion (auto-convert)
 //    AD1CON1bits.SSRCG = 0;  // 
 //    AD1CON1bits.ASAM = 1;   // Automatic sampling
@@ -127,20 +127,20 @@ void ADC_stop (void)
     IFS0bits.AD1IF = 0;     // Clear flag value     
 }
 
-//***************unsigned char ADC_sample_status (void)***********************//
+//***************uint8_t ADC_sample_status (void)***********************//
 //Description : Function returns 1 when a new ADC sample is ready to be read
 //
-//Function prototype : unsigned char ADC_sample_status (void)
+//Function prototype : uint8_t ADC_sample_status (void)
 //
 //Enter params       : None
 //
-//Exit params        : unsigned char : sample status (1 = ready)
+//Exit params        : uint8_t : sample status (1 = ready)
 //
-//Function call      : unsigned char = ADC_sample_status();
+//Function call      : uint8_t = ADC_sample_status();
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020 
 //****************************************************************************//
-unsigned char ADC_sample_status (void)
+uint8_t ADC_sample_status (void)
 {
 //    if (ADC_struct.sample_ready == ADC_SAMPLE_READY)
 //    {
@@ -151,20 +151,20 @@ unsigned char ADC_sample_status (void)
     return 0;
 }
 
-//**********unsigned int ADC_get_channel (unsigned char channel)**************//
+//**********uint16_t ADC_get_channel (uint8_t channel)**************//
 //Description : Function returns the value of the selected ADC channel
 //
-//Function prototype : unsigned int ADC_get_channel (unsigned char channel)
+//Function prototype : uint16_t ADC_get_channel (uint8_t channel)
 //
-//Enter params       : unsigned char channel : ADC channel to read (see ADC.h)
+//Enter params       : uint8_t channel : ADC channel to read (see ADC.h)
 //
-//Exit params        : unsigned int : sample value between 0 and 2^12 - 1
+//Exit params        : uint16_t : sample value between 0 and 2^12 - 1
 //
-//Function call      : unsigned int = ADC_get_channel(ADC_MOTOR_1_CHANNEL);
+//Function call      : uint16_t = ADC_get_channel(ADC_MOTOR_1_CHANNEL);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020 
 //****************************************************************************//
-unsigned int ADC_get_channel (unsigned char channel)
+uint16_t ADC_get_channel (uint8_t channel)
 {
     switch(channel)
     {
@@ -206,10 +206,10 @@ void __attribute__((__interrupt__, no_auto_psv))_AD1Interrupt(void)
 //    if (++ADC_avg.average_counter > ADC_avg.average_length)
 //    {
 //        ADC_avg.average_counter = 0;
-//        ADC_struct.motor_1_current = (unsigned int)(ADC_avg.motor1_average / ADC_avg.average_length);
-//        ADC_struct.motor_2_current = (unsigned int)(ADC_avg.motor2_average / ADC_avg.average_length);
-//        ADC_struct.analog_input = (unsigned int)(ADC_avg.analog_in_average / ADC_avg.average_length);
-//        ADC_struct.battery_voltage = (unsigned int)(ADC_avg.battery_monitor_average / ADC_avg.average_length);
+//        ADC_struct.motor_1_current = (uint16_t)(ADC_avg.motor1_average / ADC_avg.average_length);
+//        ADC_struct.motor_2_current = (uint16_t)(ADC_avg.motor2_average / ADC_avg.average_length);
+//        ADC_struct.analog_input = (uint16_t)(ADC_avg.analog_in_average / ADC_avg.average_length);
+//        ADC_struct.battery_voltage = (uint16_t)(ADC_avg.battery_monitor_average / ADC_avg.average_length);
 //        ADC_avg.motor1_average = 0;
 //        ADC_avg.motor2_average = 0;
 //        ADC_avg.analog_in_average = 0;

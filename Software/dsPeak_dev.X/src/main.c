@@ -35,7 +35,7 @@
 
 // FPOR
 #pragma config FPWRT = PWR128           // Power-on Reset Timer Value Select bits (128ms)
-#pragma config BOREN = ON               // Brown-out Reset (BOR) Detection Enable bit (BOR is enabled)
+#pragma config BOREN = ON               // Brown-out Reset (BOR) Detection Enable bit (BOR is enabled )
 #pragma config ALTI2C1 = ON             // Alternate I2C pins for I2C1 (ASDA1/ASCK1 pins are selected as the I/O pins for I2C1)
 #pragma config ALTI2C2 = ON             // Alternate I2C pins for I2C2 (I2C2 mapped to ASDA2/ASCL2 pins)
 
@@ -68,41 +68,43 @@
 
 CAN_struct CAN_native;
 
-unsigned char i = 0;
-unsigned char state = 0;
-unsigned int counter_sec = 0;
-unsigned int counter_5sec = 0;
-unsigned int counter_timer1 = 0;
-unsigned long rgb_r = 0, rgb_g = 0, rgb_b = 0;
-unsigned int counter_ms = 0;
-unsigned int counter_100us = 0;
-unsigned int hour_bcd = 0, minute_bcd = 0, second_bcd = 0;
-unsigned char buf[128] = {0};
-unsigned char test_spi[8] = {'J', 'e', 't', 'a', 'i', 'm', 'e', '!'};
-char *str = "-- Testing a full 64 bytes transfer from DPSRAM->DMA->USART3!\r\n";
-unsigned int test = 1;
-unsigned char speed = 20;
+uint8_t i = 0;
+uint8_t state = 0;
+uint16_t counter_sec = 0;
+uint16_t counter_5sec = 0;
+uint16_t counter_timer1 = 0;
+uint32_t rgb_r = 0, rgb_g = 0, rgb_b = 0;
+uint16_t counter_ms = 0;
+uint16_t counter_100us = 0;
+uint16_t hour_bcd = 0, minute_bcd = 0, second_bcd = 0;
+uint8_t buf[128] = {0};
+uint8_t test_spi[8] = {'J', 'e', 't', 'a', 'i', 'm', 'e', '!'};
+const char *str = "-- Testing a full 64 bytes transfer from DPSRAM->DMA->USART3!\r\n";
+uint16_t test = 1;
+uint8_t speed = 20;
 char new_pid_out1 = 0, new_pid_out2 = 0;
-unsigned int speed_rpm_table[5] = {30, 30, 30, 30, 30};
+uint16_t speed_rpm_table[5] = {30, 30, 30, 30, 30};
 
 RTCC_time clock;
-unsigned char hour, minute, second;
+uint8_t hour, minute, second;
 int error_rpm;
-unsigned int setpoint_rpm;
-unsigned int actual_rpm;
-unsigned char high, low;
-unsigned char rs485_state = 0;
-unsigned char pid_out = 0;
-unsigned int color = 0;
-unsigned char color_counter = 0;
-unsigned long color_888 = 0;
+uint16_t setpoint_rpm;
+uint16_t actual_rpm;
+uint8_t high, low;
+uint8_t rs485_state = 0;
+uint8_t pid_out = 0;
+uint16_t color = 0;
+uint8_t color_counter = 0;
+uint32_t color_888 = 0;
 
-unsigned int RGB_PWM_frequency = 60;
-unsigned char RGB_PWM_counter = 0;
-unsigned char RGB_R_duty = 0;
-unsigned char RGB_G_duty = 0;
-unsigned char RGB_B_duty = 0;
-unsigned char RGB_test = 0;
+uint16_t RGB_PWM_frequency = 60;
+uint8_t RGB_PWM_counter = 0;
+uint8_t RGB_R_duty = 0;
+uint8_t RGB_G_duty = 0;
+uint8_t RGB_B_duty = 0;
+uint8_t RGB_test = 0;
+uint16_t mem_adr[10] = {0x1010, 0x2020, 0x3030, 0x4040, 0x5050, 0x6060, 0x7070, 0x8080, 0x9090, 0xA0A0};
+uint16_t mem_dat[10] = {0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777, 0x8888, 0x9999, 0xAAAA};
 int main() 
 {
     DSPIC_init();
@@ -187,9 +189,9 @@ int main()
     FT8XX_write_bitmap(image, image_lut, 8160, 0);
 #endif
     
-    //UART_putbuf_dma(UART_3, (unsigned char *)"dsPeak - UART3 test 12345ABCDEF", strlen("dsPeak - UART3 test 12345ABCDEF"));
+    //UART_putbuf_dma(UART_3, (uint8_t *)"dsPeak - UART3 test 12345ABCDEF", strlen("dsPeak - UART3 test 12345ABCDEF"));
     
-    RGB_LED_set_color(0xFFFFFF);
+    RGB_LED_set_color(0x000000);
     
     MOTOR_set_rpm(MOTOR_1, speed_rpm_table[0]);
     MOTOR_set_rpm(MOTOR_2, speed_rpm_table[0]);
@@ -204,19 +206,26 @@ int main()
     TIMER_init(TIMER_8, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
     TIMER_init(TIMER_9, TIMER_PRESCALER_256, 60000);
 
+    PMP_init(PMP_MODE_SRAM);
+    for (i=0; i<10; i++)
+    {
+        PMP_write_single(PMP_MODE_SRAM, mem_adr[i], mem_dat[i]);
+        if (PMP_read_single(PMP_MODE_SRAM, mem_adr[i]) != mem_dat[i])
+        {
+            LATHbits.LATH9 = !LATHbits.LATH9;
+        }   
+        else
+        {
+            LATHbits.LATH10 = !LATHbits.LATH10;
+        }  
+        __delay_ms(100);
+    }
+    
     ST7735_init();
     color = RGB888_to_RGB565(0x00FF00);
     ST7735_Clear(color);
     
-    PMP_write(PMP_MODE_SRAM, 0x0001, 0x009C);
-    if (PMP_read(PMP_MODE_SRAM, 0x0001) != 0x009C)
-    {
-        LATHbits.LATH9 = !LATHbits.LATH9;
-    }   
-    else
-    {
-        LATHbits.LATH10 = !LATHbits.LATH10;
-    }
+
         
     TIMER_start(TIMER_1);
     TIMER_start(TIMER_2);
@@ -315,8 +324,8 @@ int main()
         
         if (TIMER_get_state(TIMER_3, TIMER_INT_STATE) == 1)
         { 
-            RGB_LED_set_color(RGB_test);
-            if (++RGB_test > 255){RGB_test = 0;}            
+//            RGB_LED_set_color(0x000000);
+//            if (++RGB_test > 255){RGB_test = 0;}            
             if (++counter_5sec >= 300)
             {                  
                 counter_5sec = 0;
@@ -497,18 +506,18 @@ void DSPIC_init (void)
     LATBbits.LATB5 = 1;     // RGB LED - Blue 
 }
 
-void RGB_LED_set_color (unsigned long color)
+void RGB_LED_set_color (uint32_t color)
 {
-    unsigned char R = ((color & 0xFF0000)>>16);
-    unsigned char G = ((color & 0x00FF00)>>8);
-    unsigned char B = color & 0x0000FF;
+    uint8_t R = ((color & 0xFF0000)>>16);
+    uint8_t G = ((color & 0x00FF00)>>8);
+    uint8_t B = color & 0x0000FF;
     
     RGB_R_duty = (R * (RGB_PWM_frequency/255.0));
     RGB_G_duty = (G * (RGB_PWM_frequency/255.0));
     RGB_B_duty = (B * (RGB_PWM_frequency/255.0));
 }
 
-void hex_to_ascii (unsigned char ucByte, unsigned char *ucByteH, unsigned char *ucByteL)
+void hex_to_ascii (uint8_t ucByte, uint8_t *ucByteH, uint8_t *ucByteL)
 {
     *ucByteH = ucByte >> 4;	   
     *ucByteL = (ucByte & 0x0F);
@@ -533,16 +542,16 @@ void hex_to_ascii (unsigned char ucByte, unsigned char *ucByteH, unsigned char *
     }   
 }
 
-int bcd_to_decimal(unsigned char x) 
+int bcd_to_decimal(uint8_t x) 
 {
     return x - 6 * (x >> 4);
 }
 
-unsigned int dec2bcd(unsigned int num) // num is now 65535
+uint16_t dec2bcd(uint16_t num) // num is now 65535
 {
-    unsigned int ones = 0;
-    unsigned int tens = 0;
-    unsigned int temp = 0;
+    uint16_t ones = 0;
+    uint16_t tens = 0;
+    uint16_t temp = 0;
 
     ones = num%10; // 65535%10 = 5
     temp = num/10; // 65535/10 = 6553
@@ -551,10 +560,10 @@ unsigned int dec2bcd(unsigned int num) // num is now 65535
     return (tens + ones);// so the result is 95
 }
 
-unsigned char hex_to_dec (unsigned char hex)
+uint8_t hex_to_dec (uint8_t hex)
 {
-    unsigned char val;
-    unsigned char decimal;
+    uint8_t val;
+    uint8_t decimal;
     if(hex>='0' && hex<='9')  
     {  
         val = hex - 48;  

@@ -1,20 +1,20 @@
 //****************************************************************************//
 // File      :  QEI.c
 //
-// Functions :  void QEI_init (unsigned char channel);
-//              unsigned long QEI_get_pulse (unsigned char channel);
-//              void QEI_reset_pulse (unsigned char channel);
-//              void QEI_set_gear_derate (unsigned char channel, unsigned int new_gear_derate);
-//              unsigned int QEI_get_gear_derate (unsigned char channel);
-//              void QEI_set_cpr (unsigned char channel, unsigned int new_cpr);
-//              unsigned int QEI_get_cpr (unsigned char channel);
-//              unsigned long QEI_get_tour (unsigned char channel);
-//              void QEI_reset_tour (unsigned char channel);
-//              unsigned char QEI_get_event (unsigned char channel);
-//              unsigned char QEI_get_direction (unsigned char channel);
-//              unsigned int QEI_get_velocity (unsigned char channel);
-//              void QEI_calculate_velocity (unsigned char channel);
-//              void QEI_interrupt_handle (unsigned char channel);
+// Functions :  void QEI_init (uint8_t channel);
+//              uint32_t QEI_get_pulse (uint8_t channel);
+//              void QEI_reset_pulse (uint8_t channel);
+//              void QEI_set_gear_derate (uint8_t channel, uint16_t new_gear_derate);
+//              uint16_t QEI_get_gear_derate (uint8_t channel);
+//              void QEI_set_cpr (uint8_t channel, uint16_t new_cpr);
+//              uint16_t QEI_get_cpr (uint8_t channel);
+//              uint32_t QEI_get_tour (uint8_t channel);
+//              void QEI_reset_tour (uint8_t channel);
+//              uint8_t QEI_get_event (uint8_t channel);
+//              uint8_t QEI_get_direction (uint8_t channel);
+//              uint16_t QEI_get_velocity (uint8_t channel);
+//              void QEI_calculate_velocity (uint8_t channel);
+//              void QEI_interrupt_handle (uint8_t channel);
 //
 // Includes  :  QEI.h
 //
@@ -29,25 +29,25 @@
 
 typedef struct
 {
-    unsigned int refresh_freq;
-    unsigned long pulse_for_tour;
-    unsigned long pulse_cnter_dist;
-    unsigned long pulse_cnter;
-    unsigned long pulse_getter;
-    unsigned long tour_cnter_dist;
-    unsigned long tour_cnter;
-    unsigned long tour_getter;
-    unsigned char int_event;
-    unsigned char direction;
-    unsigned int motor_cpr;
-    unsigned int motor_gear_derate;
-    unsigned int motor_max_rpm;
-    unsigned int speed_rpm;
-    unsigned int speed_rps;
-    unsigned long prev_pulse;
-    unsigned long velocity;
-    unsigned long pulse_diff;
-    unsigned long pulse_per_tour;
+    uint16_t refresh_freq;
+    uint32_t pulse_for_tour;
+    uint32_t pulse_cnter_dist;
+    uint32_t pulse_cnter;
+    uint32_t pulse_getter;
+    uint32_t tour_cnter_dist;
+    uint32_t tour_cnter;
+    uint32_t tour_getter;
+    uint8_t int_event;
+    uint8_t direction;
+    uint16_t motor_cpr;
+    uint16_t motor_gear_derate;
+    uint16_t motor_max_rpm;
+    uint16_t speed_rpm;
+    uint16_t speed_rps;
+    uint32_t prev_pulse;
+    uint32_t velocity;
+    uint32_t pulse_diff;
+    uint32_t pulse_per_tour;
 }STRUCT_QEI;
 
 #define QEI_1       0
@@ -88,27 +88,27 @@ typedef struct
 #define MAX_PULSE_CNT 100000000
 #define MAX_TOUR_CNT 100000000
 
-void QEI_init (unsigned char channel);
-void QEI_set_fs (unsigned char channel, unsigned int refresh_freq);
-unsigned int QEI_get_fs (unsigned char channel);
-unsigned long QEI_get_pulse (unsigned char channel);
-void QEI_reset_pulse (unsigned char channel);
-void QEI_reset_distance (unsigned char channel);
-unsigned long QEI_get_distance (unsigned char channel);
-void QEI_set_gear_derate (unsigned char channel, unsigned int new_gear_derate);
-unsigned int QEI_get_gear_derate (unsigned char channel);
-void QEI_set_cpr (unsigned char channel, unsigned int new_cpr);
-unsigned int QEI_get_cpr (unsigned char channel);
-unsigned long QEI_get_tour (unsigned char channel);
-void QEI_reset_tour (unsigned char channel);
-unsigned char QEI_get_event (unsigned char channel);
-unsigned char QEI_get_direction (unsigned char channel);
-unsigned int QEI_get_speed_rpm (unsigned char channel);
-unsigned int QEI_get_speed_rps (unsigned char channel);
-void QEI_calculate_velocity (unsigned char channel);
-unsigned int QEI_get_velocity (unsigned char channel);
-unsigned int QEI_get_max_rpm (unsigned char channel);
-void QEI_set_max_rpm (unsigned char channel, unsigned int max_rpm);
-void QEI_interrupt_handle (unsigned char channel);
+void QEI_init (uint8_t channel);
+void QEI_set_fs (uint8_t channel, uint16_t refresh_freq);
+uint16_t QEI_get_fs (uint8_t channel);
+uint32_t QEI_get_pulse (uint8_t channel);
+void QEI_reset_pulse (uint8_t channel);
+void QEI_reset_distance (uint8_t channel);
+uint32_t QEI_get_distance (uint8_t channel);
+void QEI_set_gear_derate (uint8_t channel, uint16_t new_gear_derate);
+uint16_t QEI_get_gear_derate (uint8_t channel);
+void QEI_set_cpr (uint8_t channel, uint16_t new_cpr);
+uint16_t QEI_get_cpr (uint8_t channel);
+uint32_t QEI_get_tour (uint8_t channel);
+void QEI_reset_tour (uint8_t channel);
+uint8_t QEI_get_event (uint8_t channel);
+uint8_t QEI_get_direction (uint8_t channel);
+uint16_t QEI_get_speed_rpm (uint8_t channel);
+uint16_t QEI_get_speed_rps (uint8_t channel);
+void QEI_calculate_velocity (uint8_t channel);
+uint16_t QEI_get_velocity (uint8_t channel);
+uint16_t QEI_get_max_rpm (uint8_t channel);
+void QEI_set_max_rpm (uint8_t channel, uint16_t max_rpm);
+void QEI_interrupt_handle (uint8_t channel);
 
 #endif

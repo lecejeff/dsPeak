@@ -1,11 +1,11 @@
 //****************************************************************************//
 // File      : Timer.c
 //
-// Functions :  void TIMER_init (unsigned char timer, unsigned long freq);
-//              void TIMER_update_freq (unsigned char timer, unsigned long new_freq);
-//              void TIMER_start (unsigned char timer);
-//              void TIMER_stop (unsigned char timer);
-//              unsigned char TIMER_get_state (unsigned char timer);
+// Functions :  void TIMER_init (uint8_t timer, uint32_t freq);
+//              void TIMER_update_freq (uint8_t timer, uint32_t new_freq);
+//              void TIMER_start (uint8_t timer);
+//              void TIMER_stop (uint8_t timer);
+//              uint8_t TIMER_get_state (uint8_t timer);
 //
 // Includes  : Timer.h
 //
@@ -16,14 +16,14 @@
 TIMER_STRUCT TIMER_struct[TIMER_QTY];
 
 // Current timer allocation
-//*********void TIMER_init (unsigned char timer, unsigned long Freq)**********//
+//*********void TIMER_init (uint8_t timer, uint32_t Freq)**********//
 //Description : Function initializes timer module with interrupt at specified
 //              freq
 //
-//Function prototype : void TIMER_init (unsigned char timer, unsigned long Freq)
+//Function prototype : void TIMER_init (uint8_t timer, uint32_t Freq)
 //
-//Enter params       : unsigned char timer : TIMER_x module
-//                     unsigned long freq  : Timer frequency
+//Enter params       : uint8_t timer : TIMER_x module
+//                     uint32_t freq  : Timer frequency
 //
 //Exit params        : None
 //
@@ -31,7 +31,7 @@ TIMER_STRUCT TIMER_struct[TIMER_QTY];
 //
 //Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
 //****************************************************************************//
-void TIMER_init (unsigned char timer, unsigned char prescaler, unsigned long Freq)
+void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
 {
     // 16 bit timers. With 8x prescaler, clock freq is 70MHz / 8 = 8.75MHz
     // Minimum frequency timer : 8.75MHz / Freq <= 65535, Freq >= 133
@@ -279,13 +279,13 @@ void TIMER_init (unsigned char timer, unsigned char prescaler, unsigned long Fre
     }
 }
 
-//****void TIMER_update_freq (unsigned char timer, unsigned long new_freq)****//
+//****void TIMER_update_freq (uint8_t timer, uint32_t new_freq)****//
 //Description : Function updates timer module to new frequency
 //
-//Function prototype : void TIMER_update_freq (unsigned char timer, unsigned long new_freq)
+//Function prototype : void TIMER_update_freq (uint8_t timer, uint32_t new_freq)
 //
-//Enter params       : unsigned char timer : TIMER_x module
-//                     unsigned long new_freq  : Timer frequency
+//Enter params       : uint8_t timer : TIMER_x module
+//                     uint32_t new_freq  : Timer frequency
 //
 //Exit params        : None
 //
@@ -293,7 +293,7 @@ void TIMER_init (unsigned char timer, unsigned char prescaler, unsigned long Fre
 //
 //Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
 //****************************************************************************//
-void TIMER_update_freq (unsigned char timer, unsigned char prescaler, unsigned long new_freq)
+void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
 {
     switch (timer)
     {
@@ -524,12 +524,12 @@ void TIMER_update_freq (unsigned char timer, unsigned char prescaler, unsigned l
     }
 }
 
-//*******************void TIMER_start (unsigned char timer)*******************//
+//*******************void TIMER_start (uint8_t timer)*******************//
 //Description : Function starts timer module
 //
-//Function prototype : void TIMER_start (unsigned char timer)
+//Function prototype : void TIMER_start (uint8_t timer)
 //
-//Enter params       : unsigned char timer : TIMER_x module
+//Enter params       : uint8_t timer : TIMER_x module
 //
 //Exit params        : None
 //
@@ -537,7 +537,7 @@ void TIMER_update_freq (unsigned char timer, unsigned char prescaler, unsigned l
 //
 //Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
 //****************************************************************************//
-void TIMER_start (unsigned char timer)
+void TIMER_start (uint8_t timer)
 {
     switch (timer)
     {
@@ -608,12 +608,12 @@ void TIMER_start (unsigned char timer)
     TIMER_struct[timer].run_state = 1; // Timer is started
 }
 
-//********************void TIMER_stop (unsigned char timer)*******************//
+//********************void TIMER_stop (uint8_t timer)*******************//
 //Description : Function stops timer module
 //
-//Function prototype : void TIMER_stop (unsigned char timer)
+//Function prototype : void TIMER_stop (uint8_t timer)
 //
-//Enter params       : unsigned char timer : TIMER_x module
+//Enter params       : uint8_t timer : TIMER_x module
 //
 //Exit params        : None
 //
@@ -621,7 +621,7 @@ void TIMER_start (unsigned char timer)
 //
 //Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
 //****************************************************************************//
-void TIMER_stop (unsigned char timer)
+void TIMER_stop (uint8_t timer)
 {
     switch (timer)
     {
@@ -682,20 +682,20 @@ void TIMER_stop (unsigned char timer)
     TIMER_struct[timer].run_state = 0; // Timer is stopped
 }
 
-//*************unsigned char TIMER_get_state (unsigned char timer)************//
+//*************uint8_t TIMER_get_state (uint8_t timer)************//
 //Description : Function returns timer module state
 //
-//Function prototype : unsigned char TIMER_get_state (unsigned char timer)
+//Function prototype : uint8_t TIMER_get_state (uint8_t timer)
 //
-//Enter params       : unsigned char timer : TIMER_x module
+//Enter params       : uint8_t timer : TIMER_x module
 //
-//Exit params        : unsigned char : state (0 stopped, 1 active)
+//Exit params        : uint8_t : state (0 stopped, 1 active)
 //
-//Function call      : unsigned char = TIMER_get_state(TIMER_1);
+//Function call      : uint8_t = TIMER_get_state(TIMER_1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
 //****************************************************************************//
-unsigned char TIMER_get_state (unsigned char timer, unsigned char type)
+uint8_t TIMER_get_state (uint8_t timer, uint8_t type)
 {
     switch (type)
     {

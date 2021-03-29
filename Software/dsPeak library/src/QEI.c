@@ -1,20 +1,20 @@
 //****************************************************************************//
 // File      :  QEI.c
 //
-// Functions :  void QEI_init (unsigned char channel);
-//              unsigned long QEI_get_pulse (unsigned char channel);
-//              void QEI_reset_pulse (unsigned char channel);
-//              void QEI_set_gear_derate (unsigned char channel, unsigned int new_gear_derate);
-//              unsigned int QEI_get_gear_derate (unsigned char channel);
-//              void QEI_set_cpr (unsigned char channel, unsigned int new_cpr);
-//              unsigned int QEI_get_cpr (unsigned char channel);
-//              unsigned long QEI_get_tour (unsigned char channel);
-//              void QEI_reset_tour (unsigned char channel);
-//              unsigned char QEI_get_event (unsigned char channel);
-//              unsigned char QEI_get_direction (unsigned char channel);
-//              unsigned int QEI_get_velocity (unsigned char channel);
-//              void QEI_calculate_velocity (unsigned char channel);
-//              void QEI_interrupt_handle (unsigned char channel);
+// Functions :  void QEI_init (uint8_t channel);
+//              uint32_t QEI_get_pulse (uint8_t channel);
+//              void QEI_reset_pulse (uint8_t channel);
+//              void QEI_set_gear_derate (uint8_t channel, uint16_t new_gear_derate);
+//              uint16_t QEI_get_gear_derate (uint8_t channel);
+//              void QEI_set_cpr (uint8_t channel, uint16_t new_cpr);
+//              uint16_t QEI_get_cpr (uint8_t channel);
+//              uint32_t QEI_get_tour (uint8_t channel);
+//              void QEI_reset_tour (uint8_t channel);
+//              uint8_t QEI_get_event (uint8_t channel);
+//              uint8_t QEI_get_direction (uint8_t channel);
+//              uint16_t QEI_get_velocity (uint8_t channel);
+//              void QEI_calculate_velocity (uint8_t channel);
+//              void QEI_interrupt_handle (uint8_t channel);
 //
 // Includes  :  QEI.h
 //
@@ -26,21 +26,21 @@
 
 STRUCT_QEI QEI_struct[QEI_QTY];
 
-//*****************void QEI_init (unsigned char channel)**********************//
+//*****************void QEI_init (uint8_t channel)**********************//
 //Description : Function initializes hardware QEI module (CNI pin, pos edge int)
 //
-//Function prototype : void QEI_init (unsigned char channel)
+//Function prototype : void QEI_init (uint8_t channel)
 //
-//Enter params       : unsigned char channel : channel QEI1 is CNI, QEI2 is QEIhw)
+//Enter params       : uint8_t channel : channel QEI1 is CNI, QEI2 is QEIhw)
 //
-//Exit params        : unsigned char : 0 if channel exists
+//Exit params        : uint8_t : 0 if channel exists
 //                          1 if channel doesn't exists
 //
-//Function call      : unsigned char = QEI_init(QEI1);
+//Function call      : uint8_t = QEI_init(QEI1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-void QEI_init (unsigned char channel)
+void QEI_init (uint8_t channel)
 {
     switch (channel)
     {
@@ -119,52 +119,52 @@ void QEI_init (unsigned char channel)
 //    QEI_struct[channel].pulse_per_tour = QEI_struct[channel].motor_gear_derate * QEI_struct[channel].motor_cpr;
 }
 
-unsigned long QEI_get_distance (unsigned char channel)
+uint32_t QEI_get_distance (uint8_t channel)
 {
     return QEI_struct[channel].pulse_cnter_dist;
 }
 
-void QEI_reset_distance (unsigned char channel)
+void QEI_reset_distance (uint8_t channel)
 {
     QEI_struct[channel].pulse_cnter_dist = 0;
 }
 
-void QEI_set_fs (unsigned char channel, unsigned int refresh_freq)
+void QEI_set_fs (uint8_t channel, uint16_t refresh_freq)
 {
     QEI_struct[channel].refresh_freq = refresh_freq;
 }
 
-unsigned int QEI_get_fs (unsigned char channel)
+uint16_t QEI_get_fs (uint8_t channel)
 {
     return QEI_struct[channel].refresh_freq;
 }
 
-void QEI_set_max_rpm (unsigned char channel, unsigned int max_rpm)
+void QEI_set_max_rpm (uint8_t channel, uint16_t max_rpm)
 {
     QEI_struct[channel].motor_max_rpm = max_rpm;
 }
 
-unsigned int QEI_get_max_rpm (unsigned char channel) 
+uint16_t QEI_get_max_rpm (uint8_t channel) 
 {
     return QEI_struct[channel].motor_max_rpm;
 }
 
-//*************unsigned long QEI_get_pulse (unsigned char channel)************//
+//*************uint32_t QEI_get_pulse (uint8_t channel)************//
 //Description : Function return amount of pulses counted by QEI
 //
-//Function prototype : unsigned long QEI_get_pulse (unsigned char channel)
+//Function prototype : uint32_t QEI_get_pulse (uint8_t channel)
 //
-//Enter params       : unsigned char channel : qei channel
+//Enter params       : uint8_t channel : qei channel
 //
-//Exit params        : unsigned long : counted pulses
+//Exit params        : uint32_t : counted pulses
 //
-//Function call      : unsigned long = QEI_get_pulse(QEI1);
+//Function call      : uint32_t = QEI_get_pulse(QEI1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020   
 //****************************************************************************//
-unsigned long QEI_get_pulse (unsigned char channel)
+uint32_t QEI_get_pulse (uint8_t channel)
 {
-    unsigned long position = 0, hold = 0;
+    uint32_t position = 0, hold = 0;
     switch (channel)
     {
         case QEI_1:
@@ -187,12 +187,12 @@ unsigned long QEI_get_pulse (unsigned char channel)
     }    
 }
 
-//*****************void QEI_reset_pulse (unsigned char channel)***************//
+//*****************void QEI_reset_pulse (uint8_t channel)***************//
 //Description : Function reset the pulse counter on assigned channel
 //
-//Function prototype : void QEI_reset_pulse (unsigned char channel)
+//Function prototype : void QEI_reset_pulse (uint8_t channel)
 //
-//Enter params       : unsigned char channel : qei channel
+//Enter params       : uint8_t channel : qei channel
 //
 //Exit params        : None
 //
@@ -200,7 +200,7 @@ unsigned long QEI_get_pulse (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-void QEI_reset_pulse (unsigned char channel)
+void QEI_reset_pulse (uint8_t channel)
 {
     switch (channel)
     {
@@ -219,13 +219,13 @@ void QEI_reset_pulse (unsigned char channel)
     }
 }
 
-//void QEI_set_gear_derate (unsigned char channel, unsigned int new_gear_derate)//
+//void QEI_set_gear_derate (uint8_t channel, uint16_t new_gear_derate)//
 //Description : Function sets the gear derating ratio of the motor
 //
-//Function prototype : void QEI_set_gear_derate (unsigned char channel, unsigned char new_gear_derate)
+//Function prototype : void QEI_set_gear_derate (uint8_t channel, uint8_t new_gear_derate)
 //
-//Enter params       : unsigned char channel : QEI channel
-//                     unsigned int new_gear_derate : new gear derate ratio 
+//Enter params       : uint8_t channel : QEI channel
+//                     uint16_t new_gear_derate : new gear derate ratio 
 //
 //Exit params        : None
 //
@@ -233,7 +233,7 @@ void QEI_reset_pulse (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020 
 //****************************************************************************//
-void QEI_set_gear_derate (unsigned char channel, unsigned int new_gear_derate)
+void QEI_set_gear_derate (uint8_t channel, uint16_t new_gear_derate)
 {
     QEI_struct[channel].motor_gear_derate = new_gear_derate;
     QEI_struct[channel].pulse_per_tour = QEI_struct[channel].motor_gear_derate * QEI_struct[channel].motor_cpr;
@@ -241,31 +241,31 @@ void QEI_set_gear_derate (unsigned char channel, unsigned int new_gear_derate)
     QEI_reset_pulse(channel);    
 }
 
-//**********unsigned int QEI_get_gear_derate (unsigned char channel)**********//
+//**********uint16_t QEI_get_gear_derate (uint8_t channel)**********//
 //Description : Function return the gear derate ratio of the motor
 //
-//Function prototype : unsigned int QEI_get_gear_derate (unsigned char channel)
+//Function prototype : uint16_t QEI_get_gear_derate (uint8_t channel)
 //
-//Enter params       : unsigned char channel : QEI channel
+//Enter params       : uint8_t channel : QEI channel
 //
-//Exit params        : unsigned int : gear derate ratio
+//Exit params        : uint16_t : gear derate ratio
 //
-//Function call      : unsigned int = QEI_get_gear_derate(QEI_1);
+//Function call      : uint16_t = QEI_get_gear_derate(QEI_1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020 
 //****************************************************************************//
-unsigned int QEI_get_gear_derate (unsigned char channel)
+uint16_t QEI_get_gear_derate (uint8_t channel)
 {
     return QEI_struct[channel].motor_gear_derate;
 }
 
-//******void QEI_set_cpr (unsigned char channel, unsigned int new_cpr)*******//
+//******void QEI_set_cpr (uint8_t channel, uint16_t new_cpr)*******//
 //Description : Function sets the CPR (count per revolution) of the QEI encoder
 //
-//Function prototype : void QEI_set_cpr (unsigned char channel, unsigned int new_cpr)
+//Function prototype : void QEI_set_cpr (uint8_t channel, uint16_t new_cpr)
 //
-//Enter params       : unsigned char channel : QEI channel
-//                     unsigned int new_cpr : new count per revolution value 
+//Enter params       : uint8_t channel : QEI channel
+//                     uint16_t new_cpr : new count per revolution value 
 //
 //Exit params        : None
 //
@@ -273,7 +273,7 @@ unsigned int QEI_get_gear_derate (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020 
 //****************************************************************************//
-void QEI_set_cpr (unsigned char channel, unsigned int new_cpr)
+void QEI_set_cpr (uint8_t channel, uint16_t new_cpr)
 {
     QEI_struct[channel].motor_cpr = new_cpr;
     QEI_struct[channel].pulse_per_tour = QEI_struct[channel].motor_gear_derate * QEI_struct[channel].motor_cpr;
@@ -281,20 +281,20 @@ void QEI_set_cpr (unsigned char channel, unsigned int new_cpr)
     QEI_reset_pulse(channel);
 }
 
-//**************unsigned int QEI_get_cpr (unsigned char channel)**************//
+//**************uint16_t QEI_get_cpr (uint8_t channel)**************//
 //Description : Function return the count per revolution value
 //
-//Function prototype : unsigned int QEI_get_cpr (unsigned char channel)
+//Function prototype : uint16_t QEI_get_cpr (uint8_t channel)
 //
-//Enter params       : unsigned char channel : QEI channel
+//Enter params       : uint8_t channel : QEI channel
 //
-//Exit params        : unsigned int : count per revolution value
+//Exit params        : uint16_t : count per revolution value
 //
-//Function call      : unsigned int = QEI_get_cpr(QEI_1);
+//Function call      : uint16_t = QEI_get_cpr(QEI_1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020 
 //****************************************************************************//
-unsigned int QEI_get_cpr (unsigned char channel)
+uint16_t QEI_get_cpr (uint8_t channel)
 {
     return QEI_struct[channel].motor_cpr;
 }
@@ -312,7 +312,7 @@ unsigned int QEI_get_cpr (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-unsigned long QEI_get_tour (unsigned char channel)
+uint32_t QEI_get_tour (uint8_t channel)
 {
     return QEI_struct[channel].tour_cnter_dist;
 }
@@ -330,27 +330,27 @@ unsigned long QEI_get_tour (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020   
 //****************************************************************************//
-void QEI_reset_tour (unsigned char channel)
+void QEI_reset_tour (uint8_t channel)
 {
     QEI_struct[channel].tour_cnter_dist = 0;
     QEI_struct[channel].tour_cnter = 0;
     QEI_struct[channel].tour_getter = 0;
 }
 
-//**********unsigned char QEI_get_event (unsigned char channel)***************//
+//**********uint8_t QEI_get_event (uint8_t channel)***************//
 //Description : Function return QEI interrupt event state
 //
-//Function prototype : unsigned char QEI_get_event (unsigned char channel)
+//Function prototype : uint8_t QEI_get_event (uint8_t channel)
 //
-//Enter params       : unsigned char channel : QEIx channel
+//Enter params       : uint8_t channel : QEIx channel
 //
-//Exit params        : unsigned char : Event happened or not
+//Exit params        : uint8_t : Event happened or not
 //
-//Function call      : unsigned char = QEI_get_event(QEI1);
+//Function call      : uint8_t = QEI_get_event(QEI1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-unsigned char QEI_get_event (unsigned char channel)
+uint8_t QEI_get_event (uint8_t channel)
 {
     if (QEI_struct[channel].int_event)
     {
@@ -361,58 +361,58 @@ unsigned char QEI_get_event (unsigned char channel)
         return 1;
 }
 
-//*************unsigned char QEI_get_direction (unsigned char channel)********//
+//*************uint8_t QEI_get_direction (uint8_t channel)********//
 //Description : Function gets actual motor direction
 //
-//Function prototype : unsigned char QEI_get_direction (unsigned char channel)
+//Function prototype : uint8_t QEI_get_direction (uint8_t channel)
 //
-//Enter params       : unsigned char channel : QEIx channel
+//Enter params       : uint8_t channel : QEIx channel
 //
-//Exit params        : unsigned char : direction of motor
+//Exit params        : uint8_t : direction of motor
 //
-//Function call      : unsigned char = QEI_get_direction(QEI1);
+//Function call      : uint8_t = QEI_get_direction(QEI1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-unsigned char QEI_get_direction (unsigned char channel)
+uint8_t QEI_get_direction (uint8_t channel)
 {
     return QEI_struct[channel].direction;
 }
 
-//*************unsigned long QEI_get_velocity (unsigned char channel)**********//
+//*************uint32_t QEI_get_velocity (uint8_t channel)**********//
 //Description : Function gets calculated motor rpm
 //
-//Function prototype : unsigned long QEI_get_velocity (unsigned char channel)
+//Function prototype : uint32_t QEI_get_velocity (uint8_t channel)
 //
-//Enter params       : unsigned char channel : QEIx channel
+//Enter params       : uint8_t channel : QEIx channel
 //
-//Exit params        : unsigned long : motor rpm
+//Exit params        : uint32_t : motor rpm
 //
-//Function call      : unsigned long = QEI_get_velocity(QEI1);
+//Function call      : uint32_t = QEI_get_velocity(QEI1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-unsigned int QEI_get_speed_rpm (unsigned char channel)
+uint16_t QEI_get_speed_rpm (uint8_t channel)
 {
     return QEI_struct[channel].speed_rpm;
 }
 
-unsigned int QEI_get_speed_rps (unsigned char channel)
+uint16_t QEI_get_speed_rps (uint8_t channel)
 {
     return QEI_struct[channel].speed_rps;
 }
 
-unsigned int QEI_get_velocity (unsigned char channel)
+uint16_t QEI_get_velocity (uint8_t channel)
 {
     return QEI_struct[channel].velocity;
 }
 
-//*********void QEI_calculate_velocity (unsigned char channel)***********//
+//*********void QEI_calculate_velocity (uint8_t channel)***********//
 //Description : Function computes and interpolates speed to cm/s
 //
-//Function prototype : void QEI_calculate_velocity (unsigned char channel)
+//Function prototype : void QEI_calculate_velocity (uint8_t channel)
 //
-//Enter params       : unsigned char channel : QEIx channel
+//Enter params       : uint8_t channel : QEIx channel
 //
 //Exit params        : None
 //
@@ -420,22 +420,22 @@ unsigned int QEI_get_velocity (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020 
 //****************************************************************************//
-void QEI_calculate_velocity (unsigned char channel)
+void QEI_calculate_velocity (uint8_t channel)
 {
     switch (channel)
     {
         case QEI_1:
             // Update the actual speed
             QEI_struct[channel].velocity = VEL1CNT;
-            QEI_struct[channel].speed_rps = (unsigned int)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
-            QEI_struct[channel].speed_rpm = (unsigned int)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / QEI_struct[channel].pulse_per_tour);
+            QEI_struct[channel].speed_rps = (uint16_t)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
+            QEI_struct[channel].speed_rpm = (uint16_t)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / QEI_struct[channel].pulse_per_tour);
             break; 
             
         case QEI_2:
             // Update the actual speed
             QEI_struct[channel].velocity = VEL2CNT;
-            QEI_struct[channel].speed_rps = (unsigned int)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
-            QEI_struct[channel].speed_rpm = (unsigned int)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / QEI_struct[channel].pulse_per_tour);
+            QEI_struct[channel].speed_rps = (uint16_t)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
+            QEI_struct[channel].speed_rpm = (uint16_t)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / QEI_struct[channel].pulse_per_tour);
             break;          
     }
 }

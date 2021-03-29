@@ -1,7 +1,7 @@
 #include "DMA.h"
 STRUCT_DMA DMA_struct[DMA_QTY];
 
-void DMA_init (unsigned char channel)
+void DMA_init (uint8_t channel)
 {
     if ((channel >= 0 ) && (channel < DMA_QTY))
     {
@@ -13,6 +13,7 @@ void DMA_init (unsigned char channel)
         case DMA_CH0:              
             IEC0bits.DMA0IE = 0;                    // Disable DMA0 interrupt
             IFS0bits.DMA0IF = 0;                    // Lower DMA0 interrupt flag
+            
             break;
 
         case DMA_CH1:
@@ -88,7 +89,7 @@ void DMA_init (unsigned char channel)
     }
 }
 
-void DMA_disable (unsigned char channel)
+void DMA_disable (uint8_t channel)
 {
     switch (channel)
     {
@@ -217,7 +218,7 @@ void DMA_disable (unsigned char channel)
     }
 }
 
-void DMA_enable (unsigned char channel)
+void DMA_enable (uint8_t channel)
 {
     switch (channel)
     {
@@ -346,7 +347,7 @@ void DMA_enable (unsigned char channel)
     }
 }
 
-unsigned char DMA_get_txfer_state (unsigned char channel)
+uint8_t DMA_get_txfer_state (uint8_t channel)
 {
     if (DMA_struct[channel].txfer_state == DMA_TXFER_DONE)
     {

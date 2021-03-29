@@ -7,11 +7,11 @@
 
 typedef struct
 {
-    unsigned char pid_out;
+    uint8_t pid_out;
     double pid_p_gain;
     double pid_i_gain;
     double pid_d_gain;
-    unsigned int pid_fs;
+    uint16_t pid_fs;
     double pid_T;
     double p_calc_gain;
     double i_calc_gain;
@@ -22,22 +22,22 @@ typedef struct
     double d_input;
     double i_term;
 
-    unsigned int pid_high_limit;
+    uint16_t pid_high_limit;
     double error_rpm;
     double last_error_rpm;
-    unsigned int actual_rpm;
-    unsigned int last_actual_rpm;    
+    uint16_t actual_rpm;
+    uint16_t last_actual_rpm;    
     
-    unsigned int max_rpm;
-    unsigned int min_rpm;
+    uint16_t max_rpm;
+    uint16_t min_rpm;
     
-    unsigned int speed_rpm;
+    uint16_t speed_rpm;
     
-    unsigned char speed_perc;
-    unsigned char direction;
-    unsigned char pwm_h_channel;
-    unsigned char pwm_l_channel;
-    unsigned char qei_channel;
+    uint8_t speed_perc;
+    uint8_t direction;
+    uint8_t pwm_h_channel;
+    uint8_t pwm_l_channel;
+    uint8_t qei_channel;
 }STRUCT_MCONTROL;
 
 #define MOTOR_1             0
@@ -47,15 +47,15 @@ typedef struct
 #define DIRECTION_FORWARD   0
 #define DIRECTION_BACKWARD  1
 
-void MOTOR_init (unsigned char channel, unsigned int speed_fs);
-void MOTOR_drive_perc (unsigned char channel, unsigned char direction, unsigned char perc);
-void MOTOR_set_rpm (unsigned char channel, unsigned int new_rpm);
-void MOTOR_pid_calc_gains (unsigned char channel);
-double MOTOR_get_error (unsigned char channel);
-unsigned char MOTOR_get_direction (unsigned char channel);
-unsigned int MOTOR_get_speed_rpm (unsigned char channel);
-unsigned char MOTOR_get_speed_perc (unsigned char channel);
-unsigned int MOTOR_get_setpoint_rpm (unsigned char channel);
-//char MOTOR_drive_pid (unsigned char channel);
-unsigned char MOTOR_drive_pid (unsigned char channel);
+void MOTOR_init (uint8_t channel, uint16_t speed_fs);
+void MOTOR_drive_perc (uint8_t channel, uint8_t direction, uint8_t perc);
+void MOTOR_set_rpm (uint8_t channel, uint16_t new_rpm);
+void MOTOR_pid_calc_gains (uint8_t channel);
+double MOTOR_get_error (uint8_t channel);
+uint8_t MOTOR_get_direction (uint8_t channel);
+uint16_t MOTOR_get_speed_rpm (uint8_t channel);
+uint8_t MOTOR_get_speed_perc (uint8_t channel);
+uint16_t MOTOR_get_setpoint_rpm (uint8_t channel);
+//char MOTOR_drive_pid (uint8_t channel);
+uint8_t MOTOR_drive_pid (uint8_t channel);
 #endif

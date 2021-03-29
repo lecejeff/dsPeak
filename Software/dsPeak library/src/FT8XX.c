@@ -58,66 +58,66 @@ STWindow st_Window[MAX_WINDOW_NB];
 #endif
 
 #ifdef RIVERDI_800x480_CAPACITIVE_FT813
-unsigned int ft8xx_lcd_hcycle = 928;
-unsigned int ft8xx_lcd_hsize = 800;
-unsigned int ft8xx_lcd_hoffset = 88;
-unsigned int ft8xx_lcd_hsync0 = 40;
-unsigned int ft8xx_lcd_hsync1 = 88;
-unsigned int ft8xx_lcd_cspread = 1;
+uint16_t ft8xx_lcd_hcycle = 928;
+uint16_t ft8xx_lcd_hsize = 800;
+uint16_t ft8xx_lcd_hoffset = 88;
+uint16_t ft8xx_lcd_hsync0 = 40;
+uint16_t ft8xx_lcd_hsync1 = 88;
+uint16_t ft8xx_lcd_cspread = 1;
 
-unsigned int ft8xx_lcd_vcycle = 525;
-unsigned int ft8xx_lcd_vsize = 480;
-unsigned int ft8xx_lcd_voffset = 32;
-unsigned int ft8xx_lcd_vsync0 = 13;
-unsigned int ft8xx_lcd_vsync1 = 16;
-unsigned int ft8xx_lcd_swizzle = 0;
-unsigned int ft8xx_lcd_pclk_pol = 0;
-unsigned int ft8xx_lcd_pclk = 2;
+uint16_t ft8xx_lcd_vcycle = 525;
+uint16_t ft8xx_lcd_vsize = 480;
+uint16_t ft8xx_lcd_voffset = 32;
+uint16_t ft8xx_lcd_vsync0 = 13;
+uint16_t ft8xx_lcd_vsync1 = 16;
+uint16_t ft8xx_lcd_swizzle = 0;
+uint16_t ft8xx_lcd_pclk_pol = 0;
+uint16_t ft8xx_lcd_pclk = 2;
 #endif
 
 #ifdef RIVERDI_480x272_RESISTIVE_FT800
-unsigned int ft8xx_lcd_hcycle = 548;
-unsigned int ft8xx_lcd_hsize = 480;
-unsigned int ft8xx_lcd_hoffset = 43;
-unsigned int ft8xx_lcd_hsync0 = 0;
-unsigned int ft8xx_lcd_hsync1 = 41;
-unsigned int ft8xx_lcd_cspread = 1;
+uint16_t ft8xx_lcd_hcycle = 548;
+uint16_t ft8xx_lcd_hsize = 480;
+uint16_t ft8xx_lcd_hoffset = 43;
+uint16_t ft8xx_lcd_hsync0 = 0;
+uint16_t ft8xx_lcd_hsync1 = 41;
+uint16_t ft8xx_lcd_cspread = 1;
 
-unsigned int ft8xx_lcd_vcycle = 292;
-unsigned int ft8xx_lcd_vsize = 272;
-unsigned int ft8xx_lcd_voffset = 12;
-unsigned int ft8xx_lcd_vsync0 = 0;
-unsigned int ft8xx_lcd_vsync1 = 10;
-unsigned int ft8xx_lcd_swizzle = 0;
-unsigned int ft8xx_lcd_pclk_pol = 1;
-unsigned int ft8xx_lcd_pclk = 5;
+uint16_t ft8xx_lcd_vcycle = 292;
+uint16_t ft8xx_lcd_vsize = 272;
+uint16_t ft8xx_lcd_voffset = 12;
+uint16_t ft8xx_lcd_vsync0 = 0;
+uint16_t ft8xx_lcd_vsync1 = 10;
+uint16_t ft8xx_lcd_swizzle = 0;
+uint16_t ft8xx_lcd_pclk_pol = 1;
+uint16_t ft8xx_lcd_pclk = 5;
 #endif
 
 STTouch touch_data;
-unsigned char touch_tag;
+uint8_t touch_tag;
 
 // Do not touch these variables
-unsigned int cmdBufferRd;            // Used to navigate command ring buffer
-unsigned int cmdBufferWr = 0x0000;   // Used to navigate command ring buffer
-unsigned int cmdOffset = 0x0000;    // Used to navigate command rung buffer
+uint16_t cmdBufferRd;            // Used to navigate command ring buffer
+uint16_t cmdBufferWr = 0x0000;   // Used to navigate command ring buffer
+uint16_t cmdOffset = 0x0000;    // Used to navigate command rung buffer
 
-//***************************unsigned char FT_init (void))*******************************//
+//***************************uint8_t FT_init (void))*******************************//
 //Description : Function initializes FT8XXX display to given parameters
 //
-//Function prototype : unsigned char FT_init (void)
+//Function prototype : uint8_t FT_init (void)
 //
 //Enter params       : None
 //
 //Exit params        : 0 : init was a success
 //                     1 : init failed due to bad processor clk
 //
-//Function call      : unsigned char = FT_init();
+//Function call      : uint8_t = FT_init();
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
 void FT8XX_init (void)
 {
-    unsigned char duty = 0, gpio = 0, reg_id_value = 0;
+    uint8_t duty = 0, gpio = 0, reg_id_value = 0;
    
     // Initialize FT8XX SPI port. SPI1 maximum clock frequency for full duplex is 9MHz
     SPI_init(SPI_1, SPI_MODE0, 2, 0);   // PPRE = 2, primary prescale 1:4
@@ -249,10 +249,10 @@ void FT8XX_clear_touch_tag (void)
     touch_tag = 0;
 }
 
-unsigned char FT8XX_read_touch_tag (void)
+uint8_t FT8XX_read_touch_tag (void)
 {
-    static unsigned char touch_counter = 1;
-    static unsigned char tag_flag = 0;
+    static uint8_t touch_counter = 1;
+    static uint8_t tag_flag = 0;
     // Check if the screen was touched
     if (((FT8XX_rd32(REG_TOUCH_DIRECT_XY)) & 0x8000) == 0x0000)
     {
@@ -278,12 +278,12 @@ unsigned char FT8XX_read_touch_tag (void)
     return touch_tag;
 }
 
-unsigned char FT8XX_get_touch_tag (void)
+uint8_t FT8XX_get_touch_tag (void)
 {
     return touch_tag;
 }
 
-void FT8XX_set_touch_tag (unsigned char prim_type, unsigned char prim_num, unsigned char tag_num)
+void FT8XX_set_touch_tag (uint8_t prim_type, uint8_t prim_num, uint8_t tag_num)
 {  
     switch (prim_type)
     {
@@ -361,12 +361,12 @@ void FT8XX_set_touch_tag (unsigned char prim_type, unsigned char prim_num, unsig
     }
 }
 
-//**********************void FT_write_command (unsigned char command)********************//
+//**********************void FT_write_command (uint8_t command)********************//
 //Description : Function write command to FT801
 //
-//Function prototype : void FT_write_command (unsigned char command)
+//Function prototype : void FT_write_command (uint8_t command)
 //
-//Enter params       : unsigned char command : command to send to FT801
+//Enter params       : uint8_t command : command to send to FT801
 //
 //Exit params        : None
 //
@@ -374,9 +374,9 @@ void FT8XX_set_touch_tag (unsigned char prim_type, unsigned char prim_num, unsig
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_host_command (unsigned char command)
+void FT8XX_host_command (uint8_t command)
 {
-    unsigned char wr_data[3] = {command, 0, 0};
+    uint8_t wr_data[3] = {command, 0, 0};
     SPI_master_write(SPI_1, wr_data, 3, FT8XX_EVE_CS);
     // SPI.begin();                        // Command frame :
     // digitalWrite(FT8XX_nCS_PIN, LOW);   // Set #CS low
@@ -387,13 +387,13 @@ void FT8XX_host_command (unsigned char command)
     // digitalWrite(FT8XX_nCS_PIN, HIGH);  // Set #CS high
 }
 
-//**********************void FT_write_8bit (unsigned long adr, unsigned char data)******************//
+//**********************void FT_write_8bit (uint32_t adr, uint8_t data)******************//
 //Description : Function writes 8 bit data to specified adr
 //
-//Function prototype : void FT_write_8bit (unsigned long adr, unsigned char data)
+//Function prototype : void FT_write_8bit (uint32_t adr, uint8_t data)
 //
-//Enter params       : unsigned long adr : FT801 register address
-//                     unsigned char data: Data to write to register
+//Enter params       : uint32_t adr : FT801 register address
+//                     uint8_t data: Data to write to register
 //
 //Exit params        : None
 //
@@ -401,32 +401,32 @@ void FT8XX_host_command (unsigned char command)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_wr8 (unsigned long adr, unsigned char data)
+void FT8XX_wr8 (uint32_t adr, uint8_t data)
 {
-    unsigned char wr_data[4] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data};
+    uint8_t wr_data[4] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data};
     SPI_master_write(SPI_1, wr_data, 4, FT8XX_EVE_CS);
-    // byte 0 = (unsigned char)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
-    // byte 1 = (unsigned char)(adr>>8);                    // 
+    // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
+    // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
     // byte 3 = data                                        // Write 8 bit data
                                                             // Little endian
     // SPI.begin();
     // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((unsigned char)((adr >> 16) | MEM_WRITE));
-    // SPI.transfer((unsigned char)(adr >> 8));
+    // SPI.transfer((uint8_t)((adr >> 16) | MEM_WRITE));
+    // SPI.transfer((uint8_t)(adr >> 8));
     // SPI.transfer(adr);
     // SPI.transfer(data);
     // SPI.end();
     // digitalWrite(FT8XX_nCS_PIN, HIGH);
 }
 
-//*******************void FT_write_16bit (unsigned long adr, unsigned int data)********************//
+//*******************void FT_write_16bit (uint32_t adr, uint16_t data)********************//
 //Description : Function writes 16 bit data + adr to FT8XX
 //
-//Function prototype : void FT_write_16bit (unsigned long adr, unsigned int data)
+//Function prototype : void FT_write_16bit (uint32_t adr, uint16_t data)
 //
-//Enter params       : unsigned long adr : register adress
-//                     unsigned int data: data to write
+//Enter params       : uint32_t adr : register adress
+//                     uint16_t data: data to write
 //
 //Exit params        : None
 //
@@ -434,34 +434,34 @@ void FT8XX_wr8 (unsigned long adr, unsigned char data)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_wr16 (unsigned long adr, unsigned int data)
+void FT8XX_wr16 (uint32_t adr, uint16_t data)
 {
-    unsigned char wr_data[5] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data, data >> 8};
+    uint8_t wr_data[5] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data, data >> 8};
     SPI_master_write(SPI_1, wr_data, 5, FT8XX_EVE_CS);    
-    // byte 0 = (unsigned char)((adr >> 16) | MEM_WRITE);     // Write 24 bit ADR
-    // byte 1 = (unsigned char)(adr>>8);                      // 
+    // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);     // Write 24 bit ADR
+    // byte 1 = (uint8_t)(adr>>8);                      // 
     // byte 2 = adr;                                          //
-    // byte 3 = (unsigned char)(data);                        // Write 16 bit data
-    // byte 4 = (unsigned char)(data >> 8);                   // Little endian
+    // byte 3 = (uint8_t)(data);                        // Write 16 bit data
+    // byte 4 = (uint8_t)(data >> 8);                   // Little endian
 
     // SPI.begin();
     // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((unsigned char)((adr >> 16) | MEM_WRITE));
-    // SPI.transfer((unsigned char)(adr >> 8));
+    // SPI.transfer((uint8_t)((adr >> 16) | MEM_WRITE));
+    // SPI.transfer((uint8_t)(adr >> 8));
     // SPI.transfer(adr);
     // SPI.transfer(data);
-    // SPI.transfer((unsigned char)(data >> 8));
+    // SPI.transfer((uint8_t)(data >> 8));
     // SPI.end();
     // digitalWrite(FT8XX_nCS_PIN, HIGH);
 }
 
-//*******************void FT_write_32bit (unsigned long adr, unsigned long data)********************//
+//*******************void FT_write_32bit (uint32_t adr, uint32_t data)********************//
 //Description : Function writes 32 bit data + adr to FT8XX
 //
-//Function prototype : void FT_write_32bit (unsigned long adr, unsigned long data)
+//Function prototype : void FT_write_32bit (uint32_t adr, uint32_t data)
 //
-//Enter params       : unsigned long adr : register adress
-//                     unsigned long data: data to write
+//Enter params       : uint32_t adr : register adress
+//                     uint32_t data: data to write
 //
 //Exit params        : None
 //
@@ -469,60 +469,60 @@ void FT8XX_wr16 (unsigned long adr, unsigned int data)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_wr32 (unsigned long adr, unsigned long data)
+void FT8XX_wr32 (uint32_t adr, uint32_t data)
 {
-    unsigned char wr_data[7] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data, data >> 8, data >> 16, data >> 24};
+    uint8_t wr_data[7] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data, data >> 8, data >> 16, data >> 24};
     SPI_master_write(SPI_1, wr_data, 7, FT8XX_EVE_CS);      
-    // byte 0 = (unsigned char)((adr >> 16) | MEM_WRITE);     // Write 24 bit ADR
-    // byte 1 = (unsigned char)(adr>>8);                      //
+    // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);     // Write 24 bit ADR
+    // byte 1 = (uint8_t)(adr>>8);                      //
     // byte 2 = adr;                                          //
-    // byte 3 = (unsigned char)(data);                        // Writing 32 bit data
-    // byte 4 = (unsigned char)(data >> 8);                   // Little endian
-    // byte 5 = (unsigned char)(data >> 16);                  //
-    // byte 6 = (unsigned char)(data >> 24);                  //
+    // byte 3 = (uint8_t)(data);                        // Writing 32 bit data
+    // byte 4 = (uint8_t)(data >> 8);                   // Little endian
+    // byte 5 = (uint8_t)(data >> 16);                  //
+    // byte 6 = (uint8_t)(data >> 24);                  //
 
     // SPI.begin();
     // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((unsigned char)((adr >> 16) | MEM_WRITE));
-    // SPI.transfer((unsigned char)(adr >> 8));
+    // SPI.transfer((uint8_t)((adr >> 16) | MEM_WRITE));
+    // SPI.transfer((uint8_t)(adr >> 8));
     // SPI.transfer(adr);
     // SPI.transfer(data);
-    // SPI.transfer((unsigned char)(data >> 8));
-    // SPI.transfer((unsigned char)(data >> 16));
-    // SPI.transfer((unsigned char)(data >> 24));
+    // SPI.transfer((uint8_t)(data >> 8));
+    // SPI.transfer((uint8_t)(data >> 16));
+    // SPI.transfer((uint8_t)(data >> 24));
     // SPI.end();
     // digitalWrite(FT8XX_nCS_PIN, HIGH);
 }
 
-//*************************unsigned char FT_read_8bit (unsigned long adr)***************************//
+//*************************uint8_t FT_read_8bit (uint32_t adr)***************************//
 //Description : Function reads 8 bit data from FT8XX
 //
-//Function prototype : unsigned char FT_read_8bit (unsigned long adr)
+//Function prototype : uint8_t FT_read_8bit (uint32_t adr)
 //
-//Enter params       : unsigned long adr : register adress
+//Enter params       : uint32_t adr : register adress
 //
-//Exit params        : unsigned char : data from register
+//Exit params        : uint8_t : data from register
 //
-//Function call      : unsigned char = FT_read_8bit(0x0A1E0A12);
+//Function call      : uint8_t = FT_read_8bit(0x0A1E0A12);
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-unsigned char FT8XX_rd8 (unsigned long adr)
+uint8_t FT8XX_rd8 (uint32_t adr)
 {
-    unsigned char data[5] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0};
+    uint8_t data[5] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0};
     SPI_master_write(SPI_1, data, 5, FT8XX_EVE_CS);    
     while(SPI_txfer_done(SPI_1)!= 1);
     return SPI_get_rx_buffer_index(SPI_1, 4);
-    // byte 0 = (unsigned char)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
-    // byte 1 = (unsigned char)(adr>>8);                    // 
+    // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
+    // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
     // byte 3 = dummy                                       // send 0
     // byte 4 = rd8                                         // send 0, read 8-bit value from FT8XX
-    // unsigned char rd8 = 0;
+    // uint8_t rd8 = 0;
     // SPI.begin();
     // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((unsigned char)((adr >> 16) | MEM_READ));
-    // SPI.transfer((unsigned char)(adr >> 8));
+    // SPI.transfer((uint8_t)((adr >> 16) | MEM_READ));
+    // SPI.transfer((uint8_t)(adr >> 8));
     // SPI.transfer(adr);
     // SPI.transfer(0);
     // FT8XX_rd8 = SPI.transfer(0);
@@ -531,32 +531,32 @@ unsigned char FT8XX_rd8 (unsigned long adr)
     
 }
 
-//*************************unsigned int FT_read_16bit (unsigned long adr)**************************//
+//*************************uint16_t FT_read_16bit (uint32_t adr)**************************//
 //Description : Function reads 16 bit data from FT8XX
 //
-//Function prototype : unsigned char FT_read_16bit (unsigned long adr)
+//Function prototype : uint8_t FT_read_16bit (uint32_t adr)
 //
-//Enter params       : unsigned long adr : register adress
+//Enter params       : uint32_t adr : register adress
 //
-//Exit params        : unsigned int : data from register
+//Exit params        : uint16_t : data from register
 //
-//Function call      : unsigned int = FT_read_16bit(0x0A1E0A12);
+//Function call      : uint16_t = FT_read_16bit(0x0A1E0A12);
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-unsigned int FT8XX_rd16 (unsigned long adr)
+uint16_t FT8XX_rd16 (uint32_t adr)
 {
-    unsigned char data_read1, data_read2;
-    unsigned int rd16 = 0;    
-    unsigned char data[6] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0};
+    uint8_t data_read1, data_read2;
+    uint16_t rd16 = 0;    
+    uint8_t data[6] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0};
     SPI_master_write(SPI_1, data, 6, FT8XX_EVE_CS);    
     while(SPI_txfer_done(SPI_1)!= 1);
     data_read1 = SPI_get_rx_buffer_index(SPI_1, 4);    
     data_read2 = SPI_get_rx_buffer_index(SPI_1, 5); 
     rd16 = ((data_read2 << 8) | data_read1);
     return (rd16);
-    // byte 0 = (unsigned char)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
-    // byte 1 = (unsigned char)(adr>>8);                    // 
+    // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
+    // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
     // byte 3 = dummy                                       // send 0
     // byte 4 = rd16, LSbyte                                // send 0, read less significant byte of the 16-bit data
@@ -565,8 +565,8 @@ unsigned int FT8XX_rd16 (unsigned long adr)
 
     // SPI.begin();
     // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((unsigned char)((adr >> 16) | MEM_READ));
-    // SPI.transfer((unsigned char)(adr >> 8));
+    // SPI.transfer((uint8_t)((adr >> 16) | MEM_READ));
+    // SPI.transfer((uint8_t)(adr >> 8));
     // SPI.transfer(adr);
     // SPI.transfer(0);
     // data_read1 = SPI.transfer(0);
@@ -578,46 +578,46 @@ unsigned int FT8XX_rd16 (unsigned long adr)
     
 }
 
-//*************************unsigned long FT_read_32bit (unsigned long adr)**************************//
+//*************************uint32_t FT_read_32bit (uint32_t adr)**************************//
 //Description : Function reads 32 bit data from FT8XX
 //
-//Function prototype : unsigned char FT_read_32bit (unsigned long adr)
+//Function prototype : uint8_t FT_read_32bit (uint32_t adr)
 //
-//Enter params       : unsigned long adr : register adress
+//Enter params       : uint32_t adr : register adress
 //
-//Exit params        : unsigned long : data from register
+//Exit params        : uint32_t : data from register
 //
-//Function call      : unsigned long = FT_read_16bit(0x0A1E0A12);
+//Function call      : uint32_t = FT_read_16bit(0x0A1E0A12);
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-unsigned long FT8XX_rd32 (unsigned long adr)
+uint32_t FT8XX_rd32 (uint32_t adr)
 {
-    // byte 0 = (unsigned char)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
-    // byte 1 = (unsigned char)(adr>>8);                    // 
+    // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
+    // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
     // byte 3 = dummy                                       // send 0
     // byte 4 = rd16, 0..7                                  // send 0, read bits 0..7 of the 32-bit data
     // byte 5 = rd16, 8..15                                 // send 0, read bits 8..15 of the 32-bit data
     // byte 6 = rd32, 16..23                                // send 0, read bits 16..23 of the 32-bit data
     // byte 7 = rd32, 24..31                                // send 0, read bits 24..31 of the 32-bit data
-    unsigned long data_read1, data_read2, data_read3, data_read4;
-    unsigned long rd32 = 0x00000000;  
-    unsigned char data[8] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0, 0, 0};
+    uint32_t data_read1, data_read2, data_read3, data_read4;
+    uint32_t rd32 = 0x00000000;  
+    uint8_t data[8] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0, 0, 0};
     SPI_master_write(SPI_1, data, 8, FT8XX_EVE_CS);    
     while(SPI_txfer_done(SPI_1)!= 1);
     data_read1 = SPI_get_rx_buffer_index(SPI_1, 4);    
     data_read2 = SPI_get_rx_buffer_index(SPI_1, 5); 
     data_read3 = SPI_get_rx_buffer_index(SPI_1, 6);    
     data_read4 = SPI_get_rx_buffer_index(SPI_1, 7);     
-    rd32 = (unsigned long)(data_read4 << 24);
-    rd32 = (unsigned long)(rd32 | data_read3 << 16);
-    rd32 = (unsigned long)(rd32 | data_read2 << 8);
-    rd32 = (unsigned long)(rd32 | data_read1);
+    rd32 = (uint32_t)(data_read4 << 24);
+    rd32 = (uint32_t)(rd32 | data_read3 << 16);
+    rd32 = (uint32_t)(rd32 | data_read2 << 8);
+    rd32 = (uint32_t)(rd32 | data_read1);
     // SPI.begin();
     // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((unsigned char)((adr >> 16) | MEM_READ));
-    // SPI.transfer((unsigned char)(adr >> 8));
+    // SPI.transfer((uint8_t)((adr >> 16) | MEM_READ));
+    // SPI.transfer((uint8_t)(adr >> 8));
     // SPI.transfer(adr);
     // SPI.transfer(0);
     // data_read1 = SPI.transfer(0);
@@ -627,10 +627,10 @@ unsigned long FT8XX_rd32 (unsigned long adr)
     // SPI.end();
     // digitalWrite(FT8XX_nCS_PIN, HIGH);
 
-    // rd32 = (unsigned long)(data_read4 << 24);
-    // rd32 = (unsigned long)(rd32 | data_read3 << 16);
-    // rd32 = (unsigned long)(rd32 | data_read2 << 8);
-    // rd32 = (unsigned long)(rd32 | data_read1);
+    // rd32 = (uint32_t)(data_read4 << 24);
+    // rd32 = (uint32_t)(rd32 | data_read3 << 16);
+    // rd32 = (uint32_t)(rd32 | data_read2 << 8);
+    // rd32 = (uint32_t)(rd32 | data_read1);
     return (rd32);
 }
 
@@ -683,10 +683,10 @@ void FT8XX_update_screen_dl (void)
     FT8XX_wr16(REG_CMD_WRITE, cmdOffset);     // Write list to display, now active
 }
 
-//************************void write_dl_char (unsigned char byte)************************//
+//************************void write_dl_char (uint8_t byte)************************//
 //Description : Function writes char to display list
 //
-//Function prototype : void write_dl_char (unsigned char byte)
+//Function prototype : void write_dl_char (uint8_t byte)
 //
 //Enter params       : unsinged char : data to write to display list
 //
@@ -696,16 +696,16 @@ void FT8XX_update_screen_dl (void)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_write_dl_char (unsigned char data)
+void FT8XX_write_dl_char (uint8_t data)
 {
     FT8XX_wr16(RAM_CMD + cmdOffset, data);          // Write data to display list
     cmdOffset = FT8XX_inc_cmd_offset(cmdOffset, 1); // get new cmdOffset value
 }
 
-//************************void write_dl_int (unsigned int d1)************************//
+//************************void write_dl_int (uint16_t d1)************************//
 //Description : Function writes int to display list
 //
-//Function prototype : void write_dl_int (unsigned int d1)
+//Function prototype : void write_dl_int (uint16_t d1)
 //
 //Enter params       : unsinged int : data to write to display list
 //
@@ -715,16 +715,16 @@ void FT8XX_write_dl_char (unsigned char data)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_write_dl_int (unsigned int data)
+void FT8XX_write_dl_int (uint16_t data)
 {
     FT8XX_wr16(RAM_CMD + cmdOffset, data);            // write data to display list
     cmdOffset = FT8XX_inc_cmd_offset(cmdOffset, 2);   // get new cmdOffset value
 }
 
-//**************************void write_dl_long (unsigned long cmd)*************************//
+//**************************void write_dl_long (uint32_t cmd)*************************//
 //Description : Function writes long to display list
 //
-//Function prototype : void write_dl_long (unsigned long cmd)
+//Function prototype : void write_dl_long (uint32_t cmd)
 //
 //Enter params       : unsinged long : data to write to display list
 //
@@ -734,30 +734,30 @@ void FT8XX_write_dl_int (unsigned int data)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_write_dl_long (unsigned long data)
+void FT8XX_write_dl_long (uint32_t data)
 {
     FT8XX_wr32(RAM_CMD + cmdOffset, data);          // write data to display list
     cmdOffset = FT8XX_inc_cmd_offset(cmdOffset, 4); // get new cmdOffset value
 }
 
-//****************unsigned int FT_inc_cmd_offset (unsigned int cur_off, unsigned char cmd_size)**************//
+//****************uint16_t FT_inc_cmd_offset (uint16_t cur_off, uint8_t cmd_size)**************//
 //Description : Function increments write ring buffer inside FT801, and returns
 //              the new offset value to stay between a range of 0 through 4096
 //
-//Function prototype : unsigned int FT_inc_cmd_offset (unsigned int cur_off, unsigned char cmd_size)
+//Function prototype : uint16_t FT_inc_cmd_offset (uint16_t cur_off, uint8_t cmd_size)
 //
-//Enter params       : unsigned int cur_off : current pointer offset
-//                     unsigned char cmd_size: cmd size to add to pointer offset
+//Enter params       : uint16_t cur_off : current pointer offset
+//                     uint8_t cmd_size: cmd size to add to pointer offset
 //
-//Exit params        : unsigned int : new offset value
+//Exit params        : uint16_t : new offset value
 //
-//Function call      : unsigned int = FT_inc_cmd_offset(CURR_OFF, 4);
+//Function call      : uint16_t = FT_inc_cmd_offset(CURR_OFF, 4);
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-unsigned int FT8XX_inc_cmd_offset (unsigned int cur_off, unsigned char cmd_size)
+uint16_t FT8XX_inc_cmd_offset (uint16_t cur_off, uint8_t cmd_size)
 {
-    unsigned int new_offset;
+    uint16_t new_offset;
     new_offset = cur_off + cmd_size;     // increm new offset
     if (new_offset > 4095)               // Ring buffer size not exceeded ?
     {
@@ -767,30 +767,30 @@ unsigned int FT8XX_inc_cmd_offset (unsigned int cur_off, unsigned char cmd_size)
 }
 
 
-//**********************unsigned int FT_get_cmd_offset_value (void)*********************//
+//**********************uint16_t FT_get_cmd_offset_value (void)*********************//
 //Description : Function gets actual cmdOffset value
 //
-//Function prototype : unsigned int FT_get_cmd_offset_value (void)
+//Function prototype : uint16_t FT_get_cmd_offset_value (void)
 //
 //Enter params       : none
 //
-//Exit params        : unsigned int : cmdOffset value
+//Exit params        : uint16_t : cmdOffset value
 //
-//Function call      :unsigned int = FT_get_cmd_offset_value();
+//Function call      :uint16_t = FT_get_cmd_offset_value();
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-unsigned int FT8XX_get_cmd_offset_value (void)
+uint16_t FT8XX_get_cmd_offset_value (void)
 {
     return (cmdOffset); // return cmdOffset value
 }
 
-//*************************void FT_set_bcolor (unsigned long color)**********************//
+//*************************void FT_set_bcolor (uint32_t color)**********************//
 //Description : Function set's display background color
 //
-//Function prototype : void FT_set_bcolor (unsigned long color)
+//Function prototype : void FT_set_bcolor (uint32_t color)
 //
-//Enter params       : unsigned long : color wanted, as R/G/B value
+//Enter params       : uint32_t : color wanted, as R/G/B value
 //
 //Exit params        : none
 //
@@ -798,18 +798,18 @@ unsigned int FT8XX_get_cmd_offset_value (void)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_set_context_bcolor (unsigned long color)
+void FT8XX_set_context_bcolor (uint32_t color)
 {
     FT8XX_write_dl_long(CMD_BGCOLOR); // Write Bcolor command to display list
     FT8XX_write_dl_long(color);       // Write color
 }
 
-//*************************void FT_set_fcolor (unsigned long color)**********************//
+//*************************void FT_set_fcolor (uint32_t color)**********************//
 //Description : Function set's display foreground color
 //
-//Function prototype : void FT_set_fcolor (unsigned long color)
+//Function prototype : void FT_set_fcolor (uint32_t color)
 //
-//Enter params       : unsigned long : color wanted, as R/G/B value
+//Enter params       : uint32_t : color wanted, as R/G/B value
 //
 //Exit params        : none
 //
@@ -817,18 +817,18 @@ void FT8XX_set_context_bcolor (unsigned long color)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_set_context_fcolor (unsigned long color)
+void FT8XX_set_context_fcolor (uint32_t color)
 {
     FT8XX_write_dl_long(CMD_FGCOLOR); // Write Bcolor command to display lis
     FT8XX_write_dl_long(color);       // Write color
 }
 
-//**************************void FT_set_color (unsigned long color)**********************//
+//**************************void FT_set_color (uint32_t color)**********************//
 //Description : FT directive to set new color to primitives
 //
-//Function prototype : void FT_set_color (unsigned long color)
+//Function prototype : void FT_set_color (uint32_t color)
 //
-//Enter params       : unsigned long : color wanted, as R/G/B value
+//Enter params       : uint32_t : color wanted, as R/G/B value
 //
 //Exit params        : none
 //
@@ -836,19 +836,19 @@ void FT8XX_set_context_fcolor (unsigned long color)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_set_context_color (unsigned long color)
+void FT8XX_set_context_color (uint32_t color)
 {
-    unsigned char R, G, B;
-    B = (unsigned char)color;
-    G = (unsigned char)(color >> 8);
-    R = (unsigned char)(color >> 16);
+    uint8_t R, G, B;
+    B = (uint8_t)color;
+    G = (uint8_t)(color >> 8);
+    R = (uint8_t)(color >> 16);
     FT8XX_write_dl_long(COLOR_RGB(R, G, B));
 }
 
-void FT8XX_write_bitmap (const unsigned char *img_ptr, const unsigned char *lut_ptr, unsigned long img_length, unsigned long base_adr)
+void FT8XX_write_bitmap (const uint8_t *img_ptr, const uint8_t *lut_ptr, uint32_t img_length, uint32_t base_adr)
 {
-    unsigned long counter = 0;
-    unsigned int lut_counter = 0;
+    uint32_t counter = 0;
+    uint16_t lut_counter = 0;
 
     #ifdef FT_80X_ENABLE
     while (lut_counter < FT_RAM_PAL_SIZE)
@@ -865,19 +865,19 @@ void FT8XX_write_bitmap (const unsigned char *img_ptr, const unsigned char *lut_
     #endif
 }   
 
-void FT8XX_draw_point (unsigned int x, unsigned int y, unsigned int r)
+void FT8XX_draw_point (uint16_t x, uint16_t y, uint16_t r)
 {
     FT8XX_write_dl_long(BEGIN(FTPOINTS));             //Begin primitive
     FT8XX_write_dl_long(POINT_SIZE(r * 16));          //write line width
     FT8XX_write_dl_long(VERTEX2F(x * 16, y * 16));    //draw line
 }
-//**void init_slider (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int opt, unsigned int v, unsigned int r)**//
+//**void init_slider (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t opt, uint16_t v, uint16_t r)**//
 //Description : Function will init a st_Slider[number] object with input values
 //
-//Function prototype : void init_slider (unsigned char number, unsigned int x, y, w, h, opt, v, r))
+//Function prototype : void init_slider (uint8_t number, uint16_t x, y, w, h, opt, v, r))
 //
-//Enter params       : unsigned char : number : number of stslider object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of stslider object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          w      : width of object
 //                          h      : height of object
@@ -894,7 +894,7 @@ void FT8XX_draw_point (unsigned int x, unsigned int y, unsigned int r)
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_SLIDER_NB > 0
-void FT8XX_CMD_slider (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int opt, unsigned int v, unsigned int r)
+void FT8XX_CMD_slider (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t opt, uint16_t v, uint16_t r)
 {    
     st_Slider[number].x = x;    //initialise variable with input values
     st_Slider[number].y = y;
@@ -931,7 +931,7 @@ void FT8XX_draw_slider (STSlider *st_Slider)
     FT8XX_write_dl_long(st_Slider->range); // 32 bit range (stay in 4 bytes multiples)
 }
 
-void FT8XX_modify_slider (STSlider *st_Slider, unsigned char type, unsigned int value)
+void FT8XX_modify_slider (STSlider *st_Slider, uint8_t type, uint16_t value)
 {
     switch (type)
     {
@@ -973,19 +973,19 @@ void FT8XX_modify_slider (STSlider *st_Slider, unsigned char type, unsigned int 
     }
 }
 
-unsigned char FT8XX_get_slider_nb (void)
+uint8_t FT8XX_get_slider_nb (void)
 {
     return slider_nb;
 }
 #endif //#if MAX_SLIDER_NB > 0
 
-//void init_button (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int f, unsigned int o, const char *str)//
+//void init_button (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t f, uint16_t o, const char *str)//
 //Description : Function will init a st_Button[number] object with input values
 //
-//Function prototype : void init_button (unsigned char number, unsigned int x, y, w, h, o, const char *str))
+//Function prototype : void init_button (uint8_t number, uint16_t x, y, w, h, o, const char *str))
 //
-//Enter params       : unsigned char : number : number of st_Button object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of st_Button object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          w      : width of object
 //                          h      : height of object
@@ -1001,9 +1001,9 @@ unsigned char FT8XX_get_slider_nb (void)
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_BUTTON_NB > 0
-void FT8XX_CMD_button (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int f, unsigned int o, const char *str)
+void FT8XX_CMD_button (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t f, uint16_t o, const char *str)
 {
-    unsigned char cnt = 0, temp = 0; //initialise variable with input values
+    uint8_t cnt = 0, temp = 0; //initialise variable with input values
     st_Button[number].x = x;
     st_Button[number].y = y;
     st_Button[number].w = w;
@@ -1051,7 +1051,7 @@ void FT8XX_CMD_button (unsigned char number, unsigned int x, unsigned int y, uns
 //******************************************************************************
 void FT8XX_draw_button (STButton *st_Button)
 {
-    unsigned char cnt = 0;
+    uint8_t cnt = 0;
     FT8XX_write_dl_long(CMD_BUTTON);
     FT8XX_write_dl_int(st_Button->x);    // x position on screen
     FT8XX_write_dl_int(st_Button->y);    // y position on screen
@@ -1061,12 +1061,12 @@ void FT8XX_draw_button (STButton *st_Button)
     FT8XX_write_dl_int(st_Button->opt);  // primitive options
     while (cnt < st_Button->len)        // write button text until eos
     {
-        FT8XX_write_dl_char(st_Button->str[cnt]);
+        FT8XX_write_dl_int8_t(st_Button->str[cnt]);
         cnt++;
     }
 }
 
-void FT8XX_modify_button (STButton *st_Button, unsigned char type, unsigned int value)
+void FT8XX_modify_button (STButton *st_Button, uint8_t type, uint16_t value)
 {
     switch (type)
     {
@@ -1102,13 +1102,13 @@ void FT8XX_modify_button (STButton *st_Button, unsigned char type, unsigned int 
 #endif //#if MAX_BUTTON_NB > 0
 
 
-//*****void init_text (unsigned char number, unsigned int x, unsigned int y, unsigned int f, unsigned int o, const char *str)******//
+//*****void init_text (uint8_t number, uint16_t x, uint16_t y, uint16_t f, uint16_t o, const char *str)******//
 //Description : Function will init a st_Text[number] object with input values
 //
-//Function prototype : void init_text (unsigned char number, unsigned int x, y, f, o, const char *str))
+//Function prototype : void init_text (uint8_t number, uint16_t x, y, f, o, const char *str))
 //
-//Enter params       : unsigned char : number : number of st_Text object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of st_Text object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          f      : font of object
 //                          o      : object options (refer to FT datasheet for valid options)
@@ -1123,9 +1123,9 @@ void FT8XX_modify_button (STButton *st_Button, unsigned char type, unsigned int 
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_TEXT_NB > 0
-void FT8XX_CMD_text (unsigned char number, unsigned int x, unsigned int y, unsigned int f, unsigned int o, const char *str)
+void FT8XX_CMD_text (uint8_t number, uint16_t x, uint16_t y, uint16_t f, uint16_t o, const char *str)
 {
-    unsigned char cnt = 0, temp = 0; //initialise variable with input values
+    uint8_t cnt = 0, temp = 0; //initialise variable with input values
     st_Text[number].x = x;
     st_Text[number].y = y;
     st_Text[number].font = f;
@@ -1170,7 +1170,7 @@ void FT8XX_CMD_text (unsigned char number, unsigned int x, unsigned int y, unsig
 //******************************************************************************
 void FT8XX_draw_text (STText *st_Text)
 {
-    unsigned char cnt = 0;
+    uint8_t cnt = 0;
     FT8XX_write_dl_long(CMD_TEXT);        // FT text command
     FT8XX_write_dl_int(st_Text->x);       // x position on screen
     FT8XX_write_dl_int(st_Text->y);       // y position on screen
@@ -1186,7 +1186,7 @@ void FT8XX_draw_text (STText *st_Text)
 #endif //#if MAX_TEXT_NB > 0
 
 #if MAX_GRADIENT_NB > 0
-void FT8XX_CMD_gradient(unsigned char number, unsigned int x0, unsigned int y0, unsigned long rgb0, unsigned int x1, unsigned int y1, unsigned long rgb1)
+void FT8XX_CMD_gradient(uint8_t number, uint16_t x0, uint16_t y0, uint32_t rgb0, uint16_t x1, uint16_t y1, uint32_t rgb1)
 {
     st_Gradient[number].x0 = x0;
     st_Gradient[number].y0 = y0;
@@ -1207,7 +1207,7 @@ void FT8XX_draw_gradient (STGradient *st_Gradient)
     FT8XX_write_dl_long(st_Gradient->rgb1);    //         
 }
 
-void FT8XX_modify_gradient (STGradient *st_Gradient, unsigned char type, unsigned long value)
+void FT8XX_modify_gradient (STGradient *st_Gradient, uint8_t type, uint32_t value)
 {
     switch(type)
     {
@@ -1242,17 +1242,17 @@ void FT8XX_modify_gradient (STGradient *st_Gradient, unsigned char type, unsigne
 
 #endif
 
-//*********void init_number (unsigned char number, unsigned int x, unsigned int y, unsigned int f, unsigned int o, unsigned long n*********//
+//*********void init_number (uint8_t number, uint16_t x, uint16_t y, uint16_t f, uint16_t o, uint32_t n*********//
 //Description : Function will init a st_Number[number] object with input values
 //
-//Function prototype : void init_number (unsigned char number, unsigned int x, y, f, o, unsigned long n))
+//Function prototype : void init_number (uint8_t number, uint16_t x, y, f, o, uint32_t n))
 //
-//Enter params       : unsigned char : number : number of st_Number object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of st_Number object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          f      : font of object
 //                          o      : object options (refer to FT datasheet for valid options)
-//                     unsigned long : n      : value of number (0 to 2^32)
+//                     uint32_t : n      : value of number (0 to 2^32)
 //
 //Exit params        : none
 //
@@ -1263,7 +1263,7 @@ void FT8XX_modify_gradient (STGradient *st_Gradient, unsigned char type, unsigne
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_NUMBER_NB > 0
-void FT8XX_CMD_number (unsigned char number, unsigned int x, unsigned int y, unsigned int f, unsigned int o, unsigned long n)
+void FT8XX_CMD_number (uint8_t number, uint16_t x, uint16_t y, uint16_t f, uint16_t o, uint32_t n)
 {
     st_Number[number].x = x;   //initialise struct
     st_Number[number].y = y;
@@ -1295,7 +1295,7 @@ void FT8XX_draw_number (STNumber *st_Number)
     FT8XX_write_dl_long(st_Number->num); // 32 bit number
 }
 
-void FT8XX_modify_number (STNumber *st_Number, unsigned char type, unsigned long value)
+void FT8XX_modify_number (STNumber *st_Number, uint8_t type, uint32_t value)
 {
     switch (type)
     {
@@ -1326,16 +1326,16 @@ void FT8XX_modify_number (STNumber *st_Number, unsigned char type, unsigned long
 
 #endif //#if MAX_NUMBER_NB > 0
 
-//********void init_window (unsigned char number, unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)***********//
+//********void init_window (uint8_t number, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)***********//
 //Description : Function will init a st_Window[number] touch window
 //              A window is NOT a viewable rectangle : it's transparent and
 //              used to track&detect touch tag on the display to process touch
 //              input.
 //
-//Function prototype : void init_window (unsigned char number, unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
+//Function prototype : void init_window (uint8_t number, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 //
-//Enter params       : unsigned char : number : number of st_Window object(0 to MAX_PRIM_XX)
-//                     unsigned int : x1     : x start position
+//Enter params       : uint8_t : number : number of st_Window object(0 to MAX_PRIM_XX)
+//                     uint16_t : x1     : x start position
 //                          y1     : y start position
 //                          x2     : x end position
 //                          y2     : y end position
@@ -1364,7 +1364,7 @@ void FT8XX_modify_number (STNumber *st_Number, unsigned char type, unsigned long
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_WINDOW_NB > 0
-void FT8XX_CMD_window (unsigned char number, unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
+void FT8XX_CMD_window (uint8_t number, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
     st_Window[number].x1 = x1;        //set struct default values
     st_Window[number].x2 = x2;
@@ -1380,15 +1380,15 @@ void FT8XX_CMD_window (unsigned char number, unsigned int x1, unsigned int y1, u
 #endif //#if MAX_WINDOW_NB > 0
 
 
-//****void init_rectangle (unsigned char number, unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned int w)******//
+//****void init_rectangle (uint8_t number, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t w)******//
 //Description : Function will init a st_Rectangle[number] rectangle
 //              A rectangle is viewable on the display : it writes 4 lines
 //              of width w
 //
-//Function prototype : void init_rectangle (unsigned char number, unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned int w))
+//Function prototype : void init_rectangle (uint8_t number, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t w))
 //
-//Enter params       : unsigned char : number : number of st_Rectangle object(0 to MAX_PRIM_XX)
-//                     unsigned int : x1     : x start position
+//Enter params       : uint8_t : number : number of st_Rectangle object(0 to MAX_PRIM_XX)
+//                     uint16_t : x1     : x start position
 //                          y1     : y start position
 //                          x2     : x end position
 //                          y2     : y end position
@@ -1418,7 +1418,7 @@ void FT8XX_CMD_window (unsigned char number, unsigned int x1, unsigned int y1, u
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_RECT_NB > 0
-void FT8XX_CMD_rectangle (unsigned char number, unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned int w)
+void FT8XX_CMD_rectangle (uint8_t number, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t w)
 {
     st_Rectangle[number].x1 = x1;//set struct default values
     st_Rectangle[number].y1 = y1;
@@ -1452,13 +1452,13 @@ void FT8XX_draw_rectangle (STRectangle *st_Rectangle)
 #endif //#if MAX_RECT_NB > 0
 
 
-//void init_togglesw (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int f, unsigned int o, const char *str)//
+//void init_togglesw (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t f, uint16_t o, const char *str)//
 //Description : Function will init a st_Togglesw[number] object with input values
 //
-//Function prototype : void init_togglesw(unsigned char number, unsigned int x, y, w, f, o, const char *str)
+//Function prototype : void init_togglesw(uint8_t number, uint16_t x, y, w, f, o, const char *str)
 //
-//Enter params       : unsigned char : number : number of st_Togglesw object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of st_Togglesw object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          w      : width of center circle
 //                          f      : object font (refer to FT datasheet for valid font)
@@ -1475,9 +1475,9 @@ void FT8XX_draw_rectangle (STRectangle *st_Rectangle)
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_TOGGLE_NB > 0
-void FT8XX_CMD_toggle (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int f, unsigned int o, unsigned char state, const char *str)
+void FT8XX_CMD_toggle (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t f, uint16_t o, uint8_t state, const char *str)
 {
-    unsigned char cnt = 0, temp = 0;//set struct default values
+    uint8_t cnt = 0, temp = 0;//set struct default values
     st_Toggle[number].x1 = x;
     st_Toggle[number].y1 = y;
     st_Toggle[number].w = w;
@@ -1525,7 +1525,7 @@ void FT8XX_CMD_toggle (unsigned char number, unsigned int x, unsigned int y, uns
 //******************************************************************************
 void FT8XX_draw_toggle (STToggle *st_Toggle)
 {
-    unsigned char cnt = 0;
+    uint8_t cnt = 0;
     FT8XX_write_dl_long(CMD_TOGGLE);
     FT8XX_write_dl_int(st_Toggle->x1);    // x
     FT8XX_write_dl_int(st_Toggle->y1);    // y
@@ -1535,12 +1535,12 @@ void FT8XX_draw_toggle (STToggle *st_Toggle)
     FT8XX_write_dl_int(st_Toggle->state); // state
     while (cnt < st_Toggle->len)         // write text until eos
     {
-        FT8XX_write_dl_char(st_Toggle->str[cnt]);
+        FT8XX_write_dl_int8_t(st_Toggle->str[cnt]);
         cnt++;
     }
 }
 
-void FT8XX_change_toggle_state (STToggle *st_Toggle, unsigned char state)
+void FT8XX_change_toggle_state (STToggle *st_Toggle, uint8_t state)
 {
     st_Toggle->state = state;
 }
@@ -1548,13 +1548,13 @@ void FT8XX_change_toggle_state (STToggle *st_Toggle, unsigned char state)
 #endif //#if MAX_TOGGLE_NB > 0
 
 
-//*******void init_dial (unsigned char number, unsigned int x, unsigned int y, unsigned int r, unsigned int opt, unsigned int val)********//
+//*******void init_dial (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint16_t val)********//
 //Description : Function will init a st_Dial[number] object with input values
 //
-//Function prototype : void init_dial (unsigned char number, unsigned int x, unsigned int y, unsigned int r, unsigned int opt, unsigned int val)
+//Function prototype : void init_dial (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint16_t val)
 //
-//Enter params       : unsigned char : number : number of st_Dial object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of st_Dial object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          r      : circle radius
 //                          opt    : object font (refer to FT datasheet for valid font)
@@ -1569,7 +1569,7 @@ void FT8XX_change_toggle_state (STToggle *st_Toggle, unsigned char state)
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_DIAL_NB > 0
-void FT8XX_CMD_dial (unsigned char number, unsigned int x, unsigned int y, unsigned int r, unsigned int opt, unsigned int val)
+void FT8XX_CMD_dial (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint16_t val)
 {
     st_Dial[number].x = x;    //set struct default values
     st_Dial[number].y = y;
@@ -1605,13 +1605,13 @@ void FT8XX_draw_dial (STDial *st_Dial)
 #endif //#if MAX_DIAL_NB > 0
 
 
-//void init_progress (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int opt, unsigned int val, unsigned int range)//
+//void init_progress (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t opt, uint16_t val, uint16_t range)//
 //Description : Function will init a st_Progress[number] object with input values
 //
-//Function prototype : void init_progress (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int opt, unsigned int val, unsigned int range)
+//Function prototype : void init_progress (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t opt, uint16_t val, uint16_t range)
 //
-//Enter params       : unsigned char : number : number of st_Progress object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of st_Progress object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          w      : width of bar
 //                          h      : height of bar
@@ -1629,7 +1629,7 @@ void FT8XX_draw_dial (STDial *st_Dial)
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_PROGRESS_NB > 0
-void FT8XX_CMD_progress (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int opt, unsigned int val, unsigned int range)
+void FT8XX_CMD_progress (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t opt, uint16_t val, uint16_t range)
 {
 	st_Progress[number].x = x;        //set struct default values
 	st_Progress[number].y = y;
@@ -1666,7 +1666,7 @@ void FT8XX_draw_progress (STProgress *st_Progress)
     FT8XX_write_dl_int(0);
 }
 
-void FT8XX_modify_progress (STProgress *st_Progress, unsigned char val)
+void FT8XX_modify_progress (STProgress *st_Progress, uint8_t val)
 {
     st_Progress->val = val;
 }
@@ -1675,13 +1675,13 @@ void FT8XX_modify_progress (STProgress *st_Progress, unsigned char val)
 
 
 
-//void init_scroller (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int opt, unsigned int val, unsigned int size, unsigned int range)//
+//void init_scroller (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t opt, uint16_t val, uint16_t size, uint16_t range)//
 //Description : Function will init a st_Scroller[number] object with input values
 //
-//Function prototype : void init_scroller (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int opt, unsigned int val, unsigned int size, unsigned int range)
+//Function prototype : void init_scroller (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t opt, uint16_t val, uint16_t size, uint16_t range)
 //
-//Enter params       : unsigned char : number : number of st_Scroller object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of st_Scroller object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          w      : width of bar
 //                          h      : height of bar
@@ -1701,7 +1701,7 @@ void FT8XX_modify_progress (STProgress *st_Progress, unsigned char val)
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_SCROLLBAR_NB > 0
-void FT8XX_CMD_scrollbar (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int opt, unsigned int val, unsigned int size, unsigned int range)
+void FT8XX_CMD_scrollbar (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t opt, uint16_t val, uint16_t size, uint16_t range)
 {
     st_Scrollbar[number].x = x;        //set struct default values
     st_Scrollbar[number].y = y;
@@ -1739,7 +1739,7 @@ void FT8XX_draw_scrollbar (STScrollbar *st_Scrollbar)
     FT8XX_write_dl_int(st_Scrollbar->range);
 }
 
-void FT8XX_modify_scrollbar (STScrollbar *st_Scrollbar, unsigned char type, unsigned int value)
+void FT8XX_modify_scrollbar (STScrollbar *st_Scrollbar, uint8_t type, uint16_t value)
 {
     switch (type)
     {
@@ -1788,13 +1788,13 @@ void FT8XX_modify_scrollbar (STScrollbar *st_Scrollbar, unsigned char type, unsi
 #endif //#if MAX_SCROLLBAR_NB > 0
 
 
-//void init_gauge (unsigned char number, unsigned int x, unsigned int y, unsigned int r, unsigned int opt, unsigned int maj, unsigned int min, unsigned int val, unsigned int range)//
+//void init_gauge (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint16_t maj, uint16_t min, uint16_t val, uint16_t range)//
 //Description : Function will init a st_Gauge[number] object with input values
 //
-//Function prototype : void init_gauge (unsigned char number, unsigned int x, unsigned int y, unsigned int r, unsigned int opt, unsigned int maj, unsigned int min, unsigned int val, unsigned int range)
+//Function prototype : void init_gauge (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint16_t maj, uint16_t min, uint16_t val, uint16_t range)
 //
-//Enter params       : unsigned char : number : number of st_Gauge object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of st_Gauge object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          r      : radius of gauge
 //                          opt    : options for object
@@ -1813,7 +1813,7 @@ void FT8XX_modify_scrollbar (STScrollbar *st_Scrollbar, unsigned char type, unsi
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_GAUGE_NB > 0
-void FT8XX_CMD_gauge (unsigned char number, unsigned int x, unsigned int y, unsigned int r, unsigned int opt, unsigned int maj, unsigned int min, unsigned int val, unsigned int range)
+void FT8XX_CMD_gauge (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint16_t maj, uint16_t min, uint16_t val, uint16_t range)
 {
     st_Gauge[number].x = x;        //set struct default values
     st_Gauge[number].y = y;
@@ -1851,7 +1851,7 @@ void FT8XX_draw_gauge (STGauge *st_Gauge)
     FT8XX_write_dl_int(st_Gauge->range);
 }
 
-void FT8XX_modify_gauge (STGauge *st_Gauge, unsigned char type, unsigned int value)
+void FT8XX_modify_gauge (STGauge *st_Gauge, uint8_t type, uint16_t value)
 {
     switch(type)
     {
@@ -1895,13 +1895,13 @@ void FT8XX_modify_gauge (STGauge *st_Gauge, unsigned char type, unsigned int val
 #endif //#if MAX_GAUGE_NB > 0
 
 
-//void init_clock (unsigned char number, unsigned int x, unsigned int y, unsigned int r, unsigned int opt, unsigned char h, unsigned char m, unsigned char s, unsigned char ms)//
+//void init_clock (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint8_t h, uint8_t m, uint8_t s, uint8_t ms)//
 //Description : Function will init a st_Clock[number] object with input values
 //
-//Function prototype : void init_clock (unsigned char number, unsigned int x, unsigned int y, unsigned int r, unsigned int opt, unsigned char h, unsigned char m, unsigned char s, unsigned char ms)
+//Function prototype : void init_clock (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint8_t h, uint8_t m, uint8_t s, uint8_t ms)
 //
-//Enter params       : unsigned char : number : number of st_Clock object(0 to MAX_PRIM_XX)
-//                     unsigned int : x      : x position on screen
+//Enter params       : uint8_t : number : number of st_Clock object(0 to MAX_PRIM_XX)
+//                     uint16_t : x      : x position on screen
 //                          y      : y position on screen
 //                          r      : radius of clock
 //                          opt    : options for object
@@ -1919,7 +1919,7 @@ void FT8XX_modify_gauge (STGauge *st_Gauge, unsigned char type, unsigned int val
 //Intellitrol  08/07/2016
 //******************************************************************************
 #if MAX_CLOCK_NB > 0
-void FT8XX_CMD_clock (unsigned char number, unsigned int x, unsigned int y, unsigned int r, unsigned int opt, unsigned char h, unsigned char m, unsigned char s, unsigned char ms)
+void FT8XX_CMD_clock (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint8_t h, uint8_t m, uint8_t s, uint8_t ms)
 {
     st_Clock[number].x = x;        //set struct default values
     st_Clock[number].y = y;
@@ -1957,13 +1957,13 @@ void FT8XX_draw_clock (STClock *st_Clock)
     FT8XX_write_dl_int(st_Clock->ms);
 }
 
-//*******void FT_modify_clock_hms (STClock *st_Clock, unsigned char h, unsigned char m, unsigned char s)*******//
+//*******void FT_modify_clock_hms (STClock *st_Clock, uint8_t h, uint8_t m, uint8_t s)*******//
 //Description : FT function updates h,m,s value of input st_Clock
 //
-//Function prototype : void FT_modify_clock_hms (STClock *st_Clock, unsigned char h, unsigned char m, unsigned char s)
+//Function prototype : void FT_modify_clock_hms (STClock *st_Clock, uint8_t h, uint8_t m, uint8_t s)
 //
 //Enter params       : *st_Clock : clock struct including gfx parameters
-//                   : unsigned char h     : hour value
+//                   : uint8_t h     : hour value
 //                        m     : minute value
 //                        s     : second value
 //
@@ -1973,7 +1973,7 @@ void FT8XX_draw_clock (STClock *st_Clock)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_modify_clock_hms (STClock *st_Clock, unsigned char h, unsigned char m, unsigned char s)
+void FT8XX_modify_clock_hms (STClock *st_Clock, uint8_t h, uint8_t m, uint8_t s)
 {
     st_Clock->h = h;
     st_Clock->m = m;
@@ -1983,9 +1983,9 @@ void FT8XX_modify_clock_hms (STClock *st_Clock, unsigned char h, unsigned char m
 #endif //#if MAX_CLOCK_NB > 0   
 
 #if MAX_KEYS_NB > 0
-void FT8XX_CMD_keys (unsigned char number, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int f, unsigned int opt, char *str)
+void FT8XX_CMD_keys (uint8_t number, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t f, uint16_t opt, char *str)
 {
-    unsigned char cnt = 0, temp = 0;//set struct default values
+    uint8_t cnt = 0, temp = 0;//set struct default values
     st_Keys[number].x = x;
     st_Keys[number].y = y;
     st_Keys[number].w = w;
@@ -2019,7 +2019,7 @@ void FT8XX_CMD_keys (unsigned char number, unsigned int x, unsigned int y, unsig
 
 void FT8XX_draw_keys(STKeys *st_Keys)
 {
-    unsigned char cnt = 0;
+    uint8_t cnt = 0;
     FT8XX_write_dl_long(CMD_KEYS);
     FT8XX_write_dl_int(st_Keys->x);
     FT8XX_write_dl_int(st_Keys->y);
@@ -2036,7 +2036,7 @@ void FT8XX_draw_keys(STKeys *st_Keys)
 
 #endif
 
-void FT8XX_CMD_tracker(unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned char tag)
+void FT8XX_CMD_tracker(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t tag)
 {
     FT8XX_write_dl_long(CMD_TRACK);       //write FT command to draw a clock
     FT8XX_write_dl_int(x);  //write values to command
@@ -2046,13 +2046,13 @@ void FT8XX_CMD_tracker(unsigned int x, unsigned int y, unsigned int w, unsigned 
     FT8XX_write_dl_int(tag); 
 }
 
-//********************void FT_clear_screen (unsigned long color)************************//
+//********************void FT_clear_screen (uint32_t color)************************//
 //Description : FT function to clear primitives on screen and update backgrnd
 //              color with specified input color
 //
-//Function prototype : void FT_clear_screen (unsigned long color)
+//Function prototype : void FT_clear_screen (uint32_t color)
 //
-//Enter params       : unsigned long color : background color (0,R,G,B)(r,g,b = 1 byte each)
+//Enter params       : uint32_t color : background color (0,R,G,B)(r,g,b = 1 byte each)
 //
 //Exit params        : none
 //
@@ -2060,19 +2060,19 @@ void FT8XX_CMD_tracker(unsigned int x, unsigned int y, unsigned int w, unsigned 
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_clear_screen (unsigned long color)
+void FT8XX_clear_screen (uint32_t color)
 {
     FT8XX_write_dl_long(CLEAR_COLOR_RGB(color >> 16, color >> 8, color)); //Write color
     FT8XX_write_dl_long(CLEAR(1, 1, 1));       //clear primitives, cache and backgrnd
 }
 
-//***************void FT_draw_line_h (unsigned int x1, unsigned int x2, unsigned int y, unsigned int w)**************//
+//***************void FT_draw_line_h (uint16_t x1, uint16_t x2, uint16_t y, uint16_t w)**************//
 //Description : FT function to draw a horizontal line from x1 to x2, at y pos,
 //              with a width of w
 //
-//Function prototype : void FT_draw_line_h (unsigned int x1, unsigned int x2, unsigned int y, unsigned int w)
+//Function prototype : void FT_draw_line_h (uint16_t x1, uint16_t x2, uint16_t y, uint16_t w)
 //
-//Enter params       : unsigned int x1 : x start value
+//Enter params       : uint16_t x1 : x start value
 //                        x2 : x end value
 //                         y : y pos value
 //                         w : line width value
@@ -2083,7 +2083,7 @@ void FT8XX_clear_screen (unsigned long color)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_draw_line_h (unsigned int x1, unsigned int x2, unsigned int y, unsigned int w)
+void FT8XX_draw_line_h (uint16_t x1, uint16_t x2, uint16_t y, uint16_t w)
 {
     FT8XX_write_dl_long(BEGIN(LINES));         //Begin primitive
     FT8XX_write_dl_long(LINE_WIDTH(w));        //write line width
@@ -2091,13 +2091,13 @@ void FT8XX_draw_line_h (unsigned int x1, unsigned int x2, unsigned int y, unsign
     FT8XX_write_dl_long(VERTEX2F(x2 * 16, y * 16)); //draw line
 }
 
-//***************void FT_draw_line_v (unsigned int y1, unsigned int y2, unsigned int x, unsigned int w)**************//
+//***************void FT_draw_line_v (uint16_t y1, uint16_t y2, uint16_t x, uint16_t w)**************//
 //Description : FT function to draw a vertical line from y1 to y2, at x pos,
 //              with a width of w
 //
-//Function prototype : void FT_draw_line_v (unsigned int y1, unsigned int y2, unsigned int x, unsigned int w)
+//Function prototype : void FT_draw_line_v (uint16_t y1, uint16_t y2, uint16_t x, uint16_t w)
 //
-//Enter params       : unsigned int y1 : y start value
+//Enter params       : uint16_t y1 : y start value
 //                        y2 : y end value
 //                         x : x pos value
 //                         w : line width value
@@ -2108,7 +2108,7 @@ void FT8XX_draw_line_h (unsigned int x1, unsigned int x2, unsigned int y, unsign
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_draw_line_v (unsigned int y1, unsigned int y2, unsigned int x, unsigned int w)
+void FT8XX_draw_line_v (uint16_t y1, uint16_t y2, uint16_t x, uint16_t w)
 {
     FT8XX_write_dl_long(BEGIN(LINES));         //Begin primitive
     FT8XX_write_dl_long(LINE_WIDTH(w));        //write line width
@@ -2132,7 +2132,7 @@ void FT8XX_draw_line_v (unsigned int y1, unsigned int y2, unsigned int x, unsign
 STTouch FT8XX_touchpanel_read (STTouch touch_read)
 {
     //Function scroll through each touch register, read them and convert them
-    unsigned long temp_data;
+    uint32_t temp_data;
     #ifdef TOUCH_PANEL_CAPACITIVE
         
         temp_data = FT8XX_rd32(REG_CTOUCH_TOUCH0_XY);
@@ -2168,26 +2168,26 @@ STTouch FT8XX_touchpanel_read (STTouch touch_read)
     #endif
 }
 
-//******unsigned char ucCheckTouchWindow (STWindow *st_Window, STTouch touch_data)*******//
+//******uint8_t ucCheckTouchWindow (STWindow *st_Window, STTouch touch_data)*******//
 //Description : Function read touch input and analyze if touch is inside
 //              specified st_Window. If so, debounce the window and make it
 //              active,
 //
-//Function prototype : unsigned char ucCheckTouchWindow (STWindow *st_Window, STTouch touch_data)
+//Function prototype : uint8_t ucCheckTouchWindow (STWindow *st_Window, STTouch touch_data)
 //
 //Enter params       : STTouch   : struct which contains touch values
 //                     *st_Window : pointer to struct which contains window value
 //
-//Exit params        : unsigned char : window active (1) or inactive(0)
+//Exit params        : uint8_t : window active (1) or inactive(0)
 //
-//Function call      : unsigned char = ucCheckTouchWindow (&st_Window[0], touch_data);
+//Function call      : uint8_t = ucCheckTouchWindow (&st_Window[0], touch_data);
 //
 //Intellitrol  08/07/2016
 //*****************************************************************************
 #if MAX_WINDOW_NB > 0
-unsigned char FT8XX_check_window (STWindow *st_Window, STTouch touch_data)
+uint8_t FT8XX_check_window (STWindow *st_Window, STTouch touch_data)
 {
-    unsigned char ucRet = 0;
+    uint8_t ucRet = 0;
     //look via ucCheckTouch() if x and input parameter from touch data are
     //inside specified touch window
     if (FT8XX_check_screen_press(touch_data) == 1)
@@ -2243,24 +2243,24 @@ unsigned char FT8XX_check_window (STWindow *st_Window, STTouch touch_data)
     return (ucRet);
 }
 
-//**********unsigned char ucCheckTouch (STWindow *st_Window, STTouch touch_data)*********//
+//**********uint8_t ucCheckTouch (STWindow *st_Window, STTouch touch_data)*********//
 //Description : Function verify that provided touch_data is inside specified
 //              st_Window.
 //
-//Function prototype : unsigned char ucCheckTouch (STWindow *st_Window, STTouch touch_data)
+//Function prototype : uint8_t ucCheckTouch (STWindow *st_Window, STTouch touch_data)
 //
 //input param        : *st_Window : struct which contains window values
 //                     STTouch   : struct which contains touch values
 //
-//output param       : unsigned char : 1 = true, 0 = false
+//output param       : uint8_t : 1 = true, 0 = false
 //
 //function call  : ucCheckTouch (50,50,200,150,ucTouchX, ucTouchY);
 //
 //Intellitrol  08/07/2016
 //***************************************************************************//
-unsigned char FT8XX_check_touch (STWindow *st_Window, STTouch touch_data)
+uint8_t FT8XX_check_touch (STWindow *st_Window, STTouch touch_data)
 {
-  unsigned char X1G = 0, Y1G = 0, X2G = 0, Y2G = 0, X3G = 0, Y3G = 0, X4G = 0, Y4G = 0,
+  uint8_t X1G = 0, Y1G = 0, X2G = 0, Y2G = 0, X3G = 0, Y3G = 0, X4G = 0, Y4G = 0,
                 X5G = 0, Y5G = 0, CH1 = 0, CH2 = 0, CH3 = 0, CH4 = 0, CH5 = 0, TOT = 0;
   if ((touch_data.X0 >= st_Window->x1) && (touch_data.X0 <= st_Window->x2)) {
     X1G = 1;
@@ -2388,7 +2388,7 @@ unsigned char FT8XX_check_touch (STWindow *st_Window, STTouch touch_data)
   return (TOT);
 }
 
-unsigned char FT8XX_check_screen_press (STTouch touch_data)
+uint8_t FT8XX_check_screen_press (STTouch touch_data)
 {
   if ((touch_data.X0 != 0x8000) || (touch_data.X1 != 0x8000) ||
       (touch_data.X2 != 0x8000) || (touch_data.X3 != 0x8000) || (touch_data.X4 != 0x8000))
@@ -2402,11 +2402,11 @@ unsigned char FT8XX_check_screen_press (STTouch touch_data)
 
 
 
-//******void FT_modify_element_string (unsigned char number, unsigned char type, const char *str)*****//
+//******void FT_modify_element_string (uint8_t number, uint8_t type, const char *str)*****//
 //Description : Function modify input primitives string, calculate its new
 //              length and append the required bytes if necessary
 //
-//Function prototype : void FT_modify_element_string (unsigned char number, unsigned char type, const char *str)
+//Function prototype : void FT_modify_element_string (uint8_t number, uint8_t type, const char *str)
 //
 //Enter params       : number : number of the element (stBoite[number])
 //                     type   : type of primitive (defined in FT8XX.h)
@@ -2418,9 +2418,9 @@ unsigned char FT8XX_check_screen_press (STTouch touch_data)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_modify_element_string (unsigned char number, unsigned char type, char * str)
+void FT8XX_modify_element_string (uint8_t number, uint8_t type, char * str)
 {
-  unsigned char cnt = 0, temp = 0;
+  uint8_t cnt = 0, temp = 0;
 
   //Based on primitive type, same code is executed to append text / calculate
   //offset for display list to be a multiple of 5

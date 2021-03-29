@@ -16,18 +16,18 @@
 
 STRUCT_UART UART_struct[UART_QTY];
 
-__eds__ unsigned char uart_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
-__eds__ unsigned int uart_dma_rx_buf[UART_MAX_RX] __attribute__((eds,space(dma)));
+__eds__ uint8_t uart_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
+__eds__ uint16_t uart_dma_rx_buf[UART_MAX_RX] __attribute__((eds,space(dma)));
 
-//void UART_init (unsigned char channel, unsigned long baud, unsigned char buf_length)//
+//void UART_init (uint8_t channel, uint32_t baud, uint8_t buf_length)//
 //Description : Function initialize UART channel at specified baudrate with 
 //              specified buffer length, which size cannot exceed 256 bytes
 //
-//Function prototype : void UART_init (unsigned char channel, unsigned long baud, unsigned char buf_length)
+//Function prototype : void UART_init (uint8_t channel, uint32_t baud, uint8_t buf_length)
 //
-//Enter params       : unsigned char channel    : UART_x module
-//                   : unsigned long baud       : UART_x baudrate
-//                   : unsigned char buf_length : UART_x RX and TX buffer length
+//Enter params       : uint8_t channel    : UART_x module
+//                   : uint32_t baud       : UART_x baudrate
+//                   : uint8_t buf_length : UART_x RX and TX buffer length
 //
 //Exit params        : None
 //
@@ -35,7 +35,7 @@ __eds__ unsigned int uart_dma_rx_buf[UART_MAX_RX] __attribute__((eds,space(dma))
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 //****************************************************************************//
-void UART_init (unsigned char channel, unsigned long baud, unsigned char rx_buf_length)
+void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
 {
     switch (channel)
     {
@@ -134,7 +134,7 @@ void UART_init (unsigned char channel, unsigned long baud, unsigned char rx_buf_
             DMA_init(DMA_CH0);
             DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
             DMA0REQ = DMAREQ_U3TX;
-            DMA0PAD = (volatile unsigned int)&U3TXREG;
+            DMA0PAD = (volatile uint16_t)&U3TXREG;
             DMA0STAH = __builtin_dmapage(uart_dma_tx_buf);
             DMA0STAL = __builtin_dmaoffset(uart_dma_tx_buf);
             break; 
@@ -148,14 +148,14 @@ void UART_init (unsigned char channel, unsigned long baud, unsigned char rx_buf_
     __delay_ms(50);
 }   
 
-//********void UART_putc (unsigned char channel, unsigned char data)**********//
+//********void UART_putc (uint8_t channel, uint8_t data)**********//
 //Description : Function transmits a single character on selected channel via
 //              interrupt.
 //
-//Function prototype : void UART_putc (unsigned char channel, unsigned char data)
+//Function prototype : void UART_putc (uint8_t channel, uint8_t data)
 //
-//Enter params       : unsigned char channel : UART_x channel
-//                   : unsigned char data : byte of data
+//Enter params       : uint8_t channel : UART_x channel
+//                   : uint8_t data : byte of data
 //
 //Exit params        : None
 //
@@ -163,7 +163,7 @@ void UART_init (unsigned char channel, unsigned long baud, unsigned char rx_buf_
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 //****************************************************************************//
-void UART_putc (unsigned char channel, unsigned char data)
+void UART_putc (uint8_t channel, uint8_t data)
 { 
     if (channel == UART_1)
     {
@@ -190,14 +190,14 @@ void UART_putc (unsigned char channel, unsigned char data)
     }    
 }  
 
-//******void UART_putc_ascii (unsigned char channel, unsigned char data)******//
+//******void UART_putc_ascii (uint8_t channel, uint8_t data)******//
 //Description : Function converts byte to 2 corresponding ascii characters and 
 //              send them through UART
 //
-//Function prototype : void UART_putc_ascii (unsigned char channel, unsigned char data)
+//Function prototype : void UART_putc_ascii (uint8_t channel, uint8_t data)
 //
-//Enter params       : unsigned char channel : UART_x channel
-//                   : unsigned char data : byte of data
+//Enter params       : uint8_t channel : UART_x channel
+//                   : uint8_t data : byte of data
 //
 //Exit params        : None
 //
@@ -205,20 +205,20 @@ void UART_putc (unsigned char channel, unsigned char data)
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 //****************************************************************************//
-void UART_putc_ascii (unsigned char channel, unsigned char data)
+void UART_putc_ascii (uint8_t channel, uint8_t data)
 {
-    unsigned char buf[2];
+    uint8_t buf[2];
     hex_to_ascii(data, &buf[0], &buf[1]);   // Convert byte to ascii values
     UART_putbuf(channel, buf, 2);           // Send both values through UART
 }
 
-//**************void UART_putstr (unsigned char channel, char *str)***********//
+//**************void UART_putstr (uint8_t channel, char *str)***********//
 //Description : Function sends a string of character through UART_x channel
 //
-//Function prototype : void UART_putstr (unsigned char channel, char *str)
+//Function prototype : void UART_putstr (uint8_t channel, char *str)
 //
-//Enter params       : unsigned char channel : UART_x channel
-//                   : unsigned char *str : ascii string of character
+//Enter params       : uint8_t channel : UART_x channel
+//                   : uint8_t *str : ascii string of character
 //
 //Exit params        : None
 //
@@ -226,10 +226,10 @@ void UART_putc_ascii (unsigned char channel, unsigned char data)
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 //****************************************************************************// 
-void UART_putstr (unsigned char channel, char *str)
+void UART_putstr (uint8_t channel, char *str)
 {
-    unsigned char i = 0;
-    unsigned char length = strlen(str);
+    uint8_t i = 0;
+    uint8_t length = strlen((const char *)str);
     switch (channel)
     {
         case UART_1:
@@ -275,15 +275,15 @@ void UART_putstr (unsigned char channel, char *str)
     }
 }
 
-//void UART_putbuf (unsigned char channel, unsigned char *buf, unsigned char length)//
+//void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)//
 //Description : Function sends a buffer of data of specified length to UART_x
 //              channel
 //
-//Function prototype : void UART_putbuf (unsigned char channel, unsigned char *buf, unsigned char length)
+//Function prototype : void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)
 //
-//Enter params       : unsigned char channel : UART_x channel
-//                   : unsigned char *buf : byte buffer
-//                   : unsigned char length : buffer length in bytes
+//Enter params       : uint8_t channel : UART_x channel
+//                   : uint8_t *buf : byte buffer
+//                   : uint8_t length : buffer length in bytes
 //
 //Exit params        : None
 //
@@ -291,9 +291,9 @@ void UART_putstr (unsigned char channel, char *str)
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 //****************************************************************************// 
-void UART_putbuf (unsigned char channel, unsigned char *buf, unsigned char length)
+void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)
 {
-    unsigned char i = 0;
+    uint8_t i = 0;
     switch (channel)
     {
         case UART_1:
@@ -336,9 +336,9 @@ void UART_putbuf (unsigned char channel, unsigned char *buf, unsigned char lengt
 
 // Non-blocking function
 // Uses DMA
-void UART_putbuf_dma (unsigned char channel, unsigned char *buf, unsigned char length)
+void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length)
 {
-    unsigned char i = 0;
+    uint8_t i = 0;
     switch (channel)
     {           
         case UART_3:                  
@@ -363,14 +363,14 @@ void UART_putbuf_dma (unsigned char channel, unsigned char *buf, unsigned char l
     }    
 }
 
-//void UART_fill_tx_buffer (unsigned char channel, unsigned char *data, unsigned char length)//
+//void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length)//
 //Description : Function fills the TX buffer and set it's length in the struct
 //
-//Function prototype : void UART_fill_tx_buffer (unsigned char channel, unsigned char *data, unsigned char length)
+//Function prototype : void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length)
 //
-//Enter params       : unsigned char channel : UART_x channel
-//                   : unsigned char *data : buffer
-//                   : unsigned char length : buffer length in bytes
+//Enter params       : uint8_t channel : UART_x channel
+//                   : uint8_t *data : buffer
+//                   : uint8_t length : buffer length in bytes
 //
 //Exit params        : None
 //
@@ -378,9 +378,9 @@ void UART_putbuf_dma (unsigned char channel, unsigned char *buf, unsigned char l
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 //****************************************************************************//
-void UART_fill_tx_buffer (unsigned char channel, unsigned char *data, unsigned char length)
+void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length)
 {
-    unsigned char i = 0;
+    uint8_t i = 0;
     for (; i<length; i++)
     {
         UART_struct[channel].UART_tx_data[i] = *data++; // Fill the transmit buffer
@@ -388,13 +388,13 @@ void UART_fill_tx_buffer (unsigned char channel, unsigned char *data, unsigned c
     UART_struct[channel].UART_tx_length = length;       // Write TX buffer length
 }
 
-//*****************void UART_send_tx_buffer (unsigned char channel)***************//
+//*****************void UART_send_tx_buffer (uint8_t channel)***************//
 //Description : To be used in complement of UART_fill_tx_buffer() to send the 
 //              content of the previously filled TX buffer to UART_x channel
 //
-//Function prototype : void UART_send_tx_buffer (unsigned char channel)
+//Function prototype : void UART_send_tx_buffer (uint8_t channel)
 //
-//Enter params       : unsigned char channel : UART_x channel
+//Enter params       : uint8_t channel : UART_x channel
 //
 //Exit params        : None
 //
@@ -402,7 +402,7 @@ void UART_fill_tx_buffer (unsigned char channel, unsigned char *data, unsigned c
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 //****************************************************************************//
-void UART_send_tx_buffer (unsigned char channel)
+void UART_send_tx_buffer (uint8_t channel)
 {
     switch(channel)
     {
@@ -426,20 +426,20 @@ void UART_send_tx_buffer (unsigned char channel)
     }
 }
 
-//************unsigned char * UART_get_rx_buffer (unsigned char channel)***********//
+//************uint8_t * UART_get_rx_buffer (uint8_t channel)***********//
 //Description : Function returns a pointer to the receive buffer on UART_x channel
 //
-//Function prototype : unsigned char * UART_get_rx_buffer (unsigned char channel)
+//Function prototype : uint8_t * UART_get_rx_buffer (uint8_t channel)
 //
-//Enter params       : unsigned char channel : UART_x channel
+//Enter params       : uint8_t channel : UART_x channel
 //
-//Exit params        : unsigned char * : pointer to receive buffer
+//Exit params        : uint8_t * : pointer to receive buffer
 //
 //Function call      : ptr = UART_get_rx_buffer(UART_1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 //****************************************************************************//
-unsigned char * UART_get_rx_buffer (unsigned char channel)
+uint8_t * UART_get_rx_buffer (uint8_t channel)
 {
     switch(channel)
     {
@@ -461,22 +461,22 @@ unsigned char * UART_get_rx_buffer (unsigned char channel)
     }
 }
 
-//***********unsigned char UART_rx_done (unsigned char channel)***************//
+//***********uint8_t UART_rx_done (uint8_t channel)***************//
 //Description : Function checks the UART_struct[channel].UART_rx_done bit.
 //              If set, a receive operation was completed, the function clears
 //              the bit and returns 1. Otherwise, function returns 0
 //
-//Function prototype : unsigned char UART_rx_done (unsigned char channel)
+//Function prototype : uint8_t UART_rx_done (uint8_t channel)
 //
-//Enter params       : unsigned char channel : UART_x channel
+//Enter params       : uint8_t channel : UART_x channel
 //
-//Exit params        : unsigned char : 1(done), 0(rx is not done)
+//Exit params        : uint8_t : 1(done), 0(rx is not done)
 //
 //Function call      : UART_receive = UART_rx_done(UART_1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021   
 //****************************************************************************//
-unsigned char UART_rx_done (unsigned char channel)
+uint8_t UART_rx_done (uint8_t channel)
 {
     switch(channel)
     {     
@@ -513,22 +513,22 @@ unsigned char UART_rx_done (unsigned char channel)
     }     
 }
 
-//***********unsigned char UART_tx_done (unsigned char channel)***************//
+//***********uint8_t UART_tx_done (uint8_t channel)***************//
 //Description : Function checks the UART_struct[channel].UART_tx_done bit.
 //              If set, a transmit operation was completed, the function clears
 //              the bit and returns 1. Otherwise, function returns 0
 //
-//Function prototype : unsigned char UART_tx_done (unsigned char channel)
+//Function prototype : uint8_t UART_tx_done (uint8_t channel)
 //
-//Enter params       : unsigned char channel : UART_x channel
+//Enter params       : uint8_t channel : UART_x channel
 //
-//Exit params        : unsigned char : 1(done), 0(tx is not done)
+//Exit params        : uint8_t : 1(done), 0(tx is not done)
 //
 //Function call      : UART_receive = UART_tx_done(UART_1);
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021   
 //****************************************************************************//
-unsigned char UART_tx_done (unsigned char channel)
+uint8_t UART_tx_done (uint8_t channel)
 {
     switch(channel)
     {     
@@ -565,12 +565,12 @@ unsigned char UART_tx_done (unsigned char channel)
     }     
 }
 
-//**************void UART_rx_interrupt (unsigned char channel)****************//
+//**************void UART_rx_interrupt (uint8_t channel)****************//
 //Description : Function processes uart reception interrupt
 //
-//Function prototype : void UART_rx_interrupt (unsigned char channel)
+//Function prototype : void UART_rx_interrupt (uint8_t channel)
 //
-//Enter params       : unsigned char channel : UART_x channel
+//Enter params       : uint8_t channel : UART_x channel
 //
 //Exit params        : None
 //
@@ -578,7 +578,7 @@ unsigned char UART_tx_done (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021 
 //****************************************************************************//
-void UART_rx_interrupt (unsigned char channel)
+void UART_rx_interrupt (uint8_t channel)
 {
     switch(channel)   
     {
@@ -629,12 +629,12 @@ void UART_rx_interrupt (unsigned char channel)
     }     
 }
 
-//**************void UART_tx_interrupt (unsigned char channel)****************//
+//**************void UART_tx_interrupt (uint8_t channel)****************//
 //Description : Function processes uart transmit interrupt
 //
-//Function prototype : void UART_tx_interrupt (unsigned char channel)
+//Function prototype : void UART_tx_interrupt (uint8_t channel)
 //
-//Enter params       : unsigned char channel : UART_x channel
+//Enter params       : uint8_t channel : UART_x channel
 //
 //Exit params        : None
 //
@@ -642,7 +642,7 @@ void UART_rx_interrupt (unsigned char channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021 
 //****************************************************************************//
-void UART_tx_interrupt(unsigned char channel)
+void UART_tx_interrupt(uint8_t channel)
 {
     switch(channel)
     {
@@ -768,7 +768,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3TXInterrupt(void)
 
 void __attribute__((__interrupt__, no_auto_psv)) _U1ErrInterrupt(void)
 {
-    unsigned char temp = 0;   
+    uint8_t temp = 0;   
     // Must clear the overrun error to keep UART receiving
     U1STAbits.OERR = 0; 
     temp = U1RXREG;
@@ -778,7 +778,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1ErrInterrupt(void)
 
 void __attribute__((__interrupt__, no_auto_psv)) _U2ErrInterrupt(void)
 {
-    unsigned char temp = 0;   
+    uint8_t temp = 0;   
     /* Must clear the overrun error to keep UART receiving */
     U2STAbits.OERR = 0; 
     temp = U2RXREG;
@@ -788,7 +788,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2ErrInterrupt(void)
 
 void __attribute__((__interrupt__, no_auto_psv)) _U3ErrInterrupt(void)
 {
-    unsigned char temp = 0;   
+    uint8_t temp = 0;   
     /* Must clear the overrun error to keep UART receiving */
     U3STAbits.OERR = 0; 
     temp = U3RXREG;

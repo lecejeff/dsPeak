@@ -30,7 +30,7 @@ void RTCC_write_time (RTCC_time t)
 
 void RTCC_read_time (void)
 {   
-    unsigned int read3 = 0, read2 = 0, read1 = 0, read0 = 0;
+    uint16_t read3 = 0, read2 = 0, read1 = 0, read0 = 0;
     //while(RCFGCALbits.RTCSYNC == 1);
     RCFGCALbits.RTCPTR = 3;    
     read3 = RTCVAL;
@@ -47,7 +47,7 @@ void RTCC_read_time (void)
     rtcc_time.year = bcd_to_decimal(read3);
 }
 
-unsigned char RTCC_get_time_parameter (unsigned char type)
+uint8_t RTCC_get_time_parameter (uint8_t type)
 {
     switch (type)
     {

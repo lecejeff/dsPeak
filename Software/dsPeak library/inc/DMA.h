@@ -129,13 +129,13 @@
 
 typedef struct
 {
-    unsigned int buf_length;
-    unsigned char state;
-    unsigned char txfer_state;
+    uint16_t buf_length;
+    uint8_t state;
+    uint8_t txfer_state;
 }STRUCT_DMA;
 
-void DMA_init (unsigned char channel);
-unsigned char DMA_get_txfer_state (unsigned char channel);
-void DMA_enable (unsigned char channel);
-void DMA_disable (unsigned char channel);
+void DMA_init (uint8_t channel);
+uint8_t DMA_get_txfer_state (uint8_t channel);
+void DMA_enable (uint8_t channel);
+void DMA_disable (uint8_t channel);
 #endif

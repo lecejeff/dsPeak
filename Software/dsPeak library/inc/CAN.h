@@ -32,36 +32,36 @@
 
 typedef struct
 {
-    unsigned char channel;              // Physical CAN channel
+    uint8_t channel;              // Physical CAN channel
     
-    unsigned char mode;
-    unsigned char old_mode;
-    unsigned char int_state;
+    uint8_t mode;
+    uint8_t old_mode;
+    uint8_t int_state;
     
-    unsigned long time_quantum_frequency;
-    unsigned long bus_freq;
+    uint32_t time_quantum_frequency;
+    uint32_t bus_freq;
     
-    unsigned char message_buffer_channel;
-    unsigned int SID;
-    unsigned int RX_MASK;
-    unsigned int RX_SID;
-    unsigned int EID;
-    unsigned char SRR;
-    unsigned char IDE;
-    unsigned char RTR;
-    unsigned char RB1;
-    unsigned char RB0;
-    unsigned char DLC;
-    unsigned char can_payload[8];
-    unsigned int can_message[8];
+    uint8_t message_buffer_channel;
+    uint16_t SID;
+    uint16_t RX_MASK;
+    uint16_t RX_SID;
+    uint16_t EID;
+    uint8_t SRR;
+    uint8_t IDE;
+    uint8_t RTR;
+    uint8_t RB1;
+    uint8_t RB0;
+    uint8_t DLC;
+    uint8_t can_payload[8];
+    uint16_t can_message[8];
 }CAN_struct;
 
-unsigned char CAN_init (CAN_struct *node);
-unsigned char CAN_set_mode (CAN_struct *node, unsigned char mode);
-unsigned char CAN_get_mode (CAN_struct *node);
-unsigned int CAN_get_tx_err_cnt (CAN_struct *node);
-unsigned int CAN_get_rx_err_cnt (CAN_struct *node);
-unsigned char CAN_tx_msg (CAN_struct *node);
+uint8_t CAN_init (CAN_struct *node);
+uint8_t CAN_set_mode (CAN_struct *node, uint8_t mode);
+uint8_t CAN_get_mode (CAN_struct *node);
+uint16_t CAN_get_tx_err_cnt (CAN_struct *node);
+uint16_t CAN_get_rx_err_cnt (CAN_struct *node);
+uint8_t CAN_tx_msg (CAN_struct *node);
 
 #endif	
 
