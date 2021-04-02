@@ -1,14 +1,14 @@
 {
 	"Gate Swap" : [],
-	"Ref Des" : [],
-	"Pin Swap" : [
+	"Ref Des" : [
 		{
-			"Name" : "J23.2",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):ins1347749@connector.\\header 2\/sm.normal\\(chips):\\2\\",
-			"Logical" : "J23.2",
-			"Physical" : "J23.1"
+			"Name" : "R172",
+			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):p2@\\dspeak-v1_00-0b\\.\\mcu i\/os\\(sch_1):ins1175093@discrete.\\resistor.normal\\(chips)",
+			"Logical" : "R172",
+			"Physical" : "R?"
 		}
 	],
+	"Pin Swap" : [],
 	"Component Property" : [],
 	"Net Property" : [
 		{
@@ -34,46 +34,7 @@
 		}
 	],
 	"Pin Property" : [],
-	"Component" : [
-		{
-			"Name" : "D57",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):ins1579791@\\dspeak-v1_00-0b\\.\\diode schottky_0.normal\\(chips)",
-			"Logical" : "D57",
-			"Physical" : null
-		}
-	],
-	"Net" : [
-		{
-			"Name" : "N1579889",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):n1579889",
-			"Logical" : "N1579889",
-			"Physical" : null
-		}
-	],
-	"Connection" : [
-		{
-			"Name" : "D57.1",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):ins1579791@\\dspeak-v1_00-0b\\.\\diode schottky_0.normal\\(chips):CATHODE",
-			"Logical" : "VM",
-			"Physical" : null
-		},
-		{
-			"Name" : "D57.2",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):ins1579791@\\dspeak-v1_00-0b\\.\\diode schottky_0.normal\\(chips):ANODE",
-			"Logical" : "N1579889",
-			"Physical" : null
-		},
-		{
-			"Name" : "J23.2",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):ins1347749@connector.\\header 2\/sm.normal\\(chips):\\2\\",
-			"Logical" : "DGND",
-			"Physical" : "VM"
-		},
-		{
-			"Name" : "J23.1",
-			"C_PATH" : "@\\dspeak-v1_00-0b\\.\\top schematic\\(sch_1):ins1347749@connector.\\header 2\/sm.normal\\(chips):\\1\\",
-			"Logical" : "N1579889",
-			"Physical" : "DGND"
-		}
-	]
+	"Component" : [],
+	"Net" : [],
+	"Connection" : []
 }

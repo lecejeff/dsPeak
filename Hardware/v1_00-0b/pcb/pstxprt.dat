@@ -1,5 +1,5 @@
 FILE_TYPE = EXPANDEDPARTLIST;
-{ Using PSTWRITER 17.4.0 d001Mar-28-2021 at 14:15:18 }
+{ Using PSTWRITER 17.4.0 d001Apr-01-2021 at 17:30:16 }
 DIRECTIVES
  PST_VERSION='PST_HDL_CENTRIC_VERSION_0';
  ROOT_DRAWING='DSPEAK-V1_00-0B';
@@ -3324,6 +3324,16 @@ SECTION_NUMBER 1
  '@DSPEAK-V1_00-0B.TOP SCHEMATIC(SCH_1):P31@DSPEAK-V1_00-0B.POWER SUPPLY(SCH_1):INS1021199@DSPEAK-V1_00-0B.RESISTOR_0.NORMAL(CHIPS)':
  C_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):p31@\dspeak-v1_00-0b\.\power supply\(sch_1):ins1021199@\dspeak-v1_00-0b\.\resistor_0.normal\(chips)',
  P_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):page1_p31@\dspeak-v1_00-0b\.\power supply\(sch_1):page16_ins1021199@\dspeak-v1_00-0b\.\resistor_0.normal\(chips)',
+ PRIM_FILE='.\pstchip.dat',
+ SECTION='';
+
+PART_NAME
+ R172 'RESISTOR_0603_RES_IPC_10K':;
+
+SECTION_NUMBER 1
+ '@DSPEAK-V1_00-0B.TOP SCHEMATIC(SCH_1):P2@DSPEAK-V1_00-0B.MCU I/OS(SCH_1):INS1175093@DISCRETE.RESISTOR.NORMAL(CHIPS)':
+ C_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):p2@\dspeak-v1_00-0b\.\mcu i/os\(sch_1):ins1175093@discrete.\resistor.normal\(chips)',
+ P_PATH='@\dspeak-v1_00-0b\.\top schematic\(sch_1):page1_p2@\dspeak-v1_00-0b\.\mcu i/os\(sch_1):page11_ins1175093@discrete.\resistor.normal\(chips)',
  PRIM_FILE='.\pstchip.dat',
  SECTION='';
 

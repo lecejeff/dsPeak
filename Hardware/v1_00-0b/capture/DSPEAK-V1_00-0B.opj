@@ -1,6 +1,6 @@
 (ExpressProject ""
   (ProjectVersion "19981106")
-  (SoftwareVersion "17.4-2019 S015 (3921426)  [2/23/2021]-[03/28/21]")
+  (SoftwareVersion "17.4-2019 S015 (3921426)  [2/23/2021]-[04/01/21]")
   (Folder "Design Resources"
     (Folder "Library"
       (File "c:\users\jeanf\google drive\orcad16lib\piece\part.olb"
@@ -216,9 +216,9 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
-        (Scroll "0 0")
-        (Zoom "96")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
+        (Scroll "-67 -5")
+        (Zoom "48")
         (Occurrence "/"))
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
@@ -227,8 +227,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
-        (Scroll "0 0")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
+        (Scroll "0 87")
         (Zoom "100")
         (Occurrence "/P31"))
       (Path
@@ -238,19 +238,47 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
-        (Scroll "39 0")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
+        (Scroll "0 0")
         (Zoom "100")
-        (Occurrence "/P17"))
-      (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
-        (Scroll "39 0")
-        (Zoom "100")
-        (Occurrence "/P18"))
+        (Occurrence "/P15"))
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
-      (Schematic "Motor driver")
-      (Page "MOTOR DRIVE")))
+      (Schematic "Servo motor")
+      (Page "SERVO"))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
+        (Scroll "0 -5")
+        (Zoom "89")
+        (Occurrence "/P16"))
+      (Path
+         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
+      (Schematic "Audio codec")
+      (Page "Audio codec"))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
+        (Scroll "0 -5")
+        (Zoom "89")
+        (Occurrence "/P1"))
+      (Path
+         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
+      (Schematic "MCU I/Os")
+      (Page "MCU I/Os"))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
+        (Scroll "-18 -8")
+        (Zoom "119")
+        (Occurrence "/P14"))
+      (Path
+         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
+      (Schematic "MikroBus")
+      (Page "MikroBus")))
   (MPSSessionName "jeanf")
   (ISPCBBASICLICENSE "true")
   (PartMRUSelector
