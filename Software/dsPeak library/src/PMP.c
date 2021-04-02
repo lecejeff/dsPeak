@@ -52,6 +52,49 @@ void PMP_write_single (uint8_t mode, uint16_t adr, uint16_t data)
     }
 }
 
+void PMP_write_multiple (uint8_t mode, uint16_t adr, uint16_t *ptr, uint16_t length)
+{
+    unsigned int i = 0;
+    PMP_set_bus_output();
+    switch (mode)
+    {
+        case PMP_MODE_SRAM:            
+            PMP_WR_STROBE = 1;      // PMENB, set to 1, #OE inactive
+            PMP_RD_STROBE = 1;      // Direction of latches : dsPIC33E -> memory            
+            for (; i < length; i++)
+            {               
+                LATJ = (LATJ & 0xC000) | ((adr + i) & 0x3FFF);    // Place address on bus 
+                // CS controlled writes to the SRAM                 
+                // Place data(7..0) on data bus first            
+                PMP_PMBE_STROBE = 0;                        // Low byte output latch enable
+                PMP_CS2_STROBE = 0;                         // CS2 = 0   
+                LATH = ((LATH & 0xFF00) | (*ptr & 0x00FF));
+                PMP_CS2_STROBE = 1;                         // CS2 = 1            
+                // Place data(15..8) on data bus 
+                PMP_PMBE_STROBE = 1;                        // High byte output latch enable
+                PMP_CS2_STROBE = 0;                         // CS2 = 0  
+                LATH = ((LATH & 0xFF00) | ((*ptr++ & 0xFF00)>>8));
+                PMP_CS2_STROBE = 1;                         // CS2 = 1                 
+            }                       
+            break;
+            
+        case PMP_MODE_TFT:
+            PMP_CS1_STROBE = 0;                             // CS1 = 0
+            PMP_RD_STROBE = 1;                              // RD = 1;
+            for (; i < length; i++)
+            {                                
+                PMP_WR_STROBE = 0;                          // WR = 0;
+                LATH = ((LATH & 0xFF00) | (*ptr++ & 0x00FF));
+                PMP_WR_STROBE = 1;                          // WR = 1;                
+            }
+            PMP_CS1_STROBE = 1;                             // CS1 = 1  
+            break;
+            
+        default:
+            break;
+    }    
+}
+
 uint16_t PMP_read_single (uint8_t mode, uint16_t adr)
 {
     uint16_t result = 0, result_l = 0;

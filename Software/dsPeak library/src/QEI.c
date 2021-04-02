@@ -57,8 +57,8 @@ void QEI_init (uint8_t channel)
             QEI1GECH = 0;               // Only use 32bit value for the Greather than or equal compare register
             QEI1GECL = QEI_MOT1_PPT;    // Set default pulse per revolution value
             QEI1STATbits.PCHEQIEN = 1;  // Enable position counter >= cmp interrupt enable
-            QEI1IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
-            QEI1IOCbits.QFDIV = 3;      // 1/8 clock divide for digital input filter
+            //QEI1IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
+            //QEI1IOCbits.QFDIV = 3;      // 1/8 clock divide for digital input filter
             
             QEI_set_gear_derate(channel, QEI_MOT1_GDR);
             QEI_set_cpr(channel, QEI_MOT1_CPR);
@@ -81,8 +81,8 @@ void QEI_init (uint8_t channel)
             QEI2GECH = 0;               // Only use 32bit value for the Greather than or equal compare register
             QEI2GECL = QEI_MOT2_PPT;    // Set default pulse per revolution value
             QEI2STATbits.PCHEQIEN = 1;  // Enable position counter >= cmp interrupt enable
-            QEI2IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
-            QEI2IOCbits.QFDIV = 3;      // 1/8 clock divide for digital input filter
+            //QEI2IOCbits.FLTREN = 1;     // Enable digital input filter for QEI pins
+            //QEI2IOCbits.QFDIV = 3;      // 1/8 clock divide for digital input filter
             
             QEI_set_gear_derate(channel, QEI_MOT2_GDR);
             QEI_set_cpr(channel, QEI_MOT2_CPR);
@@ -169,15 +169,15 @@ uint32_t QEI_get_pulse (uint8_t channel)
     {
         case QEI_1:
             position = POS1CNTL;
-            //hold = POS1HLD;
-            //position |= (hold << 16);
+            //hold = ((hold |POS1HLD) << 16);
+            //position |= hold;
             return position;
             break;
             
         case QEI_2:
-            position = POS1CNTL;
-            //hold = POS1HLD;
-            //position |= (hold << 16);
+            position = POS2CNTL;
+            //hold = ((hold |POS2HLD) << 16);
+            //position |= hold;
             return position;
             break;
             

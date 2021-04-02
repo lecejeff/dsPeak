@@ -1,11 +1,14 @@
 //****************************************************************************//
-// File      : main.c
+// File      :  main.c
 //
-// Includes  : general.h
+// Includes  :  general.h
+//              Project-related .h files
 //
 // Purpose   : dsPeak development project
 //
-//Jean-Francois Bilodeau    MPLab X v5.45    13/01/2021  
+// Intellitrol                   MPLab X v5.45                        13/01/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 
 //----------------------------------------------------------------------------//
@@ -51,6 +54,7 @@
 // End of dsPIC33EP512MU814 configuration fuses ------------------------------//
 
 #include "general.h"
+#include "adc.h"
 #include "rtcc.h"
 #include "timer.h"
 #include "ft8xx.h"
@@ -83,7 +87,7 @@ const char *str = "-- Testing a full 64 bytes transfer from DPSRAM->DMA->USART3!
 uint16_t test = 1;
 uint8_t speed = 20;
 char new_pid_out1 = 0, new_pid_out2 = 0;
-uint16_t speed_rpm_table[5] = {30, 30, 30, 30, 30};
+uint16_t speed_rpm_table[5] = {30, 95, 60, 18, 55};
 
 RTCC_time clock;
 uint8_t hour, minute, second;
@@ -105,6 +109,10 @@ uint8_t RGB_B_duty = 0;
 uint8_t RGB_test = 0;
 uint16_t mem_adr[10] = {0x1010, 0x2020, 0x3030, 0x4040, 0x5050, 0x6060, 0x7070, 0x8080, 0x9090, 0xA0A0};
 uint16_t mem_dat[10] = {0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777, 0x8888, 0x9999, 0xAAAA};
+
+STRUCT_ADC ADC_struct_AN0, ADC_struct_AN1, ADC_struct_AN2, ADC_struct_AN12, 
+            ADC_struct_AN13, ADC_struct_AN14, ADC_struct_AN15;
+
 int main() 
 {
     DSPIC_init();
@@ -151,6 +159,34 @@ int main()
     CAN_init(&CAN_native);
     CAN_set_mode(&CAN_native, CAN_MODE_NORMAL);
     
+    ADC_init_struct(&ADC_struct_AN12, ADC_PORT_1, ADC_CHANNEL_AN12, 
+                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
+    ADC_init_struct(&ADC_struct_AN13, ADC_PORT_1, ADC_CHANNEL_AN13, 
+                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100); 
+    ADC_init_struct(&ADC_struct_AN14, ADC_PORT_1, ADC_CHANNEL_AN14, 
+                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
+    ADC_init_struct(&ADC_struct_AN15, ADC_PORT_1, ADC_CHANNEL_AN15, 
+                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100); 
+    
+    ADC_init_struct(&ADC_struct_AN0, ADC_PORT_2, ADC_CHANNEL_AN0, 
+                    ADC_RESOLUTION_10b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
+    ADC_init_struct(&ADC_struct_AN1, ADC_PORT_2, ADC_CHANNEL_AN1, 
+                    ADC_RESOLUTION_10b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100); 
+    ADC_init_struct(&ADC_struct_AN2, ADC_PORT_2, ADC_CHANNEL_AN2, 
+                    ADC_RESOLUTION_10b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);    
+ 
+    ADC_init(&ADC_struct_AN0);
+    ADC_init(&ADC_struct_AN1);
+    ADC_init(&ADC_struct_AN2); 
+    
+    ADC_init(&ADC_struct_AN12);
+    ADC_init(&ADC_struct_AN13);
+    ADC_init(&ADC_struct_AN14);
+    ADC_init(&ADC_struct_AN15);
+    
+    ADC_start(&ADC_struct_AN0);    // Start ADC2
+    ADC_start(&ADC_struct_AN12);   // Start ADC1
+    
 #ifdef SCREEN_ENABLE
     FT8XX_init();
     FT8XX_CMD_text(0, 60, 20, 22, OPT_CENTER,  "# of tour ");
@@ -177,6 +213,37 @@ int main()
     FT8XX_CMD_gradient(0, 0, 0, 0x00AA00, 480, 272, 0x5555FF);  
     FT8XX_CMD_clock(0, 240, 136, 70, OPT_FLAT | OPT_NOBACK, 16, 20, 0, 0);  
     
+    FT8XX_CMD_text(10, 60, 130, 22, OPT_CENTER, "AN0 RawCnt ");
+    FT8XX_CMD_number(10, 140, 130, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(11, 60, 150, 22, OPT_CENTER, "AN1 RawCnt ");
+    FT8XX_CMD_number(11, 140, 150, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(12, 60, 170, 22, OPT_CENTER, "AN2 RawCnt ");
+    FT8XX_CMD_number(12, 140, 170, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(13, 60, 190, 22, OPT_CENTER, "AN12 RawCnt ");
+    FT8XX_CMD_number(13, 140, 190, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(14, 60, 210, 22, OPT_CENTER, "AN13 RawCnt ");
+    FT8XX_CMD_number(14, 140, 210, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(15, 60, 230, 22, OPT_CENTER, "AN14 RawCnt ");
+    FT8XX_CMD_number(15, 140, 230, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(16, 60, 250, 22, OPT_CENTER, "AN15 RawCnt ");
+    FT8XX_CMD_number(16, 140, 250, 22, OPT_CENTER, 0);  
+    
+    FT8XX_CMD_text(17, 360, 130, 22, OPT_CENTER, "AN0 Volt -> ");
+    FT8XX_CMD_number(17, 440, 130, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(18, 360, 150, 22, OPT_CENTER, "AN1 Volt -> ");
+    FT8XX_CMD_number(18, 440, 150, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(19, 360, 170, 22, OPT_CENTER, "AN2 Volt -> ");
+    FT8XX_CMD_number(19, 440, 170, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(20, 360, 190, 22, OPT_CENTER, "AN12 Volt -> ");
+    FT8XX_CMD_number(20, 440, 190, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(21, 360, 210, 22, OPT_CENTER, "AN13 Volt -> ");
+    FT8XX_CMD_number(21, 440, 210, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(22, 360, 230, 22, OPT_CENTER, "AN14 Volt -> ");
+    FT8XX_CMD_number(22, 440, 230, 22, OPT_CENTER, 0);  
+    FT8XX_CMD_text(23, 360, 250, 22, OPT_CENTER, "AN15 Volt -> ");
+    FT8XX_CMD_number(23, 440, 250, 22, OPT_CENTER, 0);    
+    
+    
     FT8XX_start_new_dl();					// Start a new display list, reset ring buffer and ring pointer
     FT8XX_write_dl_long(CLEAR(1, 1, 1));
     FT8XX_write_dl_long(TAG_MASK(1));    
@@ -201,10 +268,10 @@ int main()
     TIMER_init(TIMER_2, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER_3, TIMER_PRESCALER_256, 60);
     TIMER_init(TIMER_4, TIMER_PRESCALER_256, 60);
-    TIMER_init(TIMER_5, TIMER_PRESCALER_256, 10);
+    TIMER_init(TIMER_5, TIMER_PRESCALER_256, 5);
     TIMER_init(TIMER_7, TIMER_PRESCALER_256, QEI_get_fs(QEI_2));
     TIMER_init(TIMER_8, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
-    TIMER_init(TIMER_9, TIMER_PRESCALER_256, 60000);
+    //TIMER_init(TIMER_9, TIMER_PRESCALER_256, 60000);
 
     PMP_init(PMP_MODE_SRAM);
     for (i=0; i<10; i++)
@@ -234,7 +301,7 @@ int main()
     TIMER_start(TIMER_5);
     TIMER_start(TIMER_7);
     TIMER_start(TIMER_8);
-    TIMER_start(TIMER_9);
+    //TIMER_start(TIMER_9);
     while (1)
     {           
         if (TIMER_get_state(TIMER_1, TIMER_INT_STATE) == 1)
@@ -279,8 +346,23 @@ int main()
             FT8XX_modify_number(&st_Number[6], NUMBER_VAL, MOTOR_get_setpoint_rpm(MOTOR_2));
             FT8XX_modify_number(&st_Number[7], NUMBER_VAL, QEI_get_velocity(QEI_2));
             FT8XX_modify_number(&st_Number[8], NUMBER_VAL, QEI_get_pulse(QEI_2));
-            FT8XX_modify_number(&st_Number[9], NUMBER_VAL, QEI_get_speed_rpm(QEI_2));            
+            FT8XX_modify_number(&st_Number[9], NUMBER_VAL, QEI_get_speed_rpm(QEI_2)); 
             
+            FT8XX_modify_number(&st_Number[10], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN0));
+            FT8XX_modify_number(&st_Number[11], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN1));
+            FT8XX_modify_number(&st_Number[12], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN2));
+            FT8XX_modify_number(&st_Number[13], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN12));
+            FT8XX_modify_number(&st_Number[14], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN13));
+            FT8XX_modify_number(&st_Number[15], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN14));
+            FT8XX_modify_number(&st_Number[16], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN15));
+
+            FT8XX_modify_number(&st_Number[17], NUMBER_VAL, ADC_get_eng_channel(&ADC_struct_AN0));
+            FT8XX_modify_number(&st_Number[18], NUMBER_VAL, ADC_get_eng_channel(&ADC_struct_AN1));
+            FT8XX_modify_number(&st_Number[19], NUMBER_VAL, ADC_get_eng_channel(&ADC_struct_AN2));
+            FT8XX_modify_number(&st_Number[20], NUMBER_VAL, ADC_get_eng_channel(&ADC_struct_AN12));
+            FT8XX_modify_number(&st_Number[21], NUMBER_VAL, ADC_get_eng_channel(&ADC_struct_AN13));
+            FT8XX_modify_number(&st_Number[22], NUMBER_VAL, ADC_get_eng_channel(&ADC_struct_AN14));
+            FT8XX_modify_number(&st_Number[23], NUMBER_VAL, ADC_get_eng_channel(&ADC_struct_AN15));            
             
             FT8XX_start_new_dl();                               // Start a new display list, reset ring buffer and ring pointer
             FT8XX_write_dl_long(CLEAR(1, 1, 1));
@@ -305,7 +387,21 @@ int main()
             FT8XX_draw_text(&st_Text[6]);
             FT8XX_draw_text(&st_Text[7]);
             FT8XX_draw_text(&st_Text[8]);
-            FT8XX_draw_text(&st_Text[9]);            
+            FT8XX_draw_text(&st_Text[9]);     
+            FT8XX_draw_text(&st_Text[10]);
+            FT8XX_draw_text(&st_Text[11]);
+            FT8XX_draw_text(&st_Text[12]);
+            FT8XX_draw_text(&st_Text[13]);
+            FT8XX_draw_text(&st_Text[14]);
+            FT8XX_draw_text(&st_Text[15]);
+            FT8XX_draw_text(&st_Text[16]);     
+            FT8XX_draw_text(&st_Text[17]);
+            FT8XX_draw_text(&st_Text[18]);
+            FT8XX_draw_text(&st_Text[19]);
+            FT8XX_draw_text(&st_Text[20]);
+            FT8XX_draw_text(&st_Text[21]);
+            FT8XX_draw_text(&st_Text[22]);
+            FT8XX_draw_text(&st_Text[23]);            
             
             FT8XX_draw_number(&st_Number[0]);
             FT8XX_draw_number(&st_Number[1]);
@@ -317,6 +413,21 @@ int main()
             FT8XX_draw_number(&st_Number[7]);
             FT8XX_draw_number(&st_Number[8]);
             FT8XX_draw_number(&st_Number[9]);
+            
+            FT8XX_draw_number(&st_Number[10]);
+            FT8XX_draw_number(&st_Number[11]);
+            FT8XX_draw_number(&st_Number[12]);
+            FT8XX_draw_number(&st_Number[13]);
+            FT8XX_draw_number(&st_Number[14]);
+            FT8XX_draw_number(&st_Number[15]);
+            FT8XX_draw_number(&st_Number[16]);
+            FT8XX_draw_number(&st_Number[17]);
+            FT8XX_draw_number(&st_Number[18]);
+            FT8XX_draw_number(&st_Number[19]);
+            FT8XX_draw_number(&st_Number[20]);
+            FT8XX_draw_number(&st_Number[21]);
+            FT8XX_draw_number(&st_Number[22]);
+            FT8XX_draw_number(&st_Number[23]);            
             
             FT8XX_update_screen_dl();                           // Update display list 
 #endif
@@ -405,7 +516,7 @@ int main()
                     break;                          
             }
             if (++color_counter > 7){color_counter = 0;}
-            ST7735_Clear(color); 
+            //ST7735_Clear(color); 
         }
         
         // QEI velocity refresh rate
@@ -425,21 +536,21 @@ int main()
         }
         
         // SWPWM RGB LED timer
-        if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
-        {                   
-            if (RGB_PWM_counter > RGB_R_duty){RGB_LED_RED = 1;}
-            if (RGB_PWM_counter > RGB_G_duty){RGB_LED_GREEN = 1;}
-            if (RGB_PWM_counter > RGB_B_duty){RGB_LED_BLUE = 1;}
- 
-            if (RGB_PWM_counter >= RGB_PWM_frequency)
-            {
-                if (RGB_R_duty > 0){RGB_LED_RED = 0;}
-                if (RGB_G_duty > 0){RGB_LED_GREEN = 0;}
-                if (RGB_B_duty > 0){RGB_LED_BLUE = 0;}
-                RGB_PWM_counter = 0;
-            }
-            RGB_PWM_counter++;       
-        }        
+//        if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
+//        {                   
+//            if (RGB_PWM_counter > RGB_R_duty){RGB_LED_RED = 1;}
+//            if (RGB_PWM_counter > RGB_G_duty){RGB_LED_GREEN = 1;}
+//            if (RGB_PWM_counter > RGB_B_duty){RGB_LED_BLUE = 1;}
+// 
+//            if (RGB_PWM_counter >= RGB_PWM_frequency)
+//            {
+//                if (RGB_R_duty > 0){RGB_LED_RED = 0;}
+//                if (RGB_G_duty > 0){RGB_LED_GREEN = 0;}
+//                if (RGB_B_duty > 0){RGB_LED_BLUE = 0;}
+//                RGB_PWM_counter = 0;
+//            }
+//            RGB_PWM_counter++;       
+//        }        
     }
     return 0;
 }

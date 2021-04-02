@@ -19,7 +19,7 @@
 //****************************************************************************//
 #include "spi.h"
 
-SPI_struct spi_struct[SPI_QTY];
+STRUCT_SPI spi_struct[SPI_QTY];
 
 //void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)//
 //Description : Function initializes SPI module on selected MODE with Prim and

@@ -6,6 +6,8 @@
 #define PMP_WRITE           0
 #define PMP_READ            1
 
+#define PMP_READ_BUF_LENGTH 64
+
 #define PMP_MODE_TFT        0
 #define PMP_MODE_SRAM       1
 
@@ -27,11 +29,14 @@ typedef struct
     uint16_t address;
     uint8_t state;
     uint8_t chip_select;
+    uint16_t read_buffer[PMP_READ_BUF_LENGTH];
 }STRUCT_PMP;
 
 void PMP_init (uint8_t mode);
 void PMP_write_single (uint8_t mode, uint16_t adr, uint16_t data);
+void PMP_write_multiple (uint8_t mode, uint16_t adr, uint16_t *ptr, uint16_t length);
 uint16_t PMP_read_single (uint8_t mode, uint16_t adr);
+uint16_t * PMP_read_multiple (uint8_t mode, uint16_t adr, uint16_t length);
 void PMP_pins_init (void);
 void PMP_set_bus_output (void);
 void PMP_set_bus_input (void);

@@ -21,8 +21,8 @@ void MOTOR_init (uint8_t channel, uint16_t speed_fs)
             
             m_control[channel].pid_fs = QEI_get_fs(QEI_1);
             m_control[channel].pid_p_gain = 1.1;
-            m_control[channel].pid_i_gain = 3.3;
-            m_control[channel].pid_d_gain = 0.000000001;
+            m_control[channel].pid_i_gain = 4.2;
+            m_control[channel].pid_d_gain = 0;
             m_control[channel].max_rpm = QEI_get_max_rpm(QEI_1);
             m_control[channel].min_rpm = 0;
             m_control[channel].pid_high_limit = 100;        // Max output is 100% ON duty cycle to PWM
@@ -45,14 +45,13 @@ void MOTOR_init (uint8_t channel, uint16_t speed_fs)
             
             m_control[channel].pid_fs = QEI_get_fs(QEI_2);
             m_control[channel].pid_p_gain = 1.1;
-            m_control[channel].pid_i_gain = 3.3;
-            m_control[channel].pid_d_gain = 0.000000001;
+            m_control[channel].pid_i_gain = 4.2;
+            m_control[channel].pid_d_gain = 0;
             m_control[channel].max_rpm = QEI_get_max_rpm(QEI_2);
             m_control[channel].min_rpm = 0;
             m_control[channel].pid_high_limit = 100;        // Max output is 100% ON duty cycle to PWM
             MOTOR_pid_calc_gains(MOTOR_2);
             break;
-
     }
 }
 

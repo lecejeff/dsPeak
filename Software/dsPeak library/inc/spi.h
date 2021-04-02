@@ -68,7 +68,7 @@ typedef struct
     uint8_t spi_txfer_done;
     uint8_t spi_rx_cnt;
     uint8_t spi_tx_cnt;
-}SPI_struct;
+}STRUCT_SPI;
 
 void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre); 
 void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip);
