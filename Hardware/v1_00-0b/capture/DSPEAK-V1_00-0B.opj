@@ -204,9 +204,10 @@
       (Path "Design Resources"
          "c:\users\jeanf\desktop\git\dspeak\hardware\v1_00-0b\capture\dspeak-v1_00-0b.dsn"
          "USER I/O")
+      (Path "Design Resources" "Library")
       (Path "Layout")
-      (Select "Design Resources"
-         "c:\users\jeanf\desktop\git\dspeak\hardware\v1_00-0b\capture\dspeak-v1_00-0b.dsn"))
+      (Select "Design Resources" "Library"
+         "c:\users\jeanf\google drive\orcad16lib\piece\part.olb"))
     (HierarchyView)
     (Doc
       (Type "COrCapturePMDoc")
@@ -216,8 +217,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
-        (Scroll "-67 -5")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
+        (Scroll "-208 -5")
         (Zoom "48")
         (Occurrence "/"))
       (Path
@@ -227,7 +228,7 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
         (Scroll "0 87")
         (Zoom "100")
         (Occurrence "/P31"))
@@ -238,7 +239,7 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
         (Scroll "0 0")
         (Zoom "100")
         (Occurrence "/P15"))
@@ -249,8 +250,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
-        (Scroll "0 -5")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
+        (Scroll "-59 -5")
         (Zoom "89")
         (Occurrence "/P16"))
       (Path
@@ -260,8 +261,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
-        (Scroll "0 -5")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
+        (Scroll "-59 -5")
         (Zoom "89")
         (Occurrence "/P1"))
       (Path
@@ -271,8 +272,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1227 24 929")
-        (Scroll "-18 -8")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1508 24 929")
+        (Scroll "-158 -8")
         (Zoom "119")
         (Occurrence "/P14"))
       (Path
