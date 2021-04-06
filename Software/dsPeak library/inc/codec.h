@@ -5,7 +5,7 @@
 //             SGTL5000 integrated circuit. It has an audio in line, a micro in,
 //             an audio out and a speaker out. In addition, this codec has an
 //             integrated equalizer / bass-tone enhancer and many other features
-//             such as programmable mic gain, volume control, filtering and
+//             such as programmable mic gain / volume control, filtering and
 //             automatic volume control.
 //
 // Functions : 
@@ -15,8 +15,11 @@
 // Purpose   : Driver for the dsPeak SGTL5000 audio codec using DCI as audio
 //             interface and SPI as configuration interface 
 //
-//Jean-Francois Bilodeau    MPLab X v5.45   13/01/2021
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
+
 #ifndef __CODEC_H_
 #define	__CODEC_H_
 

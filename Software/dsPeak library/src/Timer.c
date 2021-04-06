@@ -1,42 +1,63 @@
 //****************************************************************************//
-// File      : Timer.c
+// File      :  timer.c
 //
-// Functions :  void TIMER_init (uint8_t timer, uint32_t freq);
-//              void TIMER_update_freq (uint8_t timer, uint32_t new_freq);
+// Functions :  void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq);
+//              void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq);
 //              void TIMER_start (uint8_t timer);
 //              void TIMER_stop (uint8_t timer);
-//              uint8_t TIMER_get_state (uint8_t timer);
+//              uint8_t TIMER_get_state (uint8_t timer, uint8_t type);
 //
-// Includes  : Timer.h
+// Includes  :  timer.h
 //
-//Jean-Francois Bilodeau    MPLab X v5.00    10/09/2018    
+// Purpose   :  Driver for the dsPIC33EP 16-bit / 32-bit TIMER core
+//              9 seperate 16-bit timers on dsPeak
+//              TIMER_1 : 
+//              TIMER_2 : 
+//              TIMER_3 : 
+//              TIMER_4 : 
+//              TIMER_5 : 
+//              TIMER_6 : 
+//              TIMER_7 : 
+//              TIMER_8 : 
+//              TIMER_9 : 
+//              
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 #include "Timer.h"
 
 TIMER_STRUCT TIMER_struct[TIMER_QTY];
 
-// Current timer allocation
-//*********void TIMER_init (uint8_t timer, uint32_t Freq)**********//
+//*****void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)******//
 //Description : Function initializes timer module with interrupt at specified
 //              freq
 //
-//Function prototype : void TIMER_init (uint8_t timer, uint32_t Freq)
+//Function prototype : void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)
 //
-//Enter params       : uint8_t timer : TIMER_x module
-//                     uint32_t freq  : Timer frequency
+//Enter params       :  uint8_t timer : TIMER_x module
+//                      uint8_t prescaler : TIMER_x prescaler
+//                      uint32_t freq : Timer frequency
 //
-//Exit params        : None
+//Exit params        :  None
 //
-//Function call      : TIMER_init(TIMER_1, 150);
+//Function call      :  TIMER_init(TIMER_1, TIMER_PRESCALER_256, 10);
 //
-//Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
-void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
+void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)
 {
-    // 16 bit timers. With 8x prescaler, clock freq is 70MHz / 8 = 8.75MHz
-    // Minimum frequency timer : 8.75MHz / Freq <= 65535, Freq >= 133
+    // 16-bit timers
+    // With 1x prescaler, clock freq is 70MHz
+    // Minimum timer frequency : 70000000 / freq, 0<freq<=65535 = >>1069Hz<<
+    // With 8x prescaler, clock freq is 70MHz / 8 = 8.75MHz
+    // Minimum timer frequency : 8.75MHz / freq, 0<=freq<=65535 = >>134Hz<<
+    // With 64x prescaler, clock freq is 70MHz / 64 = 1.09375MHz
+    // Minimum timer frequency : 1.09375MHz / freq, 0<=freq<=65535 = >>17Hz<<    
     // with 256x prescaler, clock freq is 70MHz / 256 = 273437.5Hz 
-    // Minimum frequency timer : 273437 / Freq <= 65535, Freq >= 4
+    // Minimum timer frequency : 273437 / freq, 0<=freq<=65535 = >>5Hz<<
        
     TIMER_struct[timer].int_state = 0;
     TIMER_struct[timer].run_state = 0;
@@ -51,19 +72,19 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
-                    PR1 = (FCY / Freq); 
+                    PR1 = (FCY / freq); 
                     break;
                 
                 case TIMER_PRESCALER_8:
-                    PR1 = ((FCY / 8) / Freq);
+                    PR1 = ((FCY / 8) / freq);
                     break;
                     
                 case TIMER_PRESCALER_64:
-                    PR1 = ((FCY / 64) / Freq);
+                    PR1 = ((FCY / 64) / freq);
                     break;
                     
                 case TIMER_PRESCALER_256:
-                    PR1 = ((FCY / 256) / Freq);
+                    PR1 = ((FCY / 256) / freq);
                     break;                    
             }
             break;
@@ -77,19 +98,19 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
-                    PR2 = (FCY / Freq); 
+                    PR2 = (FCY / freq); 
                     break;
                 
                 case TIMER_PRESCALER_8:
-                    PR2 = ((FCY / 8) / Freq);
+                    PR2 = ((FCY / 8) / freq);
                     break;
                     
                 case TIMER_PRESCALER_64:
-                    PR2 = ((FCY / 64) / Freq);
+                    PR2 = ((FCY / 64) / freq);
                     break;
                     
                 case TIMER_PRESCALER_256:
-                    PR2 = ((FCY / 256) / Freq);
+                    PR2 = ((FCY / 256) / freq);
                     break;                    
             }
             break;
@@ -103,19 +124,19 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
-                    PR3 = (FCY / Freq); 
+                    PR3 = (FCY / freq); 
                     break;
                 
                 case TIMER_PRESCALER_8:
-                    PR3 = ((FCY / 8) / Freq);
+                    PR3 = ((FCY / 8) / freq);
                     break;
                     
                 case TIMER_PRESCALER_64:
-                    PR3 = ((FCY / 64) / Freq);
+                    PR3 = ((FCY / 64) / freq);
                     break;
                     
                 case TIMER_PRESCALER_256:
-                    PR3 = ((FCY / 256) / Freq);
+                    PR3 = ((FCY / 256) / freq);
                     break;                    
             }
             break;
@@ -129,19 +150,19 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
-                    PR4 = (FCY / Freq); 
+                    PR4 = (FCY / freq); 
                     break;
                 
                 case TIMER_PRESCALER_8:
-                    PR4 = ((FCY / 8) / Freq);
+                    PR4 = ((FCY / 8) / freq);
                     break;
                     
                 case TIMER_PRESCALER_64:
-                    PR4 = ((FCY / 64) / Freq);
+                    PR4 = ((FCY / 64) / freq);
                     break;
                     
                 case TIMER_PRESCALER_256:
-                    PR4 = ((FCY / 256) / Freq);
+                    PR4 = ((FCY / 256) / freq);
                     break;                    
             }
             break;
@@ -155,19 +176,19 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
-                    PR5 = (FCY / Freq); 
+                    PR5 = (FCY / freq); 
                     break;
                 
                 case TIMER_PRESCALER_8:
-                    PR5 = ((FCY / 8) / Freq);
+                    PR5 = ((FCY / 8) / freq);
                     break;
                     
                 case TIMER_PRESCALER_64:
-                    PR5 = ((FCY / 64) / Freq);
+                    PR5 = ((FCY / 64) / freq);
                     break;
                     
                 case TIMER_PRESCALER_256:
-                    PR5 = ((FCY / 256) / Freq);
+                    PR5 = ((FCY / 256) / freq);
                     break;                    
             }
             break;
@@ -182,19 +203,19 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
-                    PR6 = (FCY / Freq); 
+                    PR6 = (FCY / freq); 
                     break;
                 
                 case TIMER_PRESCALER_8:
-                    PR6 = ((FCY / 8) / Freq);
+                    PR6 = ((FCY / 8) / freq);
                     break;
                     
                 case TIMER_PRESCALER_64:
-                    PR6 = ((FCY / 64) / Freq);
+                    PR6 = ((FCY / 64) / freq);
                     break;
                     
                 case TIMER_PRESCALER_256:
-                    PR6 = ((FCY / 256) / Freq);
+                    PR6 = ((FCY / 256) / freq);
                     break;                    
             }
             break;
@@ -208,19 +229,19 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
-                    PR7 = (FCY / Freq); 
+                    PR7 = (FCY / freq); 
                     break;
                 
                 case TIMER_PRESCALER_8:
-                    PR7 = ((FCY / 8) / Freq);
+                    PR7 = ((FCY / 8) / freq);
                     break;
                     
                 case TIMER_PRESCALER_64:
-                    PR7 = ((FCY / 64) / Freq);
+                    PR7 = ((FCY / 64) / freq);
                     break;
                     
                 case TIMER_PRESCALER_256:
-                    PR7 = ((FCY / 256) / Freq);
+                    PR7 = ((FCY / 256) / freq);
                     break;                    
             }
             break;
@@ -234,19 +255,19 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
-                    PR8 = (FCY / Freq); 
+                    PR8 = (FCY / freq); 
                     break;
                 
                 case TIMER_PRESCALER_8:
-                    PR8 = ((FCY / 8) / Freq);
+                    PR8 = ((FCY / 8) / freq);
                     break;
                     
                 case TIMER_PRESCALER_64:
-                    PR8 = ((FCY / 64) / Freq);
+                    PR8 = ((FCY / 64) / freq);
                     break;
                     
                 case TIMER_PRESCALER_256:
-                    PR8 = ((FCY / 256) / Freq);
+                    PR8 = ((FCY / 256) / freq);
                     break;                    
             }
             break;
@@ -260,38 +281,41 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t Freq)
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
-                    PR9 = (FCY / Freq); 
+                    PR9 = (FCY / freq); 
                     break;
                 
                 case TIMER_PRESCALER_8:
-                    PR9 = ((FCY / 8) / Freq);
+                    PR9 = ((FCY / 8) / freq);
                     break;
                     
                 case TIMER_PRESCALER_64:
-                    PR9 = ((FCY / 64) / Freq);
+                    PR9 = ((FCY / 64) / freq);
                     break;
                     
                 case TIMER_PRESCALER_256:
-                    PR9 = ((FCY / 256) / Freq);
+                    PR9 = ((FCY / 256) / freq);
                     break;                    
             }
             break;          
     }
 }
 
-//****void TIMER_update_freq (uint8_t timer, uint32_t new_freq)****//
-//Description : Function updates timer module to new frequency
+//void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)//
+//Description : Function updates timer module to new frequency using the 
+//              specified timer prescaler
 //
-//Function prototype : void TIMER_update_freq (uint8_t timer, uint32_t new_freq)
+//Function prototype : void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
 //
 //Enter params       : uint8_t timer : TIMER_x module
 //                     uint32_t new_freq  : Timer frequency
 //
 //Exit params        : None
 //
-//Function call      : TIMER_init(TIMER_1, 150);
+//Function call      : TIMER_update_freq(TIMER_1, 8, 150);
 //
-//Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
 {
@@ -524,7 +548,7 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
     }
 }
 
-//*******************void TIMER_start (uint8_t timer)*******************//
+//**********************void TIMER_start (uint8_t timer)**********************//
 //Description : Function starts timer module
 //
 //Function prototype : void TIMER_start (uint8_t timer)
@@ -535,7 +559,9 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
 //
 //Function call      : TIMER_start(TIMER_1);
 //
-//Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void TIMER_start (uint8_t timer)
 {
@@ -608,7 +634,7 @@ void TIMER_start (uint8_t timer)
     TIMER_struct[timer].run_state = 1; // Timer is started
 }
 
-//********************void TIMER_stop (uint8_t timer)*******************//
+//***********************void TIMER_stop (uint8_t timer)**********************//
 //Description : Function stops timer module
 //
 //Function prototype : void TIMER_stop (uint8_t timer)
@@ -619,7 +645,9 @@ void TIMER_start (uint8_t timer)
 //
 //Function call      : TIMER_stop(TIMER_1);
 //
-//Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void TIMER_stop (uint8_t timer)
 {
@@ -682,7 +710,7 @@ void TIMER_stop (uint8_t timer)
     TIMER_struct[timer].run_state = 0; // Timer is stopped
 }
 
-//*************uint8_t TIMER_get_state (uint8_t timer)************//
+//***********uint8_t TIMER_get_state (uint8_t timer, uint8_t type)************//
 //Description : Function returns timer module state
 //
 //Function prototype : uint8_t TIMER_get_state (uint8_t timer)
@@ -693,7 +721,9 @@ void TIMER_stop (uint8_t timer)
 //
 //Function call      : uint8_t = TIMER_get_state(TIMER_1);
 //
-//Jean-Francois Bilodeau    MPLab X v5.00    09/10/2018   
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 uint8_t TIMER_get_state (uint8_t timer, uint8_t type)
 {

@@ -5,13 +5,15 @@
 //
 // Purpose   : General header file
 //
-//Jean-Francois Bilodeau    MPLab X v5.45   13/01/2020
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 
 #ifndef __GENERAL_H_
 #define	__GENERAL_H_
 
-#define FOSC 140000000
+#define FOSC 140000000UL
 #define FCY (FOSC/2)    // FCY of 70MIPS
 
 #include <stdint.h>

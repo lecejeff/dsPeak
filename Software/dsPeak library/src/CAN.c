@@ -3,6 +3,30 @@
 
 __eds__ uint16_t CAN_MSG_BUFFER[32][8] __attribute__((eds, space(dma), aligned(32*16)));
 
+void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID,
+                        uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)
+{
+    uint8_t i = 0;
+    node->bus_freq = bus_freq;
+    node->channel = channel;
+    node->SID = SID;
+    node->EID = EID;
+    node->RX_MASK = rx_mask;
+    node->RX_SID = rx_sid;
+    
+    // See if these should be configured by default
+    node->SRR = 0;
+    node->IDE = 0;    
+    node->RTR = 0;
+    node->RB1 = 0;
+    node->RB0 = 0;
+    node->DLC = 8;
+    for (; i<8; i++)
+    {
+        node->can_payload[i] = 0;
+    }       
+}
+
 // Return 0 on successful configuration
 // Return 1 on error
 uint8_t CAN_init (CAN_struct *node)
@@ -93,6 +117,15 @@ uint8_t CAN_init (CAN_struct *node)
     }
 }
 
+void CAN_fill_payload (CAN_struct *node, uint8_t *buf, uint8_t length)
+{
+    uint8_t i = 0;
+    for (; i < length; i++)
+    {
+        node->can_payload[i] = *buf++;
+    }
+}
+
 // Returns 0 on successful execution
 // Returns 0xFF on error
 uint8_t CAN_set_mode (CAN_struct *node, uint8_t mode)
@@ -137,7 +170,7 @@ uint8_t CAN_get_mode (CAN_struct *node)
     }
 }
 
-uint8_t CAN_tx_msg (CAN_struct *node)
+uint8_t CAN_send_txmsg (CAN_struct *node)
 {
     if (CAN_get_mode(node)!=CAN_MODE_NORMAL)
     {
@@ -159,7 +192,7 @@ uint8_t CAN_tx_msg (CAN_struct *node)
     return 0;
 }
 
-uint16_t CAN_get_tx_err_cnt (CAN_struct *node)
+uint16_t CAN_get_txmsg_errcnt (CAN_struct *node)
 {
     switch (node->channel)
     {
@@ -177,7 +210,7 @@ uint16_t CAN_get_tx_err_cnt (CAN_struct *node)
     }
 }
 
-uint16_t CAN_get_rx_err_cnt (CAN_struct *node)
+uint16_t CAN_get_rxmsg_errcnt (CAN_struct *node)
 {
     switch (node->channel)
     {

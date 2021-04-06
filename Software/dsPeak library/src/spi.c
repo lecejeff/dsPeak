@@ -1,21 +1,29 @@
 //***************************************************************************//
 // File      : spi.c
 //
-// Functions :  void SPI_init (uint8_t mode, uint8_t ppre, uint8_t spre, uint8_t channel); 
-//              void SPI_master_write (uint8_t *data, uint8_t length, uint8_t chip, uint8_t channel);
-//              void SPI_fill_transmit_buffer (uint8_t * data, uint8_t length, uint8_t channel);
-//              uint8_t SPI_rx_done (uint8_t channel);
+// Functions : void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre); 
+//              void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip);
+//              uint8_t SPI_txfer_done (uint8_t channel);
 //              uint8_t * SPI_get_rx_buffer (uint8_t channel);
+//              uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index);
 //              void SPI_master_deassert_cs (uint8_t chip);
 //              void SPI_master_assert_cs (uint8_t chip);
-//              void SPI_slave_initiate (void);
-//              void SPI_clear_rx_buffer (uint8_t channel);
+//              void SPI_flush_txbuffer (uint8_t channel);
+//              void SPI_flush_rxbuffer (uint8_t channel);
+//              uint8_t SPI_module_busy (uint8_t channel); 
 //
 // Includes  :  spi.h
 //           
 // Purpose   :  Driver for the dsPIC33EP SPI peripheral
+//              4x seperate SPI channels on dsPeak :
+//              SPI_1 : Riverdi EVE embedded video engine
+//              SPI_2 : Flash / uSD Card 
+//              SPI_3 : Audio CODEC
+//              SPI_4 : MikroBus 1 and 2
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020  
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 #include "spi.h"
 
@@ -24,21 +32,22 @@ STRUCT_SPI spi_struct[SPI_QTY];
 //void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)//
 //Description : Function initializes SPI module on selected MODE with Prim and
 //              secondary prescalers to scale down the clock.
-//              Max Fclk (Write only) -> 15MHz
-//              Full duplex           -> 8MHz
 //
-//Function prototype :  void SPI_init (uint8_t mode, uint8_t ppre, uint8_t spre, uint8_t channel) 
+//Function prototype :  void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre) 
 //
-//Enter params       :  uint8_t mode : SPI MODE (0...3)
+//Enter params       :  uint8_t channel : SPI channel
+//                      uint8_t mode : SPI MODE (0...3)
 //                      uint8_t ppre : Primary clock prescaler
 //                      uint8_t spre : Secondary clock prescaler
-//                      uint8_t channel : SPI channel
+//                      
 //
-//Exit params        : None
+//Return params      : None
 //
-//Function call      : SPI_init(SPI_MODE0, 5, 3, SPI_2);
+//Function call      : SPI_init(SPI_2, SPI_MODE0, 3, 0);
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre) 
 {    
@@ -46,26 +55,27 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
     {
         // SPI1 is FTDI EVE interface
         case SPI_1:
-            IEC0bits.SPI1IE = 0;
-            SPI1STATbits.SPIEN = 0;     // Disable SPI module 
-            IFS0bits.SPI1EIF = 0;       // Disable SPI error int flag 
-            IFS0bits.SPI1IF = 0;        // Disable SPI int flag 
-            SPI1CON1bits.DISSCK = 0;    // Internal serial clock is enabled 
-            SPI1CON1bits.DISSDO = 0;    // SDOx pin is controlled by the module 
-            SPI1CON1bits.MODE16 = 0;    // Communication is byte wide (8bit)   
-            SPI1CON1bits.MSTEN = 1;     // SPI master mode enabled 
-            SPI1CON2bits.FRMEN = 0;     // Frame mode disabled 
-            SPI1CON1bits.SSEN = 0;      // GPIO controls SPI /CS
+            IEC0bits.SPI1IE = 0;            // Disable SPI module interrupt
+            SPI1STATbits.SPIEN = 0;         // Disable SPI module 
+            IFS0bits.SPI1EIF = 0;           // Reset SPI error int flag 
+            IFS0bits.SPI1IF = 0;            // Reset SPI int flag 
+            SPI1CON1bits.DISSCK = 0;        // Internal serial clock is enabled 
+            SPI1CON1bits.DISSDO = 0;        // SDOx pin is controlled by the module 
+            SPI1CON1bits.MODE16 = 0;        // Communication is byte wide (8bit)   
+            SPI1CON1bits.MSTEN = 1;         // SPI master mode enabled 
+            SPI1CON2bits.FRMEN = 0;         // Frame mode disabled 
+            SPI1CON1bits.SSEN = 0;          // GPIO controls SPI /CS
             // SPI1 clock control, Fsck = FCY / (ppre * spre)
-            // Make sure the clock rate is supported by the spi module
+            // Make sure the clock rate is supported by the spi module 
+            // (see MCU datasheet, electrical caracteristics section)
             SPI1CON1bits.PPRE = ppre;
             SPI1CON1bits.SPRE = spre;
             switch (mode)
             {
                 case SPI_MODE0:
                     SPI1CON1bits.CKE = 1;   // Mode 0 configurations  
-                    SPI1CON1bits.SMP = 0;   // Sample data at beginning valid point 
-                    SPI1CON1bits.CKP = 0;   //  
+                    SPI1CON1bits.CKP = 0;   // 
+                    SPI1CON1bits.SMP = 0;   // Sample data at beginning valid point                     
                     break;
 
                 case SPI_MODE1:
@@ -108,16 +118,16 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             
         // SPI2 is SD / FLASH interface  
         case SPI_2:
-            IEC2bits.SPI2IE = 0;
-            SPI2STATbits.SPIEN = 0;     // Disable SPI module 
-            IFS2bits.SPI2EIF = 0;       // Disable SPI error int flag 
-            IFS2bits.SPI2IF = 0;        // Disable SPI int flag 
-            SPI2CON1bits.DISSCK = 0;    // Internal serial clock is enabled 
-            SPI2CON1bits.DISSDO = 0;    // SDOx pin is controlled by the module 
-            SPI2CON1bits.MODE16 = 0;    // Communication is byte wide (8bit)   
-            SPI2CON1bits.MSTEN = 1;     // SPI master mode enabled 
-            SPI2CON2bits.FRMEN = 0;     // Frame mode disabled 
-            SPI2CON1bits.SSEN = 0;      // GPIO controls SPI /CS      
+            IEC2bits.SPI2IE = 0;            // Disable SPI module interrupt
+            SPI2STATbits.SPIEN = 0;         // Disable SPI module 
+            IFS2bits.SPI2EIF = 0;           // Reset SPI error int flag 
+            IFS2bits.SPI2IF = 0;            // Reset SPI int flag 
+            SPI2CON1bits.DISSCK = 0;        // Internal serial clock is enabled 
+            SPI2CON1bits.DISSDO = 0;        // SDOx pin is controlled by the module 
+            SPI2CON1bits.MODE16 = 0;        // Communication is byte wide (8bit)   
+            SPI2CON1bits.MSTEN = 1;         // SPI master mode enabled 
+            SPI2CON2bits.FRMEN = 0;         // Frame mode disabled 
+            SPI2CON1bits.SSEN = 0;          // GPIO controls SPI /CS      
             // SPI2 clock control, Fsck = FCY / (ppre * spre)
             // Make sure the clock rate is supported by the spi module
             SPI2CON1bits.PPRE = ppre;
@@ -126,8 +136,8 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             {
                 case SPI_MODE0:
                     SPI2CON1bits.CKE = 1;   // Mode 0 configurations  
-                    SPI2CON1bits.SMP = 0;   // Sample data at beginning valid point 
-                    SPI2CON1bits.CKP = 0;   //  
+                    SPI2CON1bits.CKP = 0;   //
+                    SPI2CON1bits.SMP = 0;   // Sample data at beginning valid point                    
                     break;
 
                 case SPI_MODE1:
@@ -164,16 +174,16 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             
         // SPI3 is the AUDIO CODEC configuration interface    
         case SPI_3:
-            IEC5bits.SPI3IE = 0;
-            SPI3STATbits.SPIEN = 0;     // Disable SPI module 
-            IFS5bits.SPI3EIF = 0;       // Disable SPI error int flag 
-            IFS5bits.SPI3IF = 0;        // Disable SPI int flag 
-            SPI3CON1bits.DISSCK = 0;    // Internal serial clock is enabled 
-            SPI3CON1bits.DISSDO = 0;    // SDOx pin is controlled by the module 
-            SPI3CON1bits.MODE16 = 0;    // Communication is byte wide (8bit)   
-            SPI3CON1bits.MSTEN = 1;     // SPI master mode enabled 
-            SPI3CON2bits.FRMEN = 0;     // Frame mode disabled 
-            SPI3CON1bits.SSEN = 0;      // GPIO controls SPI /CS      
+            IEC5bits.SPI3IE = 0;            // Disable SPI module interrupt
+            SPI3STATbits.SPIEN = 0;         // Disable SPI module 
+            IFS5bits.SPI3EIF = 0;           // Reset SPI error int flag 
+            IFS5bits.SPI3IF = 0;            // Reset SPI int flag 
+            SPI3CON1bits.DISSCK = 0;        // Internal serial clock is enabled 
+            SPI3CON1bits.DISSDO = 0;        // SDOx pin is controlled by the module 
+            SPI3CON1bits.MODE16 = 0;        // Communication is byte wide (8bit)   
+            SPI3CON1bits.MSTEN = 1;         // SPI master mode enabled 
+            SPI3CON2bits.FRMEN = 0;         // Frame mode disabled 
+            SPI3CON1bits.SSEN = 0;          // GPIO controls SPI /CS      
             // SPI3 clock control, Fsck = FCY / (ppre * spre)
             // Make sure the clock rate is supported by the spi module
             SPI3CON1bits.PPRE = ppre;
@@ -181,9 +191,9 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             switch (mode)
             {
                 case SPI_MODE0:
-                    SPI3CON1bits.CKE = 1;   // Mode 0 configurations  
-                    SPI3CON1bits.SMP = 0;   // Sample data at beginning valid point 
-                    SPI3CON1bits.CKP = 0;   //  
+                    SPI3CON1bits.CKE = 1;   // Mode 0 configurations
+                    SPI3CON1bits.CKP = 0;   //
+                    SPI3CON1bits.SMP = 0;   // Sample data at beginning valid point                
                     break;
 
                 case SPI_MODE1:
@@ -219,21 +229,21 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             IPC22bits.SPI3IP = 4;           // SPI int priority is 4  
             IFS5bits.SPI3EIF = 0;           // Disable SPI error int flag 
             IFS5bits.SPI3IF = 0;            // Disable SPI int flag               
-            SPI3STATbits.SPIEN = 1;     // Enable SPI module                   
+            SPI3STATbits.SPIEN = 1;         // Enable SPI module                   
             break;
           
         // SPI4 is the MikroBus interface     
         case SPI_4:
-            IEC7bits.SPI4IE = 0;
-            SPI4STATbits.SPIEN = 0;     // Disable SPI module 
-            IFS7bits.SPI4EIF = 0;       // Disable SPI error int flag 
-            IFS7bits.SPI4IF = 0;        // Disable SPI int flag 
-            SPI4CON1bits.DISSCK = 0;    // Internal serial clock is enabled 
-            SPI4CON1bits.DISSDO = 0;    // SDOx pin is controlled by the module 
-            SPI4CON1bits.MODE16 = 0;    // Communication is byte wide (8bit)   
-            SPI4CON1bits.MSTEN = 1;     // SPI master mode enabled 
-            SPI4CON2bits.FRMEN = 0;     // Frame mode disabled 
-            SPI4CON1bits.SSEN = 0;      // GPIO controls SPI /CS      
+            IEC7bits.SPI4IE = 0;            // Disable SPI module interrupt
+            SPI4STATbits.SPIEN = 0;         // Disable SPI module 
+            IFS7bits.SPI4EIF = 0;           // Reset SPI error int flag 
+            IFS7bits.SPI4IF = 0;            // Reset SPI int flag 
+            SPI4CON1bits.DISSCK = 0;        // Internal serial clock is enabled 
+            SPI4CON1bits.DISSDO = 0;        // SDOx pin is controlled by the module 
+            SPI4CON1bits.MODE16 = 0;        // Communication is byte wide (8bit)   
+            SPI4CON1bits.MSTEN = 1;         // SPI master mode enabled 
+            SPI4CON2bits.FRMEN = 0;         // Frame mode disabled 
+            SPI4CON1bits.SSEN = 0;          // GPIO controls SPI /CS      
             // SPI3 clock control, Fsck = FCY / (ppre * spre)
             // Make sure the clock rate is supported by the spi module
             SPI4CON1bits.PPRE = ppre;
@@ -242,8 +252,8 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             {
                 case SPI_MODE0:
                     SPI4CON1bits.CKE = 1;   // Mode 0 configurations  
-                    SPI4CON1bits.SMP = 0;   // Sample data at beginning valid point 
-                    SPI4CON1bits.CKP = 0;   //  
+                    SPI4CON1bits.CKP = 0;   //
+                    SPI4CON1bits.SMP = 0;   // Sample data at beginning valid point             
                     break;
 
                 case SPI_MODE1:
@@ -285,118 +295,99 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             break;
     }
     
-    spi_struct[channel].spi_txfer_done = 0;       // Reset SPI module state machine
+    spi_struct[channel].spi_txfer_done = SPI_TX_IDLE; // Reset SPI module state machine
     spi_struct[channel].spi_tx_cnt = 0;     // 
     spi_struct[channel].spi_rx_cnt = 0;     // 
     spi_struct[channel].spi_tx_length = 0;  // 
 }
 
-//void SPI_write (uint8_t *data, uint8_t length, uint8_t chip, uint8_t channel)//
+//void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip)//
 //Description : Function write specified array of data, of specified length, to
 //              specified chip (define it in SPI.h)
 //              This function is to be used with a MASTER SPI only
 //
-//Function prototype : void SPI_write (uint8_t *data, uint8_t length, uint8_t chip, uint8_t channel)
+//Function prototype : void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip)
 //
-//Enter params       :  uint8_t *data  : Array of data to write
-//                      uint8_t length : Array length
-//                      uint8_t chip : spi chip to select
-//                      uint8_t channel : SPI_x channel
+//Enter params       :  uint8_t channel : SPI_x channel
+//                      uint8_t *data   : Array of data to write
+//                      uint8_t length  : Array length
+//                      uint8_t chip    : spi chip to select
+//                      
 //
 //Exit params        : None
 //
-//Function call      : SPI_write(ptr, sizeof(ptr), MCP23017, SPI_1); 
+//Function call      : SPI_master_write(SPI_2, buf, (length+4), FLASH_MEMORY_CS); 
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip)
 {
-    uint8_t i = 0;
-    if (channel == SPI_1)                   
+    uint8_t i = 0;   
+    while (SPI_module_busy(channel) != SPI_MODULE_FREE);
+    for (; i<length; i++)                       
     {
-        while(IEC0bits.SPI1IE);             // Wait for previous int to be done 
-        for (; i<length; i++)            // Fill struct transmit array 
-        {
-           spi_struct[SPI_1].spi_tx_data[i] = data[i];
-        }
-        spi_struct[SPI_1].spi_rx_cnt = 0;           // Set receive counter to 0 
-        spi_struct[SPI_1].spi_tx_cnt = 0;           // Set transmit counter to 0
-        spi_struct[SPI_1].spi_chip = chip;          // Set SPI chip to struct 
-        spi_struct[SPI_1].spi_tx_length = length;   // Write length to struct 
-        spi_struct[SPI_1].spi_txfer_done = 0;             // SPI bus is busy 
-        IEC0bits.SPI1IE = 1;                        // Enable SPI interrupt 
-        SPI_master_assert_cs(chip);                 // Assert /CS from specified SPI chip  
-        SPI1BUF = spi_struct[SPI_1].spi_tx_data[0]; // Send first byte 
-    } 
-    
-    if (channel == SPI_2)                   
-    {
-        while(IEC2bits.SPI2IE);             // Wait for previous int to be done 
-        for (; i<length; i++)            // Fill struct transmit array 
-        {
-           spi_struct[SPI_2].spi_tx_data[i] = data[i];
-        }
-        spi_struct[SPI_2].spi_rx_cnt = 0;           // Set receive counter to 0 
-        spi_struct[SPI_2].spi_tx_cnt = 0;           // Set transmit counter to 0
-        spi_struct[SPI_2].spi_chip = chip;          // Set SPI chip to struct 
-        spi_struct[SPI_2].spi_tx_length = length;   // Write length to struct 
-        spi_struct[SPI_2].spi_txfer_done = 0;             // SPI bus is busy 
-        IEC2bits.SPI2IE = 1;                        // Enable SPI interrupt 
-        SPI_master_assert_cs(chip);                 // Assert /CS from specified SPI chip  
-        SPI2BUF = spi_struct[SPI_2].spi_tx_data[0]; // Send first byte 
+
+       spi_struct[channel].spi_tx_data[i] = data[i];  // Fill transmit array
     }
-    
-    if (channel == SPI_3)                   
+    spi_struct[channel].spi_rx_cnt = 0;               // Set receive counter to 0 
+    spi_struct[channel].spi_tx_cnt = 0;               // Set transmit counter to 0
+    spi_struct[channel].spi_chip = chip;              // Set SPI module chip to struct 
+    spi_struct[channel].spi_tx_length = length;       // Write transaction length to struct 
+    spi_struct[channel].spi_txfer_done = SPI_TX_IDLE; // Set SPI module state to transmit idle
+    switch (channel)
     {
-        while(IEC5bits.SPI3IE);             // Wait for previous int to be done 
-        for (; i<length; i++)            // Fill struct transmit array 
-        {
-           spi_struct[SPI_3].spi_tx_data[i] = data[i];
-        }
-        spi_struct[SPI_3].spi_rx_cnt = 0;           // Set receive counter to 0 
-        spi_struct[SPI_3].spi_tx_cnt = 0;           // Set transmit counter to 0
-        spi_struct[SPI_3].spi_chip = chip;          // Set SPI chip to struct 
-        spi_struct[SPI_3].spi_tx_length = length;   // Write length to struct 
-        spi_struct[SPI_3].spi_txfer_done = 0;       // SPI bus is busy 
-        IEC5bits.SPI3IE = 1;                        // Enable SPI interrupt 
-        SPI_master_assert_cs(chip);                 // Assert /CS from specified SPI chip  
-        SPI3BUF = spi_struct[SPI_3].spi_tx_data[0]; // Send first byte 
+        case SPI_1:
+            IEC0bits.SPI1IE = 1;                            // Enable SPI module interrupt 
+            SPI_master_assert_cs(chip);                     // Assert /CS from specified SPI chip  
+            SPI1BUF = spi_struct[SPI_1].spi_tx_data[0];     // Send first byte           
+            break;
+
+        case SPI_2:
+            IEC2bits.SPI2IE = 1;                            // Enable SPI module interrupt 
+            SPI_master_assert_cs(chip);                     // Assert /CS from specified SPI chip  
+            SPI2BUF = spi_struct[SPI_2].spi_tx_data[0];     // Send first byte                 
+            break;
+
+        case SPI_3:
+            IEC5bits.SPI3IE = 1;                            // Enable SPI module interrupt 
+            SPI_master_assert_cs(chip);                     // Assert /CS from specified SPI chip  
+            SPI3BUF = spi_struct[SPI_3].spi_tx_data[0];     // Send first byte 
+            break;
+
+        case SPI_4:
+            IEC7bits.SPI4IE = 1;                            // Enable SPI module interrupt 
+            SPI_master_assert_cs(chip);                     // Assert /CS from specified SPI chip  
+            SPI4BUF = spi_struct[SPI_4].spi_tx_data[0];     // Send first byte                 
+            break;
+
+        default:
+            break;               
     }
-    
-    if (channel == SPI_4)                   
-    {
-        while(IEC7bits.SPI4IE);             // Wait for previous int to be done 
-        for (; i<length; i++)            // Fill struct transmit array 
-        {
-           spi_struct[SPI_4].spi_tx_data[i] = data[i];
-        }
-        spi_struct[SPI_4].spi_rx_cnt = 0;           // Set receive counter to 0 
-        spi_struct[SPI_4].spi_tx_cnt = 0;           // Set transmit counter to 0
-        spi_struct[SPI_4].spi_chip = chip;          // Set SPI chip to struct 
-        spi_struct[SPI_4].spi_tx_length = length;   // Write length to struct 
-        spi_struct[SPI_4].spi_txfer_done = 0;             // SPI bus is busy 
-        IEC7bits.SPI4IE = 1;                        // Enable SPI interrupt 
-        SPI_master_assert_cs(chip);                 // Assert /CS from specified SPI chip  
-        SPI4BUF = spi_struct[SPI_4].spi_tx_data[0]; // Send first byte 
-    }    
 }
 
-//*****************void SPI_deassert_cs (uint8_t chip)******************//
-//Description : Function deassert spi /CS to specified chip
+//*************void SPI_master_deassert_cs (uint8_t chip)*********************//
+//Description : Function deassert spi /CS of specified chip
+//              If using I/Os whose primary function was not an SPI nCS, define
+//              the case in spi.h and define the LATx bit associated with the pin
+//              Make sure to set the TRISx bit to 0 prior to an SPI transaction
 //
-//Function prototype : void SPI_deassert_cs (uint8_t chip)
+//Function prototype : void SPI_master_deassert_cs (uint8_t chip)
 //
 //Enter params       : uint8_t chip : chip to deassert /CS
 //
 //Exit params        : None
 //
-//Function call      : SPI_deassert_cs(MCP23017); 
+//Function call      : SPI_master_deassert_cs(FT8XX_EVE_CS); 
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void SPI_master_deassert_cs (uint8_t chip)
 {
-   switch (chip)            // Upon switch case 
+   switch (chip)
    {
        case FT8XX_EVE_CS:
            FT8XX_EVE_CS_PIN = 1;
@@ -420,22 +411,30 @@ void SPI_master_deassert_cs (uint8_t chip)
 
        case MIKROBUS2_CS:
            MIKROBUS2_CS_PIN = 1;
-           break;           
+           break;
+
+       default:
+           break;
    }    
 }
 
-//*********************void SPI_assert_cs (uint8_t chip)****************//
+//*****************void SPI_master_assert_cs (uint8_t chip)*******************//
 //Description : Function assert spi /CS to specified chip
+//              If using I/Os whose primary function was not an SPI nCS, define
+//              the case in spi.h and define the LATx bit associated with the pin
+//              Make sure to set the TRISx bit to 0 prior to an SPI transaction
 //
-//Function prototype : void SPI_assert_cs (uint8_t chip)
+//Function prototype : void SPI_master_assert_cs (uint8_t chip)
 //
 //Enter params       : uint8_t chip : chip to assert /CS
 //
 //Exit params        : None
 //
-//Function call      : SPI_assert_cs(MCP23017); 
+//Function call      : SPI_master_assert_cs(FT8XX_EVE_CS); 
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void SPI_master_assert_cs (uint8_t chip)
 {
@@ -463,12 +462,16 @@ void SPI_master_assert_cs (uint8_t chip)
 
        case MIKROBUS2_CS:
            MIKROBUS2_CS_PIN = 0;
+           break;
+           
+       default:
            break;           
    }    
 }
 
-//**********uint8_t * SPI_get_rx_buffer (uint8_t channel)************//
-//Description : Function returns a pointer to the 1st element of the spi rx buffer
+//************uint8_t * SPI_get_rx_buffer (uint8_t channel)******************//
+//Description : Function returns a pointer to the 1st element of the specified
+//              channel spi rx buffer
 //
 //Function prototype : uint8_t * SPI_get_rx_buffer (uint8_t channel)
 //
@@ -478,63 +481,154 @@ void SPI_master_assert_cs (uint8_t chip)
 //
 //Function call      : uint8_t * = SPI_get_rx_buffer(SPI_2); 
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 uint8_t * SPI_get_rx_buffer (uint8_t channel)
 {
     return(&spi_struct[channel].spi_rx_data[0]);// Return array pointer on 1st element
 }
 
+//*****uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index)*******//
+//Description : Function returns a byte from the specified spi channel index
+//
+//Function prototype : uint8_t * SPI_get_rx_buffer (uint8_t channel)
+//
+//Enter params       : uint8_t channel : SPI_x channel                   
+//
+//Exit params        : uint8_t * : pointer to 1st element location
+//
+//Function call      : uint8_t * = SPI_get_rx_buffer(SPI_2); 
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
+//****************************************************************************//
 uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index)
 {
     return spi_struct[channel].spi_rx_data[index];
 }
 
-//*********uint8_t SPI_rx_done (uint8_t channel)************//
-//Description : Function check is SPI transfer is over, meaning the SPI bus is free 
+//***************uint8_t SPI_txfer_done (uint8_t channel)*********************//
+//Description : Function checks wether a transfer is in progress on the specified
+//              SPI channel or if the bus is free.
 //
-//Function prototype : uint8_t SPI_rx_done (uint8_t channel)
+//Function prototype : uint8_t SPI_txfer_done (uint8_t channel)
 //
 //Enter params       : uint8_t channel : SPI_x channel
 //
-//Exit params        : uint8_t 0 : Bus is BUSY
-//                                   1 : Bus is FREE
+//Exit params        : uint8_t       0 : Bus is BUSY -> SPI_TX_BUSY
+//                                   1 : Bus is FREE -> SPI_TX_COMPLETE
 //
-//Function call      : uint8_t = SPI_rx_done(SPI_1); 
+//Function call      : uint8_t = SPI_txfer_done(SPI_1); 
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 uint8_t SPI_txfer_done (uint8_t channel)
 {
-    if (spi_struct[channel].spi_txfer_done)
+    if (spi_struct[channel].spi_txfer_done == SPI_TX_COMPLETE)
     {
-        spi_struct[channel].spi_txfer_done = 0;
-        return 1;
+        spi_struct[channel].spi_txfer_done = SPI_TX_IDLE;
+        return SPI_TX_COMPLETE;
     }
     else return 0;
 }
 
-//************void SPI_clear_rx_buffer (uint8_t channel)****************//
-//Description : Function clears the RX buffer of the specified SPI channel
+//***************uint8_t SPI_module_busy (uint8_t channel)********************//
+//Description : Function checks wether the spi channel module interrupt is set
+//              or if it is free. Polling this bit indicates wether a transfer or receive
+//              operation is in progress or if the module is free.
 //
-//Function prototype : void SPI_clear_rx_buffer (uint8_t channel)
+//Function prototype : uint8_t SPI_module_busy (uint8_t channel)
+//
+//Enter params       : uint8_t channel : SPI_x channel
+//
+//Exit params        : uint8_t       0 : Bus is FREE -> SPIxIE = 0
+//                                   1 : Bus is BUSY -> SPIxIE = 1
+//
+//Function call      : uint8_t = SPI_module_busy(SPI_1); 
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
+//****************************************************************************//
+uint8_t SPI_module_busy (uint8_t channel)
+{
+    switch (channel)
+    {
+        case SPI_1:
+            return IEC0bits.SPI1IE;
+            break;
+            
+        case SPI_2:
+            return IEC2bits.SPI2IE;
+            break;
+            
+        case SPI_3:
+            return IEC5bits.SPI3IE;
+            break;
+            
+        case SPI_4:
+            return IEC7bits.SPI4IE;
+            break;
+            
+        default:
+            return SPI_MODULE_BUSY;
+            break;
+    }
+}
+
+//*****************void SPI_flush_txbuffer (uint8_t channel)******************//
+//Description : Function flushes the TX buffer of the specified SPI channel
+//              and reset it's value to all 0
+//
+//Function prototype : void SPI_flush_txbuffer (uint8_t channel)
 //
 //Enter params       : uint8_t channel : SPI_x channel
 //
 //Exit params        : None
 //
-//Function call      : SPI_clear_rx_buffer(SPI_1); 
+//Function call      : SPI_flush_txbuffer(SPI_1); 
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
-void SPI_flush_buffer (uint8_t channel)
+void SPI_flush_txbuffer (uint8_t channel)
+{
+    uint8_t i = 0;
+    for (; i < SPI_BUF_LENGTH; i++)
+    {
+        spi_struct[channel].spi_tx_data[i] = 0;
+    }
+}
+
+//*****************void SPI_flush_rxbuffer (uint8_t channel)******************//
+//Description : Function flushes the RX buffer of the specified SPI channel
+//              and reset it's value to all 0
+//
+//Function prototype : void SPI_flush_rxbuffer (uint8_t channel)
+//
+//Enter params       : uint8_t channel : SPI_x channel
+//
+//Exit params        : None
+//
+//Function call      : SPI_flush_rxbuffer(SPI_1); 
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
+//****************************************************************************//
+void SPI_flush_rxbuffer (uint8_t channel)
 {
     uint8_t i = 0;
     for (; i < SPI_BUF_LENGTH; i++)
     {
         spi_struct[channel].spi_rx_data[i] = 0;
-        spi_struct[channel].spi_tx_data[i] = 0;
-    }
+    }    
 }
 
 //**************************SPI1 interrupt function***************************//
@@ -546,28 +640,24 @@ void SPI_flush_buffer (uint8_t channel)
 //
 //Exit params        : None
 //
-//Function call      : Called when interrupt happens
-//
-//Jean-Francois Bilodeau    MPLab X v5.45    03/08/2021
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 {
     IFS0bits.SPI1IF = 0;                   
-    spi_struct[SPI_1].spi_tx_cnt++;
-    if (spi_struct[SPI_1].spi_tx_cnt < spi_struct[SPI_1].spi_tx_length)
+    if (++spi_struct[SPI_1].spi_tx_cnt < spi_struct[SPI_1].spi_tx_length)
     {
-        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt] = SPI1BUF; 
-        spi_struct[SPI_1].spi_rx_cnt++;                           
+        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt++] = SPI1BUF;                         
         SPI1BUF = spi_struct[SPI_1].spi_tx_data[spi_struct[SPI_1].spi_tx_cnt];    
     }
     
     else 
     {               
-        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt] = SPI1BUF;
-        spi_struct[SPI_1].spi_rx_cnt = 0;        
-        spi_struct[SPI_1].spi_tx_cnt = 0;           
+        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt] = SPI1BUF;        
         SPI_master_deassert_cs(spi_struct[SPI_1].spi_chip); 
-        spi_struct[SPI_1].spi_txfer_done = 1;                
+        spi_struct[SPI_1].spi_txfer_done = SPI_TX_COMPLETE;                
         IEC0bits.SPI1IE = 0;                       
     }
 }
@@ -581,28 +671,24 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 //
 //Exit params        : None
 //
-//Function call      : Called when interrupt happens
-//
-//Jean-Francois Bilodeau    MPLab X v5.45    03/08/2021
+// Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 {
     IFS2bits.SPI2IF = 0;                   
-    spi_struct[SPI_2].spi_tx_cnt++;
-    if (spi_struct[SPI_2].spi_tx_cnt < spi_struct[SPI_2].spi_tx_length)
+    if (++spi_struct[SPI_2].spi_tx_cnt < spi_struct[SPI_2].spi_tx_length)
     {
-        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt] = SPI2BUF;  
-        spi_struct[SPI_2].spi_rx_cnt++;                          
+        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt++] = SPI2BUF;                       
         SPI2BUF = spi_struct[SPI_2].spi_tx_data[spi_struct[SPI_2].spi_tx_cnt];     
     }
     
     else 
     {               
-        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt] = SPI2BUF;
-        spi_struct[SPI_2].spi_rx_cnt = 0;           
-        spi_struct[SPI_2].spi_tx_cnt = 0;         
+        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt] = SPI2BUF;   
         SPI_master_deassert_cs(spi_struct[SPI_2].spi_chip); 
-        spi_struct[SPI_2].spi_txfer_done = 1;                 
+        spi_struct[SPI_2].spi_txfer_done = SPI_TX_COMPLETE;                 
         IEC2bits.SPI2IE = 0;                          
     }
 }
@@ -616,28 +702,24 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 //
 //Exit params        : None
 //
-//Function call      : Called when interrupt happens
-//
-//Jean-Francois Bilodeau    MPLab X v5.45    03/08/2021
+// Intellitrol           MPLab X v5.45            XC16 v1.61          13/01/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 {
     IFS5bits.SPI3IF = 0;                  
-    spi_struct[SPI_3].spi_tx_cnt++;
-    if (spi_struct[SPI_3].spi_tx_cnt < spi_struct[SPI_3].spi_tx_length)
+    if (++spi_struct[SPI_3].spi_tx_cnt < spi_struct[SPI_3].spi_tx_length)
     {
-        spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt] = SPI3BUF;  
-        spi_struct[SPI_3].spi_rx_cnt++;                           
+        spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt++] = SPI3BUF;                         
         SPI3BUF = spi_struct[SPI_3].spi_tx_data[spi_struct[SPI_3].spi_tx_cnt];  
     }
     
     else
     {               
         spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt] = SPI3BUF;
-        spi_struct[SPI_3].spi_rx_cnt = 0;         
-        spi_struct[SPI_3].spi_tx_cnt = 0;       
         SPI_master_deassert_cs(spi_struct[SPI_3].spi_chip);
-        spi_struct[SPI_3].spi_txfer_done = 1;
+        spi_struct[SPI_3].spi_txfer_done = SPI_TX_COMPLETE;
         IEC5bits.SPI3IE = 0;
     }
 }
@@ -651,28 +733,24 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 //
 //Exit params        : None
 //
-//Function call      : Called when interrupt happens
-//
-//Jean-Francois Bilodeau    MPLab X v5.45    03/08/2021
+// Intellitrol           MPLab X v5.45            XC16 v1.61          13/01/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI4Interrupt(void)
 {
     IFS7bits.SPI4IF = 0;                 
-    spi_struct[SPI_4].spi_tx_cnt++;
-    if (spi_struct[SPI_4].spi_tx_cnt < spi_struct[SPI_4].spi_tx_length)
+    if (++spi_struct[SPI_4].spi_tx_cnt < spi_struct[SPI_4].spi_tx_length)
     {
-        spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt] = SPI4BUF;
-        spi_struct[SPI_4].spi_rx_cnt++;                   
+        spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt++] = SPI4BUF;              
         SPI4BUF = spi_struct[SPI_4].spi_tx_data[spi_struct[SPI_4].spi_tx_cnt];
     }
     
     else
     {               
         spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt] = SPI4BUF;
-        spi_struct[SPI_4].spi_rx_cnt = 0;     
-        spi_struct[SPI_4].spi_tx_cnt = 0;
         SPI_master_deassert_cs(spi_struct[SPI_4].spi_chip);
-        spi_struct[SPI_4].spi_txfer_done = 1;       
+        spi_struct[SPI_4].spi_txfer_done = SPI_TX_COMPLETE;       
         IEC7bits.SPI4IE = 0;      
     }
 }

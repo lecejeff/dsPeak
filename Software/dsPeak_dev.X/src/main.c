@@ -20,7 +20,7 @@
 #pragma config GSSK = OFF               // General Segment Key bits (General Segment Write Protection and Code Protection is Disabled)
 
 // FOSCSEL
-#pragma config FNOSC = FRC              // Primary oscillator at POR is XT, HS or EC, without PLL
+#pragma config FNOSC = FRC              // Primary oscillator at POR is FRC
 #pragma config IESO = OFF               // Two-speed Oscillator Start-up Enable bit (Start up with user-selected oscillator source)
 
 // FOSC
@@ -84,6 +84,7 @@ uint16_t hour_bcd = 0, minute_bcd = 0, second_bcd = 0;
 uint8_t buf[128] = {0};
 uint8_t test_spi[8] = {'J', 'e', 't', 'a', 'i', 'm', 'e', '!'};
 const char *str = "-- Testing a full 64 bytes transfer from DPSRAM->DMA->USART3!\r\n";
+uint8_t can_buf[8] = {'d', 's', 'P', 'e', 'a', 'k', ':', ')'};
 uint16_t test = 1;
 uint8_t speed = 20;
 char new_pid_out1 = 0, new_pid_out2 = 0;
@@ -120,7 +121,7 @@ int main()
     RTCC_write_time(clock);
     UART_init(UART_1, 115200, 16);
     UART_init(UART_2, 115200, 16);
-    UART_init(UART_3, 115200, 1);
+    UART_init(UART_3, 230400, 1);
     
     MOTOR_init(MOTOR_1, 30);
     MOTOR_init(MOTOR_2, 30);            
@@ -134,30 +135,12 @@ int main()
     SPI_flash_write_enable();
     SPI_flash_erase(CMD_BLOCK_ERASE_4k, 0);
     SPI_flash_write(0x100, test_spi, 8);
+ 
     
-    CAN_native.bus_freq = 500000;
-    CAN_native.channel = CAN_1;
-    CAN_native.SID = 0x0123;
-    CAN_native.SRR = 0;
-    CAN_native.IDE = 0;
-    CAN_native.EID = 0;
-    CAN_native.RTR = 0;
-    CAN_native.RB1 = 0;
-    CAN_native.RB0 = 0;
-    CAN_native.DLC = 8;
-    CAN_native.can_payload[0] = 'd';
-    CAN_native.can_payload[1] = 's';
-    CAN_native.can_payload[2] = 'P';
-    CAN_native.can_payload[3] = 'e';
-    CAN_native.can_payload[4] = 'a';
-    CAN_native.can_payload[5] = 'k';
-    CAN_native.can_payload[6] = '!';
-    CAN_native.can_payload[7] = '-';
-    CAN_native.RX_MASK = 0x0300;
-    CAN_native.RX_SID = CAN_native.RX_MASK;   
-    
+    CAN_init_struct(&CAN_native, CAN_1, 500000, 0x0123, 0, 0x0300, 0x0300);
     CAN_init(&CAN_native);
     CAN_set_mode(&CAN_native, CAN_MODE_NORMAL);
+    CAN_fill_payload(&CAN_native, can_buf, 8);
     
     ADC_init_struct(&ADC_struct_AN12, ADC_PORT_1, ADC_CHANNEL_AN12, 
                     ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
@@ -447,7 +430,7 @@ int main()
             }
             if (++counter_sec >= 60)
             {                    
-                CAN_tx_msg(&CAN_native);
+                CAN_send_txmsg(&CAN_native);
                 LATHbits.LATH8 = !LATHbits.LATH8;
                 RTCC_read_time();
                 hour = RTCC_get_time_parameter(RTC_HOUR);

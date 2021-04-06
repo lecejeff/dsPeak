@@ -1,3 +1,27 @@
+//***************************************************************************//
+// File      :  can.h
+//
+// Functions :  void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre); 
+//              void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip);
+//              uint8_t SPI_txfer_done (uint8_t channel);
+//              uint8_t * SPI_get_rx_buffer (uint8_t channel);
+//              uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index);
+//              void SPI_master_deassert_cs (uint8_t chip);
+//              void SPI_master_assert_cs (uint8_t chip);
+//              void SPI_flush_txbuffer (uint8_t channel);
+//              void SPI_flush_rxbuffer (uint8_t channel);
+//              uint8_t SPI_module_busy (uint8_t channel);
+//
+// Includes  :  general.h
+//           
+// Purpose   :  Driver for the dsPIC33E CAN peripheral
+//              1x native channel on dsPeak
+//              CAN_1 : Native CAN2.0B channel
+//
+// Intellitrol                   MPLab X v5.45                        13/01/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
+//****************************************************************************//
 #ifndef __CAN_H_
 #define	__CAN_H_
 
@@ -56,12 +80,15 @@ typedef struct
     uint16_t can_message[8];
 }CAN_struct;
 
+void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID,
+                        uint16_t EID, uint16_t rx_mask, uint16_t rx_sid);
 uint8_t CAN_init (CAN_struct *node);
+void CAN_fill_payload (CAN_struct *node, uint8_t *buf, uint8_t length);
 uint8_t CAN_set_mode (CAN_struct *node, uint8_t mode);
 uint8_t CAN_get_mode (CAN_struct *node);
-uint16_t CAN_get_tx_err_cnt (CAN_struct *node);
-uint16_t CAN_get_rx_err_cnt (CAN_struct *node);
-uint8_t CAN_tx_msg (CAN_struct *node);
+uint16_t CAN_get_txmsg_errcnt (CAN_struct *node);
+uint16_t CAN_get_rxmsg_errcnt (CAN_struct *node);
+uint8_t CAN_send_txmsg (CAN_struct *node);
 
 #endif	
 

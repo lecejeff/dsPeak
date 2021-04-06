@@ -1,24 +1,29 @@
 //***************************************************************************//
 // File      : spi.h
 //
-// Functions :  void SPI_init (uint8_t mode, uint8_t ppre, uint8_t spre, uint8_t channel); 
-//              void SPI_master_write (uint8_t *data, uint8_t length, uint8_t chip, uint8_t channel);
-//              void SPI_fill_transmit_buffer (uint8_t * data, uint8_t length, uint8_t channel);
-//              uint8_t SPI_rx_done (uint8_t channel);
+// Functions :  void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre); 
+//              void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip);
+//              uint8_t SPI_txfer_done (uint8_t channel);
 //              uint8_t * SPI_get_rx_buffer (uint8_t channel);
+//              uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index);
 //              void SPI_master_deassert_cs (uint8_t chip);
 //              void SPI_master_assert_cs (uint8_t chip);
-//              void SPI_slave_initiate (void);
-//              void SPI_clear_rx_buffer (uint8_t channel);
+//              void SPI_flush_txbuffer (uint8_t channel);
+//              void SPI_flush_rxbuffer (uint8_t channel);
+//              uint8_t SPI_module_busy (uint8_t channel);
 //
 // Includes  :  general.h
 //           
-// Purpose   :  Driver for the dsPIC33EP SPI peripheral
-//              2 seperate SPI channel on Intellitrol
-//              SPI_1 - DRV8873 control port, SPI master between dsPIC and peripheral
-//              SPI_2 - Intellitrol control port, SPI slave between dsPIC and external master
+// Purpose   :  Driver for the dsPIC33E SPI peripheral
+//              4x seperate SPI channels on dsPeak :
+//              SPI_1 : Riverdi EVE embedded video engine
+//              SPI_2 : Flash / uSD Card 
+//              SPI_3 : Audio CODEC
+//              SPI_4 : MikroBus 1 and 2
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020  
+// Intellitrol                   MPLab X v5.45                        13/01/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
 #ifndef __spi_h_
 #define __spi_h_
@@ -49,6 +54,11 @@
 
 #define SPI_BUF_LENGTH 32
 
+#define SPI_TX_IDLE         0
+#define SPI_TX_COMPLETE     1
+
+#define SPI_MODULE_FREE     0
+#define SPI_MODULE_BUSY     1
 //******************************************************************************
 // SPI CS pin assignation for assert / deassert functions
 #define FT8XX_EVE_CS_PIN    LATBbits.LATB11
@@ -77,6 +87,8 @@ uint8_t * SPI_get_rx_buffer (uint8_t channel);
 uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index);
 void SPI_master_deassert_cs (uint8_t chip);
 void SPI_master_assert_cs (uint8_t chip);
-void SPI_flush_buffer (uint8_t channel);
+void SPI_flush_txbuffer (uint8_t channel);
+void SPI_flush_rxbuffer (uint8_t channel);
+uint8_t SPI_module_busy (uint8_t channel);
 #endif
 

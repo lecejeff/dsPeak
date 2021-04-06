@@ -169,15 +169,15 @@ uint32_t QEI_get_pulse (uint8_t channel)
     {
         case QEI_1:
             position = POS1CNTL;
-            //hold = ((hold |POS1HLD) << 16);
-            //position |= hold;
+            hold = ((hold |POS1HLD) << 16);
+            position |= hold;
             return position;
             break;
             
         case QEI_2:
             position = POS2CNTL;
-            //hold = ((hold |POS2HLD) << 16);
-            //position |= hold;
+            hold = ((hold |POS2HLD) << 16);
+            position |= hold;
             return position;
             break;
             
