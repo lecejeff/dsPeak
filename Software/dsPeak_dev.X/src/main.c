@@ -9,6 +9,7 @@
 // Intellitrol                   MPLab X v5.45                        13/01/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 
 //----------------------------------------------------------------------------//
@@ -67,6 +68,7 @@
 #include "CAN.h"
 #include "image_file.h"
 #include "ST7735s.h"
+#include "dma.h"
 
 #define SCREEN_ENABLE
 
@@ -274,9 +276,7 @@ int main()
     ST7735_init();
     color = RGB888_to_RGB565(0x00FF00);
     ST7735_Clear(color);
-    
-
-        
+            
     TIMER_start(TIMER_1);
     TIMER_start(TIMER_2);
     TIMER_start(TIMER_3);
@@ -590,14 +590,7 @@ void DSPIC_init (void)
     TRISHbits.TRISH9 = 0;
     TRISHbits.TRISH10 = 0;
     TRISHbits.TRISH11 = 0;
-    
-    // SWPWM RGB LED pins
-    TRISBbits.TRISB3 = 0;   // RGB LED - Red   
-    LATBbits.LATB3 = 1;     // RGB LED - Red
-    TRISBbits.TRISB4 = 0;   // RGB LED - Green 
-    LATBbits.LATB4 = 1;     // RGB LED - Green   
-    TRISBbits.TRISB5 = 0;   // RGB LED - Blue 
-    LATBbits.LATB5 = 1;     // RGB LED - Blue 
+    DMA_struct_init(DMA_ALL_INIT);
 }
 
 void RGB_LED_set_color (uint32_t color)
