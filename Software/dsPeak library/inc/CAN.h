@@ -1,16 +1,7 @@
 //***************************************************************************//
 // File      :  can.h
 //
-// Functions :  void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre); 
-//              void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip);
-//              uint8_t SPI_txfer_done (uint8_t channel);
-//              uint8_t * SPI_get_rx_buffer (uint8_t channel);
-//              uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index);
-//              void SPI_master_deassert_cs (uint8_t chip);
-//              void SPI_master_assert_cs (uint8_t chip);
-//              void SPI_flush_txbuffer (uint8_t channel);
-//              void SPI_flush_rxbuffer (uint8_t channel);
-//              uint8_t SPI_module_busy (uint8_t channel);
+// Functions :  
 //
 // Includes  :  general.h
 //           
@@ -18,9 +9,10 @@
 //              1x native channel on dsPeak
 //              CAN_1 : Native CAN2.0B channel
 //
-// Intellitrol                   MPLab X v5.45                        13/01/2021  
+// Intellitrol                   MPLab X v5.45                        06/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 #ifndef __CAN_H_
 #define	__CAN_H_
