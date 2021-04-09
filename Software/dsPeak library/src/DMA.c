@@ -1,6 +1,29 @@
 #include "DMA.h"
 STRUCT_DMA DMA_struct[DMA_QTY];
 
+// DMA channel usage
+// DMA_CH0 -> UART3 transmit
+// DMA_CH1 -> CAN1_TX
+// DMA_CH2 -> CAN1_RX
+
+void DMA_struct_init (uint8_t channel)
+{   
+    if ((channel >= 0) && (channel < DMA_QTY))
+    {
+        DMA_struct[channel].state = DMA_STATE_UNASSIGNED;
+        DMA_struct[channel].txfer_state = DMA_TXFER_DONE; 
+    }
+    if (channel == DMA_ALL_INIT)
+    {
+        uint8_t i = 0;
+        for (; i < DMA_QTY; i++)
+        {
+            DMA_struct[i].state = DMA_STATE_UNASSIGNED;
+            DMA_struct[i].txfer_state = DMA_TXFER_DONE;             
+        }
+    }
+}
+
 void DMA_init (uint8_t channel)
 {
     if ((channel >= 0 ) && (channel < DMA_QTY))
@@ -12,8 +35,7 @@ void DMA_init (uint8_t channel)
     {     
         case DMA_CH0:              
             IEC0bits.DMA0IE = 0;                    // Disable DMA0 interrupt
-            IFS0bits.DMA0IF = 0;                    // Lower DMA0 interrupt flag
-            
+            IFS0bits.DMA0IF = 0;                    // Lower DMA0 interrupt flag           
             break;
 
         case DMA_CH1:
