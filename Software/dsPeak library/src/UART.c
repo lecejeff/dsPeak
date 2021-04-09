@@ -27,6 +27,7 @@
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 #include "UART.h"
 #include "string.h"
@@ -60,6 +61,7 @@ __eds__ uint8_t uart3_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
 {
@@ -230,6 +232,7 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void UART_putc (uint8_t channel, uint8_t data)
 { 
@@ -274,6 +277,7 @@ void UART_putc (uint8_t channel, uint8_t data)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void UART_putc_ascii (uint8_t channel, uint8_t data)
 {
@@ -297,6 +301,7 @@ void UART_putc_ascii (uint8_t channel, uint8_t data)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void UART_putstr (uint8_t channel, const char *str)
 {
@@ -364,6 +369,7 @@ void UART_putstr (uint8_t channel, const char *str)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)
 {
@@ -425,6 +431,7 @@ void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length)
 {
@@ -503,6 +510,7 @@ void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length)
 {
@@ -530,6 +538,7 @@ void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void UART_send_tx_buffer (uint8_t channel)
 {
@@ -570,6 +579,7 @@ void UART_send_tx_buffer (uint8_t channel)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 uint8_t * UART_get_rx_buffer (uint8_t channel)
 {
@@ -597,6 +607,7 @@ uint8_t * UART_get_rx_buffer (uint8_t channel)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 uint8_t UART_rx_done (uint8_t channel)
 {
@@ -629,6 +640,7 @@ uint8_t UART_rx_done (uint8_t channel)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 uint8_t UART_tx_done (uint8_t channel)
 {
@@ -657,6 +669,7 @@ uint8_t UART_tx_done (uint8_t channel)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
 {
@@ -685,6 +698,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
 {
@@ -723,6 +737,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
 {
@@ -751,6 +766,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
 {
@@ -795,6 +811,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U3RXInterrupt(void)
 {
@@ -823,6 +840,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3RXInterrupt(void)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U3TXInterrupt(void)
 {

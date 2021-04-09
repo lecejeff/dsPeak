@@ -24,6 +24,7 @@
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 #include "Timer.h"
 
@@ -46,6 +47,7 @@ TIMER_STRUCT TIMER_struct[TIMER_QTY];
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)
 {
@@ -316,6 +318,7 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
 {
@@ -562,6 +565,7 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void TIMER_start (uint8_t timer)
 {
@@ -648,6 +652,7 @@ void TIMER_start (uint8_t timer)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void TIMER_stop (uint8_t timer)
 {
@@ -724,6 +729,7 @@ void TIMER_stop (uint8_t timer)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 uint8_t TIMER_get_state (uint8_t timer, uint8_t type)
 {

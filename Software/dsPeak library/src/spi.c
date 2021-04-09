@@ -24,6 +24,7 @@
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 #include "spi.h"
 
@@ -48,6 +49,7 @@ STRUCT_SPI spi_struct[SPI_QTY];
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre) 
 {    
@@ -321,6 +323,7 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip)
 {
@@ -384,6 +387,7 @@ void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t c
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void SPI_master_deassert_cs (uint8_t chip)
 {
@@ -435,6 +439,7 @@ void SPI_master_deassert_cs (uint8_t chip)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void SPI_master_assert_cs (uint8_t chip)
 {
@@ -484,6 +489,7 @@ void SPI_master_assert_cs (uint8_t chip)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 uint8_t * SPI_get_rx_buffer (uint8_t channel)
 {
@@ -504,6 +510,7 @@ uint8_t * SPI_get_rx_buffer (uint8_t channel)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index)
 {
@@ -526,6 +533,7 @@ uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 uint8_t SPI_txfer_done (uint8_t channel)
 {
@@ -554,6 +562,7 @@ uint8_t SPI_txfer_done (uint8_t channel)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 uint8_t SPI_module_busy (uint8_t channel)
 {
@@ -596,6 +605,7 @@ uint8_t SPI_module_busy (uint8_t channel)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void SPI_flush_txbuffer (uint8_t channel)
 {
@@ -621,6 +631,7 @@ void SPI_flush_txbuffer (uint8_t channel)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void SPI_flush_rxbuffer (uint8_t channel)
 {
@@ -643,6 +654,7 @@ void SPI_flush_rxbuffer (uint8_t channel)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 {
@@ -674,6 +686,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 {
@@ -705,6 +718,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          13/01/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 {
@@ -736,6 +750,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 // Intellitrol           MPLab X v5.45            XC16 v1.61          13/01/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI4Interrupt(void)
 {
