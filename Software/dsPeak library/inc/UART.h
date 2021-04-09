@@ -25,6 +25,7 @@
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 #ifndef __UART_H__
  #define __UART_H__

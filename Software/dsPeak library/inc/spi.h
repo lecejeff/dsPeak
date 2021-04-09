@@ -24,6 +24,7 @@
 // Intellitrol                   MPLab X v5.45                        13/01/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 #ifndef __spi_h_
 #define __spi_h_
