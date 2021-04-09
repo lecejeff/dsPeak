@@ -1,8 +1,47 @@
+//***************************************************************************//
+// File      :  can.c
+//
+// Functions :  
+//
+// Includes  :  #include "CAN.h"
+//              #include "DMA.h"
+//           
+// Purpose   :  Driver for the dsPIC33E CAN peripheral
+//              1x native channel on dsPeak
+//              CAN_1 : Native CAN2.0B channel
+//
+// Intellitrol                   MPLab X v5.45                        06/04/2021
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
 #include "CAN.h"
 #include "DMA.h"
 
 __eds__ uint16_t CAN_MSG_BUFFER[32][8] __attribute__((eds, space(dma), aligned(32*16)));
 
+//void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID, uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)//
+//Description : Function initialize CAN structure parameters
+//
+//Function prototype : void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID, uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)
+//
+//Enter params       : CAN_struct *node    : Pointer to a CAN_struct item
+//                   : uint8_t channel     : CAN physical channel
+//                   : uint32_t bus_freq   : CAN bus frequency, max is 550kbps (hardware constraint)
+//                   : uint16_t SID        : CAN Standard identifier
+//                   : uint16_t EID        : CAN extended identifier
+//                   : uint16_t rx_mask    : CAN receive mask
+//                   : uint16_t rx_sid     : CAN receive SID
+//
+//Exit params        : None
+//
+//Function call      : CAN_init_struct(&CAN_native, CAN_1, 500000, 0x0123, 0, 0x0300, 0x0300);
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
 void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID,
                         uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)
 {
@@ -21,99 +60,125 @@ void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint
     node->RB1 = 0;
     node->RB0 = 0;
     node->DLC = 8;
+    
+    // Initialize payload bytes to 0 by default
     for (; i<8; i++)
     {
         node->can_payload[i] = 0;
-    }       
+    }
+    
+    // Set node CAN channel to CAN_MODE_CONFIG
+    if (CAN_set_mode(node, CAN_MODE_CONFIG) == 0xFF)
+    {
+        // Error while trying to set CAN operating mode
+    }
 }
 
-// Return 0 on successful configuration
-// Return 1 on error
+//********************uint8_t CAN_init (CAN_struct *node)*********************//
+//Description : Function initialize CAN state machine and registers
+//
+//Function prototype : uint8_t CAN_init (CAN_struct *node)
+//
+//Enter params       : CAN_struct *node    : Pointer to a CAN_struct item
+//
+//Exit params        : uint8_t : CAN configuration status
+//                               0 : Configuration successful
+//                               1 : Error
+//Function call      : CAN_init(&CAN_native);
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
 uint8_t CAN_init (CAN_struct *node)
 {
     uint8_t i = 0;
-    for (; i < 8; i++)
+   
+    // Make sure node CAN physical channel is in config mode before initializing
+    // the CAN registers, otherwise write to these registers will be discarded
+    if (CAN_get_mode(node) != CAN_MODE_CONFIG){return 1;}    
+    else
     {
-        CAN_MSG_BUFFER[0][i] = 0;
-        //node->can_message[i] = 0;   // Initialize can_message to all 0
-    }
-    //--------- Module always resets in the CAN configuration mode -----------//
-    node->old_mode = CAN_MODE_CONFIG;   //
-    node->mode = CAN_MODE_CONFIG;       //
-    
-    switch (node->channel)
-    {
-        case CAN_1:
-            IEC2bits.C1IE = 0;                  // Disable CAN interrupt during initialization
-            IFS2bits.C1IF = 0;                  // Reset interrupt flag 
-            
-            CAN_set_mode(node, CAN_MODE_CONFIG);// Set CAN module to configuration 
-            C1CTRL1bits.WIN = 0;                
-            
-            TRISGbits.TRISG15 = 0;              // RG15 configured as an output (CAN1_LBK)
-            CAN_LBK_STATE = CAN_LBK_INACTIVE;   // Disable loopback during initialization
-            TRISEbits.TRISE5 = 0;               // RE5 configured as an output (CAN1_TX)
-            TRISEbits.TRISE6 = 1;               // RE6 configured as an input (CAN1_RX)
-            RPOR6bits.RP85R = 0x0E;             // RE5 (RP85) assigned to CAN1_TX
-            RPINR26bits.C1RXR = 86;             // RE6 (RPI86) assigned to CAN1_RX
-      
-            // CAN bus nominal bit time and time quanta
-            C1CTRL1bits.CANCKS = 1;             // IMPLEMENTATION REVERSED, SEE ERRATA DS80000526H-page 8 -> Fcan = Fp (Fcy) = (FOSC / 2)
-            C1CFG2bits.SAM = 1;                 // BUS sampled 3x times at the sample point
-            
-            if (node->bus_freq > CAN_MAXIMUM_BUS_FREQ)
-            {
-                // Return error because requested bus frequency is higher than
-                // the hardware limit of the platform
-                return 1;
-            }
-            else
-            {   
-                node->time_quantum_frequency = NOMINAL_TIME_QUANTA * node->bus_freq;
-                C1CFG1bits.BRP = (node->time_quantum_frequency / (2*node->bus_freq))+1;                         // For maximum resolution
-                //C1CFG1bits.BRP = 6;
-                // Hard requirements for the CAN bus bit timing that must be followed :
-                // Bit time = Sync segment + Propagation segment + Phase segment 1 + Phase segment 2
-                // 1) Propagation segment + Phase segment 1 >=  Phase segment 2
-                // 2) Phase segment 2 >= Synchronous jump width (SJW)
-                C1CFG2bits.SEG1PH = PHASE_SEGMENT_1 - 1;        // Set phase segment 1 
-                C1CFG2bits.SEG2PHTS = 0;                        // Set SEG2 constrained to "Maximum of SEG1PHx bits"
-                C1CFG2bits.SEG2PH = PHASE_SEGMENT_2 - 1;        // Set phase segment 2
-                C1CFG2bits.PRSEG = PROPAGATION_SEGMENT - 1;         // Set propagation segment
-                C1CFG1bits.SJW = SYNCHRONIZATION_JUMP_WIDTH - 1;// Set SJW
-            }
-            
-            DMA_init(DMA_CH1);
-            DMA1CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
-            DMA1REQ = DMAREQ_ECAN1TX;
-            DMA1PAD = (volatile uint16_t)&C1TXD;
-            DMA1STAH = __builtin_dmapage(CAN_MSG_BUFFER);
-            DMA1STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
-            DMA1CNT = 0x7;        // 8 word transfers 
-            
-            // As a first test, use buffer 0 to transmit message, buffer 1 to receive message
-            C1TR01CONbits.TXEN0 = 1;            // Set buffer 0 to transmit buffer
-            C1TR01CONbits.TX0PRI = 0x3; 
-            
-            // Enable CAN interrupts
-            IEC2bits.C1IE = 1;
-            C1INTEbits.TBIE = 1;
-            //C1INTEbits.RBIE = 1;
-            
-            // Enable DMA channel and interrupt
-            DMA_enable(DMA_CH1);  
-            return 0;
-            break;
-            
-        case CAN_2:
-            IEC3bits.C2IE = 0;                  // Disable CAN interrupt during initialization
-            IFS3bits.C2IF = 0;                  // Reset interrupt flag      
-            return 0;                           
-            break;
-            
-        default:
-            return 1;                           // Return error 
-            break;
+        // Initialize CAN DMA message buffers to 0
+        for (; i < 8; i++)
+        {
+            CAN_MSG_BUFFER[0][i] = 0;
+        }        
+        switch (node->channel)
+        {
+            case CAN_1:
+                IEC2bits.C1IE = 0;                  // Disable CAN interrupt during initialization
+                IFS2bits.C1IF = 0;                  // Reset interrupt flag 
+                C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers               
+
+                // CAN channel physical pin configuration
+                TRISGbits.TRISG15 = 0;              // RG15 configured as an output (CAN1_LBK)
+                CAN_LBK_STATE = CAN_LBK_INACTIVE;   // Disable loopback during initialization
+                TRISEbits.TRISE5 = 0;               // RE5 configured as an output (CAN1_TX)
+                TRISEbits.TRISE6 = 1;               // RE6 configured as an input (CAN1_RX)
+                RPOR6bits.RP85R = 0x0E;             // RE5 (RP85) assigned to CAN1_TX
+                RPINR26bits.C1RXR = 86;             // RE6 (RPI86) assigned to CAN1_RX
+
+                // CAN bus nominal bit time and time quanta
+                C1CTRL1bits.CANCKS = 1;             // IMPLEMENTATION REVERSED, SEE ERRATA DS80000526H-page 8 -> Fcan = Fp (Fcy) = (FOSC / 2)
+                C1CFG2bits.SAM = 1;                 // BUS sampled 3x times at the sample point
+                // Make sure to limit the CAN bus frequency to 550kHz
+                if (node->bus_freq > CAN_MAXIMUM_BUS_FREQ){return 1;}
+                else
+                {  
+                    // Hard requirements for the CAN bus bit timing that must be followed :
+                    // Bit time = Sync segment + Propagation segment + Phase segment 1 + Phase segment 2
+                    // 1) Propagation segment + Phase segment 1 >=  Phase segment 2
+                    // 2) Phase segment 2 >= Synchronous jump width (SJW)  
+                    // If you want to change the bit timing, make sure to use 
+                    // MPLAB X IDE Tools / Embedded / ECAN bit rate calculator
+                    node->time_quantum_frequency = NOMINAL_TIME_QUANTA * node->bus_freq;
+                    C1CFG1bits.BRP = (node->time_quantum_frequency / (2*node->bus_freq))+1;
+                    C1CFG2bits.SEG1PH = PHASE_SEGMENT_1 - 1;        // Set phase segment 1 
+                    C1CFG2bits.SEG2PHTS = 0;                        // Set SEG2 constrained to "Maximum of SEG1PHx bits"
+                    C1CFG2bits.SEG2PH = PHASE_SEGMENT_2 - 1;        // Set phase segment 2
+                    C1CFG2bits.PRSEG = PROPAGATION_SEGMENT - 1;     // Set propagation segment
+                    C1CFG1bits.SJW = SYNCHRONIZATION_JUMP_WIDTH - 1;// Set SJW
+                }
+                // DMA channel initialization, 1x channel for message transmission
+                DMA_init(DMA_CH1);
+                DMA1CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
+                DMA1REQ = DMAREQ_ECAN1TX;
+                DMA1PAD = (volatile uint16_t)&C1TXD;
+                DMA1STAH = __builtin_dmapage(CAN_MSG_BUFFER);
+                DMA1STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
+                DMA1CNT = 0x7;        
+                
+                // DMA channel initialization, 1x channel for message reception
+                DMA_init(DMA_CH2);
+                DMA2CON = DMA_SIZE_WORD | DMA_TXFER_RD_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
+                DMA2REQ = DMAREQ_ECAN1RX;
+                DMA2PAD = (volatile uint16_t)&C1RXD;
+                DMA2STAH = __builtin_dmapage(CAN_MSG_BUFFER);
+                DMA2STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
+                DMA2CNT = 0x7;                 
+                C1CTRL1bits.WIN = 1;                // Set at 1 to access CAN filter / mask registers 
+                
+                // As a first test, use buffer 0 to transmit message, buffer 1 to receive message
+                C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers    
+                C1TR01CONbits.TXEN0 = 1;            // Set buffer 0 to transmit buffer
+                C1TR01CONbits.TX0PRI = 0x3; 
+
+                // Enable CAN interrupts
+                IEC2bits.C1IE = 1;
+                C1INTEbits.TBIE = 1;
+                C1INTEbits.RBIE = 1;
+               
+                DMA_enable(DMA_CH1);                // Enable DMA channel and interrupt  
+                DMA_enable(DMA_CH2);                // Enable DMA channel and interrupt 
+                return 0;
+                break;
+
+            default:
+                return 1;                           // Return error 
+                break;
+        }
     }
 }
 
@@ -137,15 +202,13 @@ uint8_t CAN_set_mode (CAN_struct *node, uint8_t mode)
         case CAN_1:
             C1CTRL1bits.REQOP = mode;
             break;
-
-        case CAN_2:
-            C2CTRL1bits.REQOP = mode;
-            break;
         
         default:
             return 0xFF;
             break;
     }
+    // Mode change occurs only when the bus is idle (11 successive recessive bits)
+    // The following blocks the program execution until mode change is done
     while(CAN_get_mode(node) != node->mode);
     return node->mode;
 }
@@ -158,10 +221,6 @@ uint8_t CAN_get_mode (CAN_struct *node)
     {
         case CAN_1:
             return C1CTRL1bits.OPMODE;
-            break;
-            
-        case CAN_2:
-            return C2CTRL1bits.OPMODE;
             break;
             
         default:
@@ -200,10 +259,6 @@ uint16_t CAN_get_txmsg_errcnt (CAN_struct *node)
             return C1ECbits.TERRCNT;
             break;
             
-        case CAN_2:
-            return C2ECbits.TERRCNT;
-            break;
-            
         default:
             return 0;
             break;
@@ -216,10 +271,6 @@ uint16_t CAN_get_rxmsg_errcnt (CAN_struct *node)
     {
         case CAN_1:
             return C1ECbits.RERRCNT;
-            break;
-            
-        case CAN_2:
-            return C2ECbits.RERRCNT;
             break;
             
         default:
@@ -253,12 +304,6 @@ void __attribute__((__interrupt__, no_auto_psv))_C1Interrupt(void)
 //void __attribute__((__interrupt__, no_auto_psv))_C1TxReqInterrupt(void)
 //{
 //}
-
-// ECAN2 event interrupt
-void __attribute__((__interrupt__, no_auto_psv))_C2Interrupt(void)
-{
-    IFS3bits.C2IF = 0;
-}
 
 //// ECAN2 Receive data ready interrupt
 //void __attribute__((__interrupt__, no_auto_psv))_C2RxRdyInterrupt(void)
