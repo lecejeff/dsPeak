@@ -15,15 +15,18 @@
 // Includes  :  i2c.h
 //           
 // Purpose   :  I2C driver for the dsPIC33EP family
-//           :  I2C1 : dsPIC33EP slave module, controlled by external master
-//           :  I2C2 : dsPIC33EP master module, controls an I2C memory
+//              2x native channels on dsPeak :
+//              I2C_1 : MikroBus I2C port
+//              I2C_2 : On-board I2C rheostats for PWM RC-DAC function
 //
-//Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020  
+// Intellitrol                   MPLab X v5.45                        10/04/2021  
+// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
 //****************************************************************************//
 #include "i2c.h"
 
 STRUCT_I2C i2c_struct[I2C_MODULE_QTY];
-
 
 //void I2C_init (uint8_t port, uint8_t mode, uint8_t address)//
 //Description : Function initializes the i2c module in slave or master mode
@@ -220,7 +223,7 @@ void I2C_master_write (uint8_t port, uint8_t *data, uint8_t length)
     while(I2C_wait(port));      // Check for disabled interrupt
     for (i=0; i<length; i++)
     {
-        i2c_struct[port].i2c_tx_data[i] = *data;// copy data to struct table
+        i2c_struct[port].i2c_tx_data[i] = *data;    // copy data to struct array
         data++;
     }
     i2c_struct[port].i2c_write_length = length;     // Set message length 
@@ -229,11 +232,11 @@ void I2C_master_write (uint8_t port, uint8_t *data, uint8_t length)
     i2c_struct[port].i2c_tx_counter = 0;            //
     i2c_struct[port].i2c_done = 1;                  // busy i2c flag set
     
-    //if (port == I2C_port_1)
-    //{
-    //    IEC1bits.MI2C1IE = 1;                           // Enable I2C master interrupt 
-    //    I2C1CONbits.SEN = 1;                            // Start I2C sequence
-    //}
+    if (port == I2C_port_1)
+    {
+        IEC1bits.MI2C1IE = 1;                           // Enable I2C master interrupt 
+        I2C1CONbits.SEN = 1;                            // Start I2C sequence
+    }
     
     if (port == I2C_port_2)
     {
@@ -407,6 +410,138 @@ void __attribute__((__interrupt__, no_auto_psv)) _SI2C1Interrupt(void)
     IFS1bits.SI2C1IF = 0;    
 }
 
+// I2C2 master interrupt routine 
+// Uncomment these lines if the I2C2 is used as master
+void __attribute__((__interrupt__, no_auto_psv)) _MI2C1Interrupt(void)
+{
+    if (i2c_struct[I2C_port_1].i2c_message_mode == I2C_WRITE) // write
+    {
+        if (i2c_struct[I2C_port_1].i2c_int_counter == 0)
+        {
+            IFS1bits.MI2C1IF = 0;   // Lower interrupt flag 
+            I2C1TRN = i2c_struct[I2C_port_1].i2c_tx_data[i2c_struct[I2C_port_1].i2c_tx_counter]; //send adr
+            i2c_struct[I2C_port_1].i2c_int_counter++;
+            i2c_struct[I2C_port_1].i2c_tx_counter++;  
+        }            
+
+        else if (i2c_struct[I2C_port_1].i2c_int_counter == 1) // send data
+        {
+            if (i2c_struct[I2C_port_1].i2c_tx_counter < i2c_struct[I2C_port_1].i2c_write_length)//send data
+            {  
+                IFS1bits.MI2C1IF = 0;   // Lower interrupt flag  
+                I2C1TRN = i2c_struct[I2C_port_1].i2c_tx_data[i2c_struct[I2C_port_1].i2c_tx_counter];
+                i2c_struct[I2C_port_1].i2c_tx_counter++;
+            }
+
+            else //all the data was transmitted
+            {
+                IFS1bits.MI2C1IF = 0;                           // Lower interrupt flag 
+                i2c_struct[I2C_port_1].i2c_int_counter++;     
+                I2C1CONbits.PEN = 1;                            //enable stop sequence
+            }
+        }    
+
+        else if (i2c_struct[I2C_port_1].i2c_int_counter == 2)   //end transmission 
+        {
+            i2c_struct[I2C_port_1].i2c_int_counter = 0;         // Reset interrupt counter
+            i2c_struct[I2C_port_1].i2c_tx_counter = 0;          // Reset transmit counter
+            i2c_struct[I2C_port_1].i2c_done = 0;                // Bus is free, transaction over
+            IEC1bits.MI2C1IE = 0;                               // Disable SSP interrupt
+            IFS1bits.MI2C1IF = 0;                               // Lower interrupt flag
+        }
+    }   // End of I2C_write interrupt
+    
+    // 24LCXX read scheme   : Write adr + read bit disabled
+    //                      : Write memory location to read
+    //                      : Repeated start on I2C bus
+    //                      : Write adr + read bit enabled
+    //                      : Read then store byte
+    else if (i2c_struct[I2C_port_1].i2c_message_mode == I2C_READ) // read
+    {
+        if (i2c_struct[I2C_port_1].i2c_int_counter == 0)    // send adr 
+        {
+            IFS1bits.MI2C1IF = 0; 
+            I2C1TRN = i2c_struct[I2C_port_1].i2c_tx_data[i2c_struct[I2C_port_1].i2c_tx_counter];
+            i2c_struct[I2C_port_1].i2c_int_counter++;
+            i2c_struct[I2C_port_1].i2c_tx_counter++;
+        }    
+
+        else if (i2c_struct[I2C_port_1].i2c_int_counter == 1) //send register to read
+        {
+            IFS1bits.MI2C1IF = 0; 
+            if (i2c_struct[I2C_port_1].i2c_tx_counter < i2c_struct[I2C_port_1].i2c_write_length)
+            {
+                I2C1TRN = i2c_struct[I2C_port_1].i2c_tx_data[i2c_struct[I2C_port_1].i2c_tx_counter];
+                i2c_struct[I2C_port_1].i2c_tx_counter++;
+            }
+            
+            else   
+            {
+                I2C1CONbits.RSEN = 1; //enable restart
+                i2c_struct[I2C_port_1].i2c_int_counter++;
+            }   
+        }
+
+        // Send read address
+        else if (i2c_struct[I2C_port_1].i2c_int_counter == 2)
+        {
+            IFS1bits.MI2C1IF = 0; 
+            I2C1TRN = i2c_struct[I2C_port_1].i2c_tx_data[i2c_struct[I2C_port_1].i2c_rx_counter] + 1; //send adr + 1
+            i2c_struct[I2C_port_1].i2c_int_counter++;             
+        }
+
+        // Enable data read on I2C bus
+        else if (i2c_struct[I2C_port_1].i2c_int_counter == 3)
+        {
+            IFS1bits.MI2C1IF = 0; 
+            I2C1CONbits.RCEN = 1;
+            i2c_struct[I2C_port_1].i2c_int_counter++; 
+        }    
+        
+        // Read data from i2c slave
+        else if (i2c_struct[I2C_port_1].i2c_int_counter == 4)
+        {
+            IFS1bits.MI2C1IF = 0; 
+            if (i2c_struct[I2C_port_1].i2c_rx_counter < i2c_struct[I2C_port_1].i2c_read_length)
+            {   
+                // Get byte and store in rx buffer
+                i2c_struct[I2C_port_1].i2c_rx_data[i2c_struct[I2C_port_1].i2c_rx_counter] = I2C1RCV;
+                
+                // See if we wish to receive more data as set in i2c_read_length field
+                if (++i2c_struct[I2C_port_1].i2c_rx_counter < i2c_struct[I2C_port_1].i2c_read_length)
+                {          
+                    I2C1CONbits.ACKDT = 0; //send ack
+                    I2C1CONbits.ACKEN = 1; //continue data reception
+                    i2c_struct[I2C_port_1].i2c_int_counter = 4;
+                }   
+                
+                // No more data to receive, send NACK to slave device
+                else
+                {
+                    I2C1CONbits.ACKDT = 1; //send nack
+                    I2C1CONbits.ACKEN = 1;
+                }   
+            } 
+
+            // Stop I2C transaction
+            else
+            {
+                I2C1CONbits.PEN = 1;
+                i2c_struct[I2C_port_1].i2c_int_counter++; 
+            }            
+        }
+
+        else if (i2c_struct[I2C_port_1].i2c_int_counter == 5)
+        {
+            i2c_struct[I2C_port_1].i2c_int_counter = 0;
+            i2c_struct[I2C_port_1].i2c_rx_counter = 0;
+            i2c_struct[I2C_port_1].i2c_tx_counter = 0;
+            i2c_struct[I2C_port_1].i2c_done = 0;
+            IEC1bits.MI2C1IE = 0;
+            IFS1bits.MI2C1IF = 0;
+        }                             
+    }
+}
 
 // I2C2 master interrupt routine 
 // Uncomment these lines if the I2C2 is used as master

@@ -19,6 +19,7 @@
 #include "DMA.h"
 
 __eds__ uint16_t CAN_MSG_BUFFER[32][8] __attribute__((eds, space(dma), aligned(32*16)));
+uint16_t CAN_RX_MSG[8] = {0};
 
 //void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID, uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)//
 //Description : Function initialize CAN structure parameters
@@ -52,6 +53,8 @@ void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint
     node->EID = EID;
     node->RX_MASK = rx_mask;
     node->RX_SID = rx_sid;
+    node->txmsg_buffer_channel = 0; // Use CAN MSGBUF0 for message transmission
+    node->rxmsg_buffer_channel = 1; // Use CAN MSGBUF1 for message transmission
     
     // See if these should be configured by default
     node->SRR = 0;
@@ -93,7 +96,7 @@ void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint
 //****************************************************************************//
 uint8_t CAN_init (CAN_struct *node)
 {
-    uint8_t i = 0;
+    uint8_t i = 0, j = 0;
    
     // Make sure node CAN physical channel is in config mode before initializing
     // the CAN registers, otherwise write to these registers will be discarded
@@ -103,7 +106,10 @@ uint8_t CAN_init (CAN_struct *node)
         // Initialize CAN DMA message buffers to 0
         for (; i < 8; i++)
         {
-            CAN_MSG_BUFFER[0][i] = 0;
+            for (; j < 32; j++)
+            {
+                CAN_MSG_BUFFER[j][i] = 0;
+            }
         }        
         switch (node->channel)
         {
@@ -111,7 +117,7 @@ uint8_t CAN_init (CAN_struct *node)
                 IEC2bits.C1IE = 0;                  // Disable CAN interrupt during initialization
                 IFS2bits.C1IF = 0;                  // Reset interrupt flag 
                 C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers               
-
+                C1FCTRLbits.DMABS = 6;              // 32 message buffers in device RAM
                 // CAN channel physical pin configuration
                 TRISGbits.TRISG15 = 0;              // RG15 configured as an output (CAN1_LBK)
                 CAN_LBK_STATE = CAN_LBK_INACTIVE;   // Disable loopback during initialization
@@ -141,6 +147,8 @@ uint8_t CAN_init (CAN_struct *node)
                     C1CFG2bits.PRSEG = PROPAGATION_SEGMENT - 1;     // Set propagation segment
                     C1CFG1bits.SJW = SYNCHRONIZATION_JUMP_WIDTH - 1;// Set SJW
                 }
+                // Use CAN TX buffer 0 for message transmission
+                // Use CAN RX buffer 1 for message reception
                 // DMA channel initialization, 1x channel for message transmission
                 DMA_init(DMA_CH1);
                 DMA1CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
@@ -158,11 +166,17 @@ uint8_t CAN_init (CAN_struct *node)
                 DMA2STAH = __builtin_dmapage(CAN_MSG_BUFFER);
                 DMA2STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
                 DMA2CNT = 0x7;                 
-                C1CTRL1bits.WIN = 1;                // Set at 1 to access CAN filter / mask registers 
+                C1CTRL1bits.WIN = 1;                // Set at 1 to access CAN filter / mask registers                       
+                C1RXF1SIDbits.SID = node->RX_SID;   // Setup acceptance filter 1 SID
+                C1RXM1SIDbits.SID = node->RX_MASK;  // Setup acceptance mask 1
+                C1FMSKSEL1bits.F1MSK = 1;           // Acceptance mask 1 registers contain mask
+                C1BUFPNT1bits.F1BP = 1;             // Acceptance filter 1 will use message buffer 1
+                C1FEN1bits.FLTEN1 = 1;              // Acceptance filter 1 enabled 
                 
-                // As a first test, use buffer 0 to transmit message, buffer 1 to receive message
-                C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers    
+                C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers   
+                
                 C1TR01CONbits.TXEN0 = 1;            // Set buffer 0 to transmit buffer
+                C1TR01CONbits.RTREN1 = 1;           // Set buffer 1 to receive buffer
                 C1TR01CONbits.TX0PRI = 0x3; 
 
                 // Enable CAN interrupts
@@ -249,6 +263,33 @@ uint8_t CAN_send_txmsg (CAN_struct *node)
     C1TR01CONbits.TXREQ0 = 0x1; 
     while (C1TR01CONbits.TXREQ0 == 1);
     return 0;
+}
+
+uint16_t * CAN_parse_rxmsg (CAN_struct *node)
+{
+    uint8_t can_rx_payload[8] = {0};
+    if ((CAN_MSG_BUFFER[node->rxmsg_buffer_channel][0] & 0x1FFC)>>2 == node->RX_SID)
+    {
+        CAN_RX_MSG[0] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][0];
+        CAN_RX_MSG[1] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][1];
+        CAN_RX_MSG[2] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][2];
+        CAN_RX_MSG[3] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][3];
+        CAN_RX_MSG[4] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][4];
+        CAN_RX_MSG[5] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][5];
+        CAN_RX_MSG[6] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][6];
+        CAN_RX_MSG[7] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][7];
+        can_rx_payload[0] = CAN_RX_MSG[3]&0x00FF;
+        can_rx_payload[1] = ((CAN_RX_MSG[3]&0xFF00)>>8);
+        can_rx_payload[2] = CAN_RX_MSG[4]&0x00FF;
+        can_rx_payload[3] = ((CAN_RX_MSG[4]&0xFF00)>>8);
+        can_rx_payload[4] = CAN_RX_MSG[5]&0x00FF;
+        can_rx_payload[5] = ((CAN_RX_MSG[5]&0xFF00)>>8);
+        can_rx_payload[6] = CAN_RX_MSG[6]&0x00FF;
+        can_rx_payload[7] = ((CAN_RX_MSG[6]&0xFF00)>>8);        
+        return &CAN_RX_MSG[0];
+    }
+    else
+        return 0;
 }
 
 uint16_t CAN_get_txmsg_errcnt (CAN_struct *node)

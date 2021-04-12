@@ -41,7 +41,7 @@
 #pragma config FPWRT = PWR128           // Power-on Reset Timer Value Select bits (128ms)
 #pragma config BOREN = ON               // Brown-out Reset (BOR) Detection Enable bit (BOR is enabled )
 #pragma config ALTI2C1 = ON             // Alternate I2C pins for I2C1 (ASDA1/ASCK1 pins are selected as the I/O pins for I2C1)
-#pragma config ALTI2C2 = ON             // Alternate I2C pins for I2C2 (I2C2 mapped to ASDA2/ASCL2 pins)
+#pragma config ALTI2C2 = ON             // Alternate I2C pins for I2C2 (ASDA2/ASCK2 pins are selected as the I/O pins for I2C2)
 
 // FICD
 #pragma config ICS = PGD1               // ICD Communication Channel Select bits (Communicate on PGEC1 and PGED1)
@@ -69,6 +69,7 @@
 #include "image_file.h"
 #include "ST7735s.h"
 #include "dma.h"
+#include "i2c.h"
 
 #define SCREEN_ENABLE
 
@@ -116,6 +117,11 @@ uint16_t mem_dat[10] = {0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777, 
 STRUCT_ADC ADC_struct_AN0, ADC_struct_AN1, ADC_struct_AN2, ADC_struct_AN12, 
             ADC_struct_AN13, ADC_struct_AN14, ADC_struct_AN15;
 
+uint16_t data_rx_can[4] = {0};
+uint16_t *ptr_can;
+uint8_t I2C_buf[4] = {0};
+uint16_t i2c_sine_counter = 0;
+
 int main() 
 {
     DSPIC_init();
@@ -128,6 +134,17 @@ int main()
     MOTOR_init(MOTOR_1, 30);
     MOTOR_init(MOTOR_2, 30);            
 
+    I2C_init(I2C_port_1, I2C_mode_master, 0);
+    I2C_buf[0] = 0x90;
+    I2C_buf[1] = 0x01;// Device config
+    I2C_buf[2] = 0x00;
+    I2C_buf[3] = 0x00; // Power-up all channels  
+    I2C_master_write(I2C_port_1, I2C_buf, 4);
+    TRISCbits.TRISC1 = 0;
+    TRISHbits.TRISH12 = 0;
+    LATCbits.LATC1 = 0;
+    LATHbits.LATH12 = 1;
+    
     PWM_init(PWM_5H, PWM_TYPE_SERVO);
     PWM_init(PWM_6L, PWM_TYPE_SERVO);
    
@@ -256,7 +273,7 @@ int main()
     TIMER_init(TIMER_5, TIMER_PRESCALER_256, 5);
     TIMER_init(TIMER_7, TIMER_PRESCALER_256, QEI_get_fs(QEI_2));
     TIMER_init(TIMER_8, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
-    //TIMER_init(TIMER_9, TIMER_PRESCALER_256, 60000);
+    TIMER_init(TIMER_9, TIMER_PRESCALER_256, 128);
 
     PMP_init(PMP_MODE_SRAM);
     for (i=0; i<10; i++)
@@ -284,7 +301,7 @@ int main()
     TIMER_start(TIMER_5);
     TIMER_start(TIMER_7);
     TIMER_start(TIMER_8);
-    //TIMER_start(TIMER_9);
+    TIMER_start(TIMER_9);
     while (1)
     {           
         if (TIMER_get_state(TIMER_1, TIMER_INT_STATE) == 1)
@@ -431,7 +448,21 @@ int main()
             if (++counter_sec >= 60)
             {                    
                 CAN_send_txmsg(&CAN_native);
-                LATHbits.LATH8 = !LATHbits.LATH8;
+                if (C1RXFUL1bits.RXFUL1 == 1)
+                {
+                    C1RXFUL1bits.RXFUL1 = 0;
+                    
+                    ptr_can = CAN_parse_rxmsg(&CAN_native);
+                    if (ptr_can != 0)
+                    {
+                        ptr_can++; ptr_can++; ptr_can++;
+                        data_rx_can[0] = *ptr_can++;
+                        data_rx_can[1] = *ptr_can++;
+                        data_rx_can[2] = *ptr_can++;
+                        data_rx_can[3] = *ptr_can;
+                    }
+                    LATHbits.LATH8 = !LATHbits.LATH8;
+                }               
                 RTCC_read_time();
                 hour = RTCC_get_time_parameter(RTC_HOUR);
                 minute = RTCC_get_time_parameter(RTC_MINUTE);
@@ -519,21 +550,20 @@ int main()
         }
         
         // SWPWM RGB LED timer
-//        if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
-//        {                   
-//            if (RGB_PWM_counter > RGB_R_duty){RGB_LED_RED = 1;}
-//            if (RGB_PWM_counter > RGB_G_duty){RGB_LED_GREEN = 1;}
-//            if (RGB_PWM_counter > RGB_B_duty){RGB_LED_BLUE = 1;}
-// 
-//            if (RGB_PWM_counter >= RGB_PWM_frequency)
-//            {
-//                if (RGB_R_duty > 0){RGB_LED_RED = 0;}
-//                if (RGB_G_duty > 0){RGB_LED_GREEN = 0;}
-//                if (RGB_B_duty > 0){RGB_LED_BLUE = 0;}
-//                RGB_PWM_counter = 0;
-//            }
-//            RGB_PWM_counter++;       
-//        }        
+        if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
+        {                   
+            unsigned int cnt = 0;
+            for (; cnt < 8; cnt++)
+            {
+                I2C_buf[0] = 0x90;
+                I2C_buf[1] = 0x08 + cnt; // Channel
+                I2C_buf[2] = ((sine_10b_512pts[i2c_sine_counter] & 0x03C0) >> 6) & 0x0F;
+                I2C_buf[3] = ((sine_10b_512pts[i2c_sine_counter] & 0x003F) << 2) & 0xFC;  
+                I2C_master_write(I2C_port_1, I2C_buf, 4);                
+            }         
+            i2c_sine_counter++;
+            if (i2c_sine_counter == 512){i2c_sine_counter = 0;}      
+        }        
     }
     return 0;
 }

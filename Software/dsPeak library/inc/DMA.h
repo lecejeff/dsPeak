@@ -21,7 +21,7 @@
 #define DMA_CH12            12
 #define DMA_CH13            13
 #define DMA_CH14            14
-#define DMA_ALL_INIT        255
+#define DMA_ALL_INIT        15
 
 #define DMA_TXFER_DONE          1
 #define DMA_TXFER_IN_PROGRESS   0

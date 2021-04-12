@@ -57,7 +57,9 @@ typedef struct
     uint32_t time_quantum_frequency;
     uint32_t bus_freq;
     
-    uint8_t message_buffer_channel;
+    uint8_t txmsg_buffer_channel;
+    uint8_t rxmsg_buffer_channel;
+    
     uint16_t SID;
     uint16_t RX_MASK;
     uint16_t RX_SID;
@@ -81,6 +83,7 @@ uint8_t CAN_get_mode (CAN_struct *node);
 uint16_t CAN_get_txmsg_errcnt (CAN_struct *node);
 uint16_t CAN_get_rxmsg_errcnt (CAN_struct *node);
 uint8_t CAN_send_txmsg (CAN_struct *node);
+uint16_t * CAN_parse_rxmsg (CAN_struct *node);
 
 #endif	
 
