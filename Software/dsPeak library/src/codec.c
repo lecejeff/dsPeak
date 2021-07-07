@@ -15,39 +15,14 @@
 
 STRUCT_CODEC CODEC_struct; 
 uint8_t sine_counter = 0;
-const int sine_wave_255_65k[256] = {
-0x8000,0x8327,0x864e,0x8973,0x8c98,0x8fba,0x92da,0x95f7,
-0x9911,0x9c27,0x9f38,0xa244,0xa54c,0xa84d,0xab48,0xae3c,
-0xb12a,0xb40f,0xb6ed,0xb9c2,0xbc8e,0xbf50,0xc209,0xc4b7,
-0xc75b,0xc9f4,0xcc81,0xcf02,0xd177,0xd3e0,0xd63b,0xd889,
-0xdac9,0xdcfb,0xdf1e,0xe133,0xe339,0xe52f,0xe716,0xe8ec,
-0xeab3,0xec68,0xee0d,0xefa1,0xf123,0xf294,0xf3f3,0xf540,
-0xf67a,0xf7a3,0xf8b8,0xf9bb,0xfaab,0xfb88,0xfc52,0xfd08,
-0xfdab,0xfe3b,0xfeb7,0xff1f,0xff73,0xffb4,0xffe1,0xfff9,
-0xfffe,0xffef,0xffcd,0xff96,0xff4b,0xfeed,0xfe7b,0xfdf6,
-0xfd5c,0xfcb0,0xfbef,0xfb1c,0xfa36,0xf93c,0xf830,0xf711,
-0xf5df,0xf49b,0xf345,0xf1de,0xf064,0xeed9,0xed3d,0xeb8f,
-0xe9d2,0xe803,0xe625,0xe436,0xe238,0xe02b,0xde0f,0xdbe4,
-0xd9ab,0xd763,0xd50f,0xd2ad,0xd03e,0xcdc3,0xcb3c,0xc8a9,
-0xc60b,0xc361,0xc0ae,0xbdf0,0xbb29,0xb858,0xb57f,0xb29d,
-0xafb4,0xacc3,0xa9cb,0xa6cd,0xa3c9,0xa0bf,0x9db0,0x9a9c,
-0x9785,0x9469,0x914b,0x8e29,0x8b06,0x87e1,0x84ba,0x8193,
-0x7e6c,0x7b45,0x781e,0x74f9,0x71d6,0x6eb4,0x6b96,0x687a,
-0x6563,0x624f,0x5f40,0x5c36,0x5932,0x5634,0x533c,0x504b,
-0x4d62,0x4a80,0x47a7,0x44d6,0x420f,0x3f51,0x3c9e,0x39f4,
-0x3756,0x34c3,0x323c,0x2fc1,0x2d52,0x2af0,0x289c,0x2654,
-0x241b,0x21f0,0x1fd4,0x1dc7,0x1bc9,0x19da,0x17fc,0x162d,
-0x1470,0x12c2,0x1126,0xf9b,0xe21,0xcba,0xb64,0xa20,
-0x8ee,0x7cf,0x6c3,0x5c9,0x4e3,0x410,0x34f,0x2a3,
-0x209,0x184,0x112,0xb4,0x69,0x32,0x10,0x1,
-0x6,0x1e,0x4b,0x8c,0xe0,0x148,0x1c4,0x254,
-0x2f7,0x3ad,0x477,0x554,0x644,0x747,0x85c,0x985,
-0xabf,0xc0c,0xd6b,0xedc,0x105e,0x11f2,0x1397,0x154c,
-0x1713,0x18e9,0x1ad0,0x1cc6,0x1ecc,0x20e1,0x2304,0x2536,
-0x2776,0x29c4,0x2c1f,0x2e88,0x30fd,0x337e,0x360b,0x38a4,
-0x3b48,0x3df6,0x40af,0x4371,0x463d,0x4912,0x4bf0,0x4ed5,
-0x51c3,0x54b7,0x57b2,0x5ab3,0x5dbb,0x60c7,0x63d8,0x66ee,
-0x6a08,0x6d25,0x7045,0x7367,0x768c,0x79b1,0x7cd8,0x8000};
+extern uint8_t record_flag;
+uint8_t codec_int_flag = 0;
+uint16_t rx_ch_left = 0;
+uint16_t rx_ch_right = 0;
+extern uint16_t tx_ch_left;
+extern uint8_t first_read;
+extern uint16_t tx_ch_right;
+uint8_t data_tx_ready = 0;
 
 void CODEC_init (uint8_t sys_fs)
 {
@@ -149,6 +124,9 @@ void CODEC_init (uint8_t sys_fs)
     
     // Codec System MCLK and Sample Clock
     CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFF3, sys_fs<<2);
+    // FOR 8kHz SAMPLING, REMOVE OTHERWISE
+    CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFF3F, 3 << 4);
+    //
     CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFFC, 3 << 0);
     
     // Set CODEC to I2S master, set data length to 16 bits
@@ -169,7 +147,7 @@ void CODEC_init (uint8_t sys_fs)
     // I2S in -> HP Out
     CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 1 << 4);   // DAC data source is I2S in
     CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
-    CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818);  
+    CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1010);  
     
     CODEC_unmute(ADC_MUTE);
     CODEC_unmute(DAC_MUTE);
@@ -258,6 +236,23 @@ void CODEC_set_dac_volume (uint8_t dac_vol_right, uint8_t dac_vol_left)
     CODEC_struct.CHIP_DAC_VOL = CODEC_spi_write(CODEC_CHIP_DAC_VOL, ((CODEC_struct.dac_vol_right << 8) | CODEC_struct.dac_vol_left)); 
 }
 
+void CODEC_set_hp_volume (uint8_t hp_vol_right, uint8_t hp_vol_left)
+{
+    // SGTL datasheet, adjustment to HP vol is made by steps of 0.5dB / LSB
+    // 0x00 = +12dB
+    // 0x18 = 0dB
+    // 0x7F - 51.5dB        
+    if ((hp_vol_right >= 0) && (hp_vol_right <= 0x7F))
+    {
+        CODEC_struct.hp_vol_right = hp_vol_right + 0x18;  // 0x18 is 0dB base offset in SGTL5000       
+    }
+    if ((hp_vol_left >= 0) && (hp_vol_left <= 0x7F))
+    {
+        CODEC_struct.hp_vol_left = hp_vol_left + 0x18;    // 0x18 is 0dB base offset in SGTL5000        
+    }    
+    CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, ((CODEC_struct.hp_vol_right << 8) | CODEC_struct.hp_vol_left));     
+}
+
 void CODEC_mute (uint8_t channel)
 {
     switch(channel)
@@ -338,22 +333,39 @@ void DCI_init (void)
     RPOR1bits.RP67R = 0x0B; // RD3 (RP67) assigned to I2S_DOUT
     RPINR24bits.CSDIR = 76; // RD12 (RPI76) assigned to I2S_DIN
     
-    TXBUF0 = sine_wave_255_65k[sine_counter];   
-    
-    IPC15bits.DCIIP = 6;    // Make the DCI interrupt higher priority than nominal
+    IPC15bits.DCIIP = 4;    // Make the DCI interrupt higher priority than nominal
     IEC3bits.DCIIE = 1;     // Enable DCI interrupt
     DCICON1bits.DCIEN = 1;  // Enable DCI module
+}
+
+uint8_t DCI_get_interrupt_state (void)
+{
+    if (codec_int_flag == 1)
+    {
+        codec_int_flag = 0;
+        return 1;
+    }
+    else 
+        return 0;
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _DCIInterrupt(void)
 {
     IFS3bits.DCIIF = 0;      // clear DCI interrupt flag
-    if (++sine_counter > 255){sine_counter = 0;}
-    TXBUF0 = RXBUF0;
-    TXBUF1 = RXBUF1;
-//    TXBUF0 = sine_wave_255_65k[sine_counter]; 
-//    TXBUF1 = sine_wave_255_65k[sine_counter]; 
-//    dumb = RXBUF0;
-//    dumb = RXBUF1;
-    //UART_rx_interrupt(UART_1);// process interrupt routine
+    
+    rx_ch_left = RXBUF0;
+    rx_ch_right = RXBUF1;
+    LATCbits.LATC2 = 1;   
+    if (data_tx_ready == 1)
+    {
+        TXBUF0 = tx_ch_left;    
+        TXBUF1 = tx_ch_right; 
+    }
+    else
+    {
+        TXBUF0 = rx_ch_left;
+        TXBUF1 = rx_ch_right;
+    }
+    codec_int_flag = 1;
+    LATCbits.LATC2 = 0;
 }

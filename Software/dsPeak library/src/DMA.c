@@ -5,6 +5,8 @@ STRUCT_DMA DMA_struct[DMA_QTY];
 // DMA_CH0 -> UART3 transmit
 // DMA_CH1 -> CAN1_TX
 // DMA_CH2 -> CAN1_RX
+// DMA_CH3 -> SPI_TX
+// DMA_CH4 -> SPI_RX
 
 void DMA_struct_init (uint8_t channel)
 {   

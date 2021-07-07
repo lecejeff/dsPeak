@@ -29,6 +29,10 @@
 #include "spi.h"
 
 STRUCT_SPI spi_struct[SPI_QTY];
+__eds__ uint8_t spi2_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+__eds__ uint8_t spi2_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+
+extern uint8_t flash_test;
 
 //void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)//
 //Description : Function initializes SPI module on selected MODE with Prim and
@@ -51,9 +55,9 @@ STRUCT_SPI spi_struct[SPI_QTY];
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre) 
+void SPI_init (uint8_t spi_channel, uint8_t spi_mode, uint8_t ppre, uint8_t spre) 
 {    
-    switch (channel)
+    switch (spi_channel)
     {
         // SPI1 is FTDI EVE interface
         case SPI_1:
@@ -65,14 +69,17 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             SPI1CON1bits.DISSDO = 0;        // SDOx pin is controlled by the module 
             SPI1CON1bits.MODE16 = 0;        // Communication is byte wide (8bit)   
             SPI1CON1bits.MSTEN = 1;         // SPI master mode enabled 
+            SPI1CON2bits.SPIBEN = 1;        // Enhanced buffer mode enabled
+            SPI1STATbits.SISEL = 5;         // Interrupt when the last bit is shifted out of SPIxSR and the transmit is complete             
             SPI1CON2bits.FRMEN = 0;         // Frame mode disabled 
             SPI1CON1bits.SSEN = 0;          // GPIO controls SPI /CS
+            
             // SPI1 clock control, Fsck = FCY / (ppre * spre)
             // Make sure the clock rate is supported by the spi module 
             // (see MCU datasheet, electrical caracteristics section)
             SPI1CON1bits.PPRE = ppre;
             SPI1CON1bits.SPRE = spre;
-            switch (mode)
+            switch (spi_mode)
             {
                 case SPI_MODE0:
                     SPI1CON1bits.CKE = 1;   // Mode 0 configurations  
@@ -127,14 +134,33 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             SPI2CON1bits.DISSCK = 0;        // Internal serial clock is enabled 
             SPI2CON1bits.DISSDO = 0;        // SDOx pin is controlled by the module 
             SPI2CON1bits.MODE16 = 0;        // Communication is byte wide (8bit)   
-            SPI2CON1bits.MSTEN = 1;         // SPI master mode enabled 
+            SPI2CON1bits.MSTEN = 1;         // SPI master mode enabled
+            
+            // DMA_CH3 is SPI2-TX DMA channel
+            DMA_init(DMA_CH3);
+            DMA3CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
+            DMA3REQ = DMAREQ_SPI2;
+            DMA3PAD = (volatile uint16_t)&SPI2BUF;
+            DMA3STAH = __builtin_dmapage(spi2_dma_tx_buf);
+            DMA3STAL = __builtin_dmaoffset(spi2_dma_tx_buf);       
+            
+            // DMA_CH4 is SPI2-RX DMA channel
+            DMA_init(DMA_CH4);
+            DMA4CON = DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD;
+            DMA4REQ = DMAREQ_SPI2;
+            DMA4PAD = (volatile uint16_t)&SPI2BUF;
+            DMA4STAH = __builtin_dmapage(spi2_dma_rx_buf);
+            DMA4STAL = __builtin_dmaoffset(spi2_dma_rx_buf);               
+            
+            //SPI2CON2bits.SPIBEN = 1;        // Enhanced buffer mode enable
+            //SPI2STATbits.SISEL = 5;         // Interrupt when the last bit is shifted out of SPIxSR and the transmit is complete              
             SPI2CON2bits.FRMEN = 0;         // Frame mode disabled 
             SPI2CON1bits.SSEN = 0;          // GPIO controls SPI /CS      
             // SPI2 clock control, Fsck = FCY / (ppre * spre)
             // Make sure the clock rate is supported by the spi module
             SPI2CON1bits.PPRE = ppre;
             SPI2CON1bits.SPRE = spre;
-            switch (mode)
+            switch (spi_mode)
             {
                 case SPI_MODE0:
                     SPI2CON1bits.CKE = 1;   // Mode 0 configurations  
@@ -166,12 +192,16 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             TRISGbits.TRISG7 = 1;           // RG7 configured as an input (SPI2_MISO)
             TRISGbits.TRISG8 = 0;           // RGB configured as an output (SPI2_MOSI)
             TRISGbits.TRISG9 = 0;           // RB9 configured as an output (SD_nCS)
-            TRISGbits.TRISG0 = 0;           // RG0 configured as an output (FLASH_nCS)       
+            TRISGbits.TRISG0 = 0;           // RG0 configured as an output (FLASH_nCS)
+            SD_CARD_CS_PIN = 1;
+            FLASH_MEMORY_CS_PIN = 1;
 
-            IPC8bits.SPI2IP = 4;            // SPI int priority is 4  
+            IPC8bits.SPI2IP = 4;            // SPI int priority is 7  
             IFS2bits.SPI2EIF = 0;           // Disable SPI error int flag 
             IFS2bits.SPI2IF = 0;            // Disable SPI int flag                 
-            SPI2STATbits.SPIEN = 1;         // Enable SPI module                    
+            SPI2STATbits.SPIEN = 1;         // Enable SPI module   
+            
+            spi_struct[SPI_2].spi_nonblock_state = SPI_IS_INITIALIZED;
             break;  
             
         // SPI3 is the AUDIO CODEC configuration interface    
@@ -184,13 +214,15 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             SPI3CON1bits.DISSDO = 0;        // SDOx pin is controlled by the module 
             SPI3CON1bits.MODE16 = 0;        // Communication is byte wide (8bit)   
             SPI3CON1bits.MSTEN = 1;         // SPI master mode enabled 
+            SPI3CON2bits.SPIBEN = 1;        // Enhanced buffer mode enable
+            SPI3STATbits.SISEL = 5;         // Interrupt when the last bit is shifted out of SPIxSR and the transmit is complete
             SPI3CON2bits.FRMEN = 0;         // Frame mode disabled 
             SPI3CON1bits.SSEN = 0;          // GPIO controls SPI /CS      
             // SPI3 clock control, Fsck = FCY / (ppre * spre)
             // Make sure the clock rate is supported by the spi module
             SPI3CON1bits.PPRE = ppre;
             SPI3CON1bits.SPRE = spre;
-            switch (mode)
+            switch (spi_mode)
             {
                 case SPI_MODE0:
                     SPI3CON1bits.CKE = 1;   // Mode 0 configurations
@@ -234,7 +266,8 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             SPI3STATbits.SPIEN = 1;         // Enable SPI module                   
             break;
           
-        // SPI4 is the MikroBus interface     
+        // SPI4 is the MikroBus interface   
+        // Testing SPI enhanced buffer mode (see if it removes the delay between consecutive bytes)    
         case SPI_4:
             IEC7bits.SPI4IE = 0;            // Disable SPI module interrupt
             SPI4STATbits.SPIEN = 0;         // Disable SPI module 
@@ -244,13 +277,15 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             SPI4CON1bits.DISSDO = 0;        // SDOx pin is controlled by the module 
             SPI4CON1bits.MODE16 = 0;        // Communication is byte wide (8bit)   
             SPI4CON1bits.MSTEN = 1;         // SPI master mode enabled 
+            SPI4CON2bits.SPIBEN = 1;        // Enhanced buffer mode enable
+            SPI4STATbits.SISEL = 5;         // Interrupt when the last bit is shifted out of SPIxSR and the transmit is complete       
             SPI4CON2bits.FRMEN = 0;         // Frame mode disabled 
             SPI4CON1bits.SSEN = 0;          // GPIO controls SPI /CS      
-            // SPI3 clock control, Fsck = FCY / (ppre * spre)
+            // SPI4 clock control, Fsck = FCY / (ppre * spre)
             // Make sure the clock rate is supported by the spi module
             SPI4CON1bits.PPRE = ppre;
             SPI4CON1bits.SPRE = spre;
-            switch (mode)
+            switch (spi_mode)
             {
                 case SPI_MODE0:
                     SPI4CON1bits.CKE = 1;   // Mode 0 configurations  
@@ -282,10 +317,12 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             TRISDbits.TRISD13 = 1;          // RD13 configured as an input (SPI4_MISO)            
             TRISDbits.TRISD7 = 0;           // RD7 configured as an output (SPI4_SCLK)
             TRISHbits.TRISH15 = 0;          // RH15 configured as an output (MikroBus1_nCS)    
-            TRISHbits.TRISH13 = 0;          // RH13 configured as an output (MikroBus2_nCS)   
+            TRISHbits.TRISH13 = 0;          // RH13 configured as an output (MikroBus2_nCS) 
+            MIKROBUS1_CS_PIN = 1;
+            MIKROBUS2_CS_PIN = 1;
 
             // SPI4 peripheral pin assignment       
-            RPOR2bits.RP68R = 0x22;         // RF0 (RP68) assigned to SPI4_MOSI 
+            RPOR7bits.RP96R = 0x22;         // RF0 (RP96) assigned to SPI4_MOSI 
             RPINR31bits.SDI4R = 77;         // RD13 (RPI77) assigned to SPI4_MISO
             RPINR31bits.SCK4R = 71;         // RD7 (RP71) assigned to SPI4_SCLK input
             RPOR3bits.RP71R = 0x23;         // RD7 (RP71) assigned to SPI4_SCLK output             
@@ -297,10 +334,12 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
             break;
     }
     
-    spi_struct[channel].spi_txfer_done = SPI_TX_IDLE; // Reset SPI module state machine
-    spi_struct[channel].spi_tx_cnt = 0;     // 
-    spi_struct[channel].spi_rx_cnt = 0;     // 
-    spi_struct[channel].spi_tx_length = 0;  // 
+    spi_struct[spi_channel].spi_txfer_done = SPI_TX_IDLE; // Reset SPI module state machine
+    spi_struct[spi_channel].spi_tx_cnt = 0;     // 
+    spi_struct[spi_channel].spi_rx_cnt = 0;     // 
+    spi_struct[spi_channel].spi_tx_length = 0;  // 
+    spi_struct[spi_channel].spi_last_tx_length = 0;
+    spi_struct[spi_channel].spi_tx_remaining = 0;
 }
 
 //void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip)//
@@ -325,49 +364,239 @@ void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip)
+void SPI_master_write (uint8_t channel, uint8_t *data, uint16_t length, uint8_t chip)
 {
-    uint8_t i = 0;   
-    while (SPI_module_busy(channel) != SPI_MODULE_FREE);
-    for (; i<length; i++)                       
+    uint16_t i = 0;   
+    if (channel != SPI_2)
     {
-
-       spi_struct[channel].spi_tx_data[i] = data[i];  // Fill transmit array
+        while (SPI_module_busy(channel) != SPI_MODULE_FREE);
+        for (i=0; i<length; i++)                       
+        {
+           spi_struct[channel].spi_tx_data[i] = data[i];  // Fill transmit array
+        }        
     }
     spi_struct[channel].spi_rx_cnt = 0;               // Set receive counter to 0 
     spi_struct[channel].spi_tx_cnt = 0;               // Set transmit counter to 0
     spi_struct[channel].spi_chip = chip;              // Set SPI module chip to struct 
     spi_struct[channel].spi_tx_length = length;       // Write transaction length to struct 
+    spi_struct[channel].spi_last_tx_length = 0;
+    spi_struct[channel].spi_tx_remaining = 0;
     spi_struct[channel].spi_txfer_done = SPI_TX_IDLE; // Set SPI module state to transmit idle
     switch (channel)
     {
         case SPI_1:
             IEC0bits.SPI1IE = 1;                            // Enable SPI module interrupt 
-            SPI_master_assert_cs(chip);                     // Assert /CS from specified SPI chip  
-            SPI1BUF = spi_struct[SPI_1].spi_tx_data[0];     // Send first byte           
+            SPI_master_assert_cs(spi_struct[channel].spi_chip);                     // Assert /CS from specified SPI chip  
+            // Enhanced buffer mode
+            // If <= 8 bytes transfer, fill FIFO once
+            if (spi_struct[channel].spi_tx_length <= 8)
+            {
+                for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+                {
+                    SPI1BUF = spi_struct[channel].spi_tx_data[i];     // Send bytes in txfifo                    
+                }
+                spi_struct[channel].spi_tx_cnt = spi_struct[channel].spi_tx_length;
+                spi_struct[channel].spi_last_tx_length = spi_struct[channel].spi_tx_cnt;
+            }
+            // If > 8 bytes transfer, fill FIFO once, increm tx cnt
+            else
+            {
+                for (i=0; i<8; i++)
+                {
+                    SPI1BUF = spi_struct[channel].spi_tx_data[i];     // Send bytes in txfifo
+                }
+                spi_struct[channel].spi_tx_cnt = 8;  
+                spi_struct[channel].spi_last_tx_length = spi_struct[channel].spi_tx_cnt;
+            }            
             break;
 
-        case SPI_2:
-            IEC2bits.SPI2IE = 1;                            // Enable SPI module interrupt 
-            SPI_master_assert_cs(chip);                     // Assert /CS from specified SPI chip  
-            SPI2BUF = spi_struct[SPI_2].spi_tx_data[0];     // Send first byte                 
+        case SPI_2:                                 
+            // DMA mode
+            for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+            {
+                //spi2_dma_tx_buf[i] = spi_struct[channel].spi_tx_data[i];
+                spi2_dma_tx_buf[i] = data[i];
+            }
+            DMA3CNT = spi_struct[channel].spi_tx_length - 1;    // 0 = 1 txfer, so substract 1  
+            DMA4CNT = spi_struct[channel].spi_tx_length - 1;    // 0 = 1 txfer, so substract 1  
+            DMA_enable(DMA_CH3);                                // Enable DMA CH3
+            DMA_enable(DMA_CH4);                                // Enable DMA CH4    
+            SPI_master_assert_cs(spi_struct[channel].spi_chip); // Assert /CS from specified SPI chip  
+            IEC2bits.SPI2IE = 1;                                // Enable SPI module interrupt 
+            DMA3REQbits.FORCE = 1;                              // Force first DMA transfer 
+            while (DMA3REQbits.FORCE == 1);            
+            while(DMA_get_txfer_state(DMA_CH4) != DMA_TXFER_DONE);
+            SPI_master_deassert_cs(spi_struct[SPI_2].spi_chip);
+            spi_struct[SPI_2].spi_txfer_done = SPI_TX_COMPLETE;       
+            IEC2bits.SPI2IE = 0;      
+            for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+            {
+                spi_struct[channel].spi_rx_data[i] = spi2_dma_rx_buf[i];
+                //spi2_dma_tx_buf[i] = spi_struct[channel].spi_tx_data[i];
+            }
+            // Enhanced buffer mode
+            // If <= 8 bytes transfer, fill FIFO once
+//            if (spi_struct[channel].spi_tx_length <= 8)
+//            {
+//                for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+//                {
+//                    SPI2BUF = spi_struct[channel].spi_tx_data[i];     // Send bytes in txfifo                    
+//                }
+//                spi_struct[channel].spi_tx_cnt = spi_struct[channel].spi_tx_length;
+//                spi_struct[channel].spi_last_tx_length = spi_struct[channel].spi_tx_cnt;
+//            }
+            // If > 8 bytes transfer, fill FIFO once, increm tx cnt
+//            else
+//            {
+//                for (i=0; i<8; i++)
+//                {
+//                    SPI2BUF = spi_struct[channel].spi_tx_data[i];     // Send bytes in txfifo
+//                }
+//                spi_struct[channel].spi_tx_cnt = 8;  
+//                spi_struct[channel].spi_last_tx_length = spi_struct[channel].spi_tx_cnt;
+//            }                      
             break;
 
         case SPI_3:
             IEC5bits.SPI3IE = 1;                            // Enable SPI module interrupt 
-            SPI_master_assert_cs(chip);                     // Assert /CS from specified SPI chip  
-            SPI3BUF = spi_struct[SPI_3].spi_tx_data[0];     // Send first byte 
+            SPI_master_assert_cs(spi_struct[channel].spi_chip);                     // Assert /CS from specified SPI chip  
+            // Enhanced buffer mode
+            // If <= 8 bytes transfer, fill FIFO once
+            if (spi_struct[channel].spi_tx_length <= 8)
+            {
+                for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+                {
+                    SPI3BUF = spi_struct[channel].spi_tx_data[i];     // Send bytes in txfifo                    
+                }
+                spi_struct[channel].spi_tx_cnt = spi_struct[channel].spi_tx_length;
+                spi_struct[channel].spi_last_tx_length = spi_struct[channel].spi_tx_cnt;
+            }
+            // If > 8 bytes transfer, fill FIFO once, increm tx cnt
+            else
+            {
+                for (i=0; i<8; i++)
+                {
+                    SPI3BUF = spi_struct[channel].spi_tx_data[i];     // Send bytes in txfifo
+                }
+                spi_struct[channel].spi_tx_cnt = 8;  
+                spi_struct[channel].spi_last_tx_length = spi_struct[channel].spi_tx_cnt;
+            } 
             break;
 
-        case SPI_4:
+        case SPI_4:                               
             IEC7bits.SPI4IE = 1;                            // Enable SPI module interrupt 
-            SPI_master_assert_cs(chip);                     // Assert /CS from specified SPI chip  
-            SPI4BUF = spi_struct[SPI_4].spi_tx_data[0];     // Send first byte                 
+            SPI_master_assert_cs(spi_struct[channel].spi_chip);                     // Assert /CS from specified SPI chip 
+            // Enhanced buffer mode
+            // If <= 8 bytes transfer, fill FIFO once
+            if (spi_struct[channel].spi_tx_length <= 8)
+            {
+                for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+                {
+                    SPI4BUF = spi_struct[channel].spi_tx_data[i];     // Send bytes in txfifo                    
+                }
+                spi_struct[channel].spi_tx_cnt = spi_struct[channel].spi_tx_length;
+                spi_struct[channel].spi_last_tx_length = spi_struct[channel].spi_tx_cnt;
+            }
+            // If > 8 bytes transfer, fill FIFO once, increm tx cnt
+            else
+            {
+                for (i=0; i<8; i++)
+                {
+                    SPI4BUF = spi_struct[channel].spi_tx_data[i];     // Send bytes in txfifo
+                }
+                spi_struct[channel].spi_tx_cnt = 8;  
+                spi_struct[channel].spi_last_tx_length = spi_struct[channel].spi_tx_cnt;
+            }
             break;
 
         default:
             break;               
     }
+}
+
+void SPI_master_write_nonblock (uint8_t channel, uint8_t *data, uint16_t length, uint8_t chip)
+{
+    uint16_t i = 0;   
+    spi_struct[channel].spi_rx_cnt = 0;               // Set receive counter to 0 
+    spi_struct[channel].spi_tx_cnt = 0;               // Set transmit counter to 0
+    spi_struct[channel].spi_chip = chip;              // Set SPI module chip to struct 
+    spi_struct[channel].spi_tx_length = length;       // Write transaction length to struct 
+    spi_struct[channel].spi_last_tx_length = 0;
+    spi_struct[channel].spi_tx_remaining = 0;
+    spi_struct[channel].spi_txfer_done = SPI_TX_IDLE; // Set SPI module state to transmit idle    
+    switch (channel)    
+    {
+        case SPI_2:                                 
+            // DMA mode
+            if (flash_test == 0)
+            {
+                for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+                {
+                    //spi2_dma_tx_buf[i] = spi_struct[channel].spi_tx_data[i];
+                    spi2_dma_tx_buf[i] = data[i];
+                }
+            }
+            else
+            {
+                // Flash test = read, only need to set 4 first bytes of array
+                for (i=0; i<4; i++)
+                {
+                    //spi2_dma_tx_buf[i] = spi_struct[channel].spi_tx_data[i];
+                    spi2_dma_tx_buf[i] = data[i];
+                } 
+                flash_test = 0;
+            }
+
+            DMA3CNT = spi_struct[channel].spi_tx_length - 1;    // 0 = 1 txfer, so substract 1  
+            DMA4CNT = spi_struct[channel].spi_tx_length - 1;    // 0 = 1 txfer, so substract 1  
+            DMA_enable(DMA_CH3);                                // Enable DMA CH3
+            DMA_enable(DMA_CH4);                                // Enable DMA CH4    
+            SPI_master_assert_cs(spi_struct[channel].spi_chip); // Assert /CS from specified SPI chip  
+            IEC2bits.SPI2IE = 1;                                // Enable SPI module interrupt 
+            DMA3REQbits.FORCE = 1;                              // Force first DMA transfer 
+            //while (DMA3REQbits.FORCE == 1);            
+//            while(DMA_get_txfer_state(DMA_CH4) != DMA_TXFER_DONE);
+//            SPI_master_deassert_cs(spi_struct[SPI_2].spi_chip);
+//            spi_struct[SPI_2].spi_txfer_done = SPI_TX_COMPLETE;       
+//            IEC2bits.SPI2IE = 0;      
+//            for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+//            {
+//                spi_struct[channel].spi_rx_data[i] = spi2_dma_rx_buf[i];
+//                //spi2_dma_tx_buf[i] = spi_struct[channel].spi_tx_data[i];
+//            }
+            break;
+    }
+}
+
+void SPI_master_release_port (uint8_t channel)
+{
+    uint16_t i = 0;
+    switch (channel)
+    {
+        case SPI_2:
+            SPI_master_deassert_cs(spi_struct[channel].spi_chip);
+            spi_struct[channel].spi_txfer_done = SPI_TX_COMPLETE;       
+            IEC2bits.SPI2IE = 0;      
+//            for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+//            {
+//                spi_struct[channel].spi_rx_data[i] = spi2_dma_rx_buf[i];
+//            }
+            break;
+    }
+}
+
+void SPI_master_unload_dma_buffer (uint8_t channel)
+{
+    uint16_t i = 0;
+    switch (channel)
+    {
+        case SPI_2:   
+            for (i=0; i<spi_struct[channel].spi_tx_length; i++)
+            {
+                spi_struct[channel].spi_rx_data[i] = spi2_dma_rx_buf[i];
+            }
+            break;
+    }    
 }
 
 //*************void SPI_master_deassert_cs (uint8_t chip)*********************//
@@ -512,9 +741,19 @@ uint8_t * SPI_get_rx_buffer (uint8_t channel)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index)
+uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint16_t index)
 {
     return spi_struct[channel].spi_rx_data[index];
+}
+
+uint8_t SPI_get_nonblock_state (uint8_t channel)
+{
+    return spi_struct[channel].spi_nonblock_state;
+}
+
+void SPI_set_nonblock_state (uint8_t channel, uint8_t state)
+{
+    spi_struct[channel].spi_nonblock_state = state;
 }
 
 //***************uint8_t SPI_txfer_done (uint8_t channel)*********************//
@@ -659,19 +898,46 @@ void SPI_flush_rxbuffer (uint8_t channel)
 void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 {
     IFS0bits.SPI1IF = 0;                   
-    if (++spi_struct[SPI_1].spi_tx_cnt < spi_struct[SPI_1].spi_tx_length)
+    uint16_t i=0;  
+    // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
+    for (i=0; i<spi_struct[SPI_1].spi_last_tx_length; i++)
     {
-        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt++] = SPI1BUF;                         
-        SPI1BUF = spi_struct[SPI_1].spi_tx_data[spi_struct[SPI_1].spi_tx_cnt];    
+        //while (SPI1STATbits.SRXMPT != 0);
+        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt++] = SPI1BUF;
+        SPI1STATbits.SPIROV = 0;
     }
-    
-    else 
-    {               
-        spi_struct[SPI_1].spi_rx_data[spi_struct[SPI_1].spi_rx_cnt] = SPI1BUF;        
-        SPI_master_deassert_cs(spi_struct[SPI_1].spi_chip); 
-        spi_struct[SPI_1].spi_txfer_done = SPI_TX_COMPLETE;                
-        IEC0bits.SPI1IE = 0;                       
+    // Is there more data to transmit?
+    if (spi_struct[SPI_1].spi_tx_cnt < spi_struct[SPI_1].spi_tx_length)
+    {     
+        spi_struct[SPI_1].spi_tx_remaining = spi_struct[SPI_1].spi_tx_length - spi_struct[SPI_1].spi_tx_cnt;
+        // Is there at least 8+ bytes left to transmit?
+        if (spi_struct[SPI_1].spi_tx_remaining  >= 8)
+        {
+            for (i=0; i<8; i++)
+            {
+                SPI1BUF = spi_struct[SPI_1].spi_tx_data[spi_struct[SPI_1].spi_tx_cnt++];
+            }
+            spi_struct[SPI_1].spi_last_tx_length = 8;
+        }
+        else
+        {
+            for (i=0; i<spi_struct[SPI_1].spi_tx_remaining ; i++)
+            {
+                SPI1BUF = spi_struct[SPI_1].spi_tx_data[spi_struct[SPI_1].spi_tx_cnt++];
+            } 
+            spi_struct[SPI_1].spi_last_tx_length = spi_struct[SPI_1].spi_tx_remaining;
+        }
     }
+    else
+    {
+        if (SPI1STATbits.SRXMPT == 1)
+        {  
+            SPI_master_deassert_cs(spi_struct[SPI_1].spi_chip);
+            spi_struct[SPI_1].spi_txfer_done = SPI_TX_COMPLETE;       
+            IEC0bits.SPI1IE = 0;             
+        }
+    } 
+    IFS0bits.SPI1IF = 0;
 }
 
 //**************************SPI2interrupt function***************************//
@@ -689,21 +955,59 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
-{
-    IFS2bits.SPI2IF = 0;                   
-    if (++spi_struct[SPI_2].spi_tx_cnt < spi_struct[SPI_2].spi_tx_length)
-    {
-        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt++] = SPI2BUF;                       
-        SPI2BUF = spi_struct[SPI_2].spi_tx_data[spi_struct[SPI_2].spi_tx_cnt];     
-    }
-    
-    else 
-    {               
-        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt] = SPI2BUF;   
-        SPI_master_deassert_cs(spi_struct[SPI_2].spi_chip); 
-        spi_struct[SPI_2].spi_txfer_done = SPI_TX_COMPLETE;                 
-        IEC2bits.SPI2IE = 0;                          
-    }
+{    
+    unsigned char test = 0;
+//    uint16_t i=0;  
+//    // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
+//    for (i=0; i<spi_struct[SPI_2].spi_last_tx_length; i++)
+//    {
+//        //while (SPI1STATbits.SRXMPT != 0);
+//        spi_struct[SPI_2].spi_rx_data[spi_struct[SPI_2].spi_rx_cnt++] = SPI2BUF;
+//        SPI2STATbits.SPIROV = 0;
+//    }
+//    // Is there more data to transmit?
+//    if (spi_struct[SPI_2].spi_tx_cnt < spi_struct[SPI_2].spi_tx_length)
+//    {     
+//        spi_struct[SPI_2].spi_tx_remaining = spi_struct[SPI_2].spi_tx_length - spi_struct[SPI_2].spi_tx_cnt;
+//        // Is there at least 8+ bytes left to transmit?
+//        if (spi_struct[SPI_2].spi_tx_remaining  >= 8)
+//        {
+//            for (i=0; i<8; i++)
+//            {
+//                SPI2BUF = spi_struct[SPI_2].spi_tx_data[spi_struct[SPI_2].spi_tx_cnt++];
+//            }
+//            spi_struct[SPI_2].spi_last_tx_length = 8;
+//        }
+//        else
+//        {
+//            for (i=0; i<spi_struct[SPI_2].spi_tx_remaining ; i++)
+//            {
+//                SPI2BUF = spi_struct[SPI_2].spi_tx_data[spi_struct[SPI_2].spi_tx_cnt++];
+//            } 
+//            spi_struct[SPI_2].spi_last_tx_length = spi_struct[SPI_2].spi_tx_remaining;
+//        }
+//    }
+//    else
+//    {
+//        if (SPI2STATbits.SRXMPT == 1)
+//        {  
+            //SPI_master_deassert_cs(spi_struct[SPI_2].spi_chip);
+            //spi_struct[SPI_2].spi_txfer_done = SPI_TX_COMPLETE;       
+            //IEC2bits.SPI2IE = 0;             
+//        }
+//    } 
+    IFS2bits.SPI2IF = 0;
+//    if (DMA_get_txfer_state(DMA_CH3) == DMA_TXFER_DONE)
+//    {       
+//        test = 1;
+//    }
+//    if (DMA_get_txfer_state(DMA_CH4) == DMA_TXFER_DONE)
+//    {
+//        test = 2;
+//        SPI_master_deassert_cs(spi_struct[SPI_2].spi_chip);
+//        spi_struct[SPI_2].spi_txfer_done = SPI_TX_COMPLETE;       
+//        IEC2bits.SPI2IE = 0; 
+//    //}
 }
 
 //**************************SPI3 interrupt function***************************//
@@ -722,20 +1026,46 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 {
-    IFS5bits.SPI3IF = 0;                  
-    if (++spi_struct[SPI_3].spi_tx_cnt < spi_struct[SPI_3].spi_tx_length)
+    uint16_t i=0;  
+    // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
+    for (i=0; i<spi_struct[SPI_3].spi_last_tx_length; i++)
     {
-        spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt++] = SPI3BUF;                         
-        SPI3BUF = spi_struct[SPI_3].spi_tx_data[spi_struct[SPI_3].spi_tx_cnt];  
+        //while (SPI1STATbits.SRXMPT != 0);
+        spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt++] = SPI3BUF;
+        SPI3STATbits.SPIROV = 0;
     }
-    
+    // Is there more data to transmit?
+    if (spi_struct[SPI_3].spi_tx_cnt < spi_struct[SPI_3].spi_tx_length)
+    {     
+        spi_struct[SPI_3].spi_tx_remaining = spi_struct[SPI_3].spi_tx_length - spi_struct[SPI_3].spi_tx_cnt;
+        // Is there at least 8+ bytes left to transmit?
+        if (spi_struct[SPI_3].spi_tx_remaining  >= 8)
+        {
+            for (i=0; i<8; i++)
+            {
+                SPI3BUF = spi_struct[SPI_3].spi_tx_data[spi_struct[SPI_3].spi_tx_cnt++];
+            }
+            spi_struct[SPI_3].spi_last_tx_length = 8;
+        }
+        else
+        {
+            for (i=0; i<spi_struct[SPI_3].spi_tx_remaining ; i++)
+            {
+                SPI3BUF = spi_struct[SPI_3].spi_tx_data[spi_struct[SPI_3].spi_tx_cnt++];
+            } 
+            spi_struct[SPI_3].spi_last_tx_length = spi_struct[SPI_3].spi_tx_remaining;
+        }
+    }
     else
-    {               
-        spi_struct[SPI_3].spi_rx_data[spi_struct[SPI_3].spi_rx_cnt] = SPI3BUF;
-        SPI_master_deassert_cs(spi_struct[SPI_3].spi_chip);
-        spi_struct[SPI_3].spi_txfer_done = SPI_TX_COMPLETE;
-        IEC5bits.SPI3IE = 0;
-    }
+    {
+        if (SPI3STATbits.SRXMPT == 1)
+        {  
+            SPI_master_deassert_cs(spi_struct[SPI_3].spi_chip);
+            spi_struct[SPI_3].spi_txfer_done = SPI_TX_COMPLETE;       
+            IEC5bits.SPI3IE = 0;             
+        }
+    } 
+    IFS5bits.SPI3IF = 0; 
 }
 
 //**************************SPI4 interrupt function***************************//
@@ -754,18 +1084,42 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI4Interrupt(void)
 {
-    IFS7bits.SPI4IF = 0;                 
-    if (++spi_struct[SPI_4].spi_tx_cnt < spi_struct[SPI_4].spi_tx_length)
+    IFS7bits.SPI4IF = 0; 
+    uint16_t i=0;
+    // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
+    for (i=0; i<spi_struct[SPI_4].spi_last_tx_length; i++)
     {
-        spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt++] = SPI4BUF;              
-        SPI4BUF = spi_struct[SPI_4].spi_tx_data[spi_struct[SPI_4].spi_tx_cnt];
+        spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt++] = SPI4BUF;
     }
-    
+    // Is there more data to transmit?
+    if (spi_struct[SPI_4].spi_tx_cnt < spi_struct[SPI_4].spi_tx_length)
+    {     
+        spi_struct[SPI_4].spi_tx_remaining = spi_struct[SPI_4].spi_tx_length - spi_struct[SPI_4].spi_tx_cnt;
+        // Is there at least 8+ bytes left to transmit?
+        if (spi_struct[SPI_4].spi_tx_remaining  >= 8)
+        {
+            for (i=0; i<8; i++)
+            {
+                SPI4BUF = spi_struct[SPI_4].spi_tx_data[spi_struct[SPI_4].spi_tx_cnt++];
+            }
+            spi_struct[SPI_4].spi_last_tx_length = 8;
+        }
+        else
+        {
+            for (i=0; i<spi_struct[SPI_4].spi_tx_remaining ; i++)
+            {
+                SPI4BUF = spi_struct[SPI_4].spi_tx_data[spi_struct[SPI_4].spi_tx_cnt++];
+            } 
+            spi_struct[SPI_4].spi_last_tx_length = spi_struct[SPI_4].spi_tx_remaining;
+        }
+    }
     else
-    {               
-        spi_struct[SPI_4].spi_rx_data[spi_struct[SPI_4].spi_rx_cnt] = SPI4BUF;
-        SPI_master_deassert_cs(spi_struct[SPI_4].spi_chip);
-        spi_struct[SPI_4].spi_txfer_done = SPI_TX_COMPLETE;       
-        IEC7bits.SPI4IE = 0;      
+    {
+        if (SPI4STATbits.SRXMPT == 1)
+        {  
+            SPI_master_deassert_cs(spi_struct[SPI_4].spi_chip);
+            spi_struct[SPI_4].spi_txfer_done = SPI_TX_COMPLETE;       
+            IEC7bits.SPI4IE = 0;             
+        }                      
     }
 }

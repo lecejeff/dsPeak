@@ -583,12 +583,24 @@ void UART_send_tx_buffer (uint8_t channel)
 //****************************************************************************//
 uint8_t * UART_get_rx_buffer (uint8_t channel)
 {
-    if ((channel == UART_1) || (channel == UART_2) || (channel == UART_3))
+    switch (channel)
     {
-        return &UART_struct[channel].UART_rx_data[0];
+        case UART_1:
+            return &UART_struct[channel].UART_rx_data[0];
+            break;
+            
+        case UART_2:
+            return &UART_struct[channel].UART_rx_data[0];
+            break;
+            
+        case UART_3:
+            return &UART_struct[channel].UART_rx_data[0];
+            break;
+
+        default:
+            return 0;
+        break;
     }
-    else
-        return 0;
 }
 
 //*****************uint8_t UART_rx_done (uint8_t channel)*********************//
@@ -618,10 +630,10 @@ uint8_t UART_rx_done (uint8_t channel)
             UART_struct[channel].UART_rx_done = UART_RX_IDLE;
             return UART_RX_COMPLETE;
         }
-        else return 0;        
+        else return UART_RX_IDLE;        
     }
     else
-        return 0;
+        return UART_RX_IDLE;
 }
 
 //*****************uint8_t UART_tx_done (uint8_t channel)*********************//
@@ -651,10 +663,10 @@ uint8_t UART_tx_done (uint8_t channel)
             UART_struct[channel].UART_tx_done = UART_TX_IDLE;
             return UART_TX_COMPLETE;
         }
-        else return 0;        
+        else return UART_TX_IDLE;        
     }
     else
-        return 0;  
+        return UART_TX_IDLE;  
 }
 
 //**********************UART1 receive interrupt function**********************//

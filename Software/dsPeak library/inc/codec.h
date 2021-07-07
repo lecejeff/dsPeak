@@ -106,6 +106,12 @@
 #define SYS_FS_44_1kHz      1
 #define SYS_FS_48kHz        2
 #define SYS_FS_96kHz        3
+#define SYS_FS_8kHz         4
+#define SYS_FS_11_025kHz    5
+#define SYS_FS_12kHz        6
+#define SYS_FS_16kHz        7
+#define SYS_FS_22_05kHz     8
+#define SYS_FS_24kHz        9
 
 #define ADC_MUTE            0
 #define HEADPHONE_MUTE      1
@@ -168,6 +174,8 @@ typedef struct
     uint16_t DAP_COEF_WR_A2_LSB; 
     uint8_t dac_vol_left;
     uint8_t dac_vol_right;
+    uint8_t hp_vol_left;
+    uint8_t hp_vol_right;
 }STRUCT_CODEC;
 
 void DCI_init (void);
@@ -180,5 +188,7 @@ void CODEC_mic_config (uint8_t bias_res, uint8_t bias_volt, uint8_t gain);
 void CODEC_set_input_route (uint8_t channel);
 void CODEC_set_output_route (uint8_t channel);
 void CODEC_set_dac_volume (uint8_t dac_vol_right, uint8_t dac_vol_left);
+void CODEC_set_hp_volume (uint8_t hp_vol_right, uint8_t hp_vol_left);
+uint8_t DCI_get_interrupt_state (void);
 #endif	
 
