@@ -22,6 +22,13 @@
 #include <dsp.h>
 #include <string.h>
 
+// dsPeak generic I/Os definition
+// Basically LEDs, Pushbutton, Encoder switch, buzzer
+#define DSPEAK_IO_BTN1_STATE        PORTAbits.RA9
+#define DSPEAK_IO_BTN1_DIR          TRISAbits.TRISA9
+#define DSPEAK_IO_BTN2_STATE        PORTFbits.RF2
+#define DSPEAK_IO_BTN2_DIR          TRISFbits.TRISF2
+
 #define RGB_LED_RED     LATBbits.LATB3
 #define RGB_LED_GREEN   LATBbits.LATB4
 #define RGB_LED_BLUE    LATBbits.LATB5
