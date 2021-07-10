@@ -3,7 +3,7 @@
 //
 // Functions :  
 //
-// Includes  :  general.h
+// Includes  :  dspeak_generic.h
 //           
 // Purpose   :  Driver for the dsPIC33E CAN peripheral
 //              1x native channel on dsPeak
@@ -17,7 +17,7 @@
 #ifndef __CAN_H_
 #define	__CAN_H_
 
-#include "general.h"
+#include "dspeak_generic.h"
 
 // CAN channel definitions for dsPIC33E
 #define CAN_1               0

@@ -29,7 +29,7 @@
 #ifndef __TIMER_H_
 #define	__TIMER_H_
 
-#include "general.h"
+#include "dspeak_generic.h"
 
 #define TIMER_1             0
 #define TIMER_2             1

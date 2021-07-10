@@ -1,7 +1,7 @@
 #ifndef __spi_flash_h__
 #define __spi_flash_h__
 
-#include "general.h"
+#include "dspeak_generic.h"
 #include "spi.h"
 
 typedef struct

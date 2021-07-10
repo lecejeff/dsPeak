@@ -1,7 +1,7 @@
 #ifndef __ST7735S_H_
 #define	__ST7735S_H_
 
-#include "general.h"
+#include "dspeak_generic.h"
 #include "PMP.h"
 
 #define ST7735_CMD_NOP          0x00

@@ -1,7 +1,7 @@
 #ifndef __rtcc_h__
 #define __rtcc_h__
 
-#include "general.h"
+#include "dspeak_generic.h"
 
 typedef struct
 {

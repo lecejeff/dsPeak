@@ -5,14 +5,14 @@
 //              void PWM_change_duty (uint8_t channel, uint8_t duty);
 //              uint8_t PWM_get_position (uint8_t channel);
 //
-// Includes  : general.h
+// Includes  : dspeak_generic.h
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    10/02/2020   
 //****************************************************************************//
 #ifndef __PWM_H__
 #define __PWM_H__
 
-#include "general.h"
+#include "dspeak_generic.h"
 
 #define PWM_1L  0
 #define PWM_1H  1

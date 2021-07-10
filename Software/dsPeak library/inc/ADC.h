@@ -8,7 +8,7 @@
 //
 // Functions : 
 //
-// Includes  : general.h
+// Includes  : dspeak_generic.h
 //           
 // Purpose   : Driver for the dsPIC33EP ADC 10bits and 12bits module
 //
@@ -17,7 +17,7 @@
 #ifndef __ADC_H_
 #define	__ADC_H_
 
-#include "general.h"
+#include "dspeak_generic.h"
 
 #define ADC_SAMPLE_READY    1
 #define ADC_SAMPLE_NOT_READY 0

@@ -10,7 +10,7 @@
 //
 // Functions : 
 //
-// Includes  : general.h
+// Includes  : dspeak_generic.h
 //           
 // Purpose   : Driver for the dsPeak SGTL5000 audio codec using DCI as audio
 //             interface and SPI as configuration interface 
@@ -23,7 +23,7 @@
 #ifndef __CODEC_H_
 #define	__CODEC_H_
 
-#include "general.h"
+#include "dspeak_generic.h"
 #include "spi.h"
 
 #define CODEC_CHIP_ID                   0x0000

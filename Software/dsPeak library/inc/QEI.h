@@ -16,7 +16,7 @@
 //              void QEI_calculate_velocity (uint8_t channel);
 //              void QEI_interrupt_handle (uint8_t channel);
 //
-// Includes  :  QEI.h
+// Includes  :  dspeak_generic.h
 //
 // Purpose   :  QEI driver for the dsPIC33EP
 //
@@ -25,7 +25,7 @@
 #ifndef __QEI_H__
 #define __QEI_H__
 
-#include "general.h"
+#include "dspeak_generic.h"
 
 typedef struct
 {

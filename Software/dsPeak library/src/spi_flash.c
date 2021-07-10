@@ -46,7 +46,7 @@ uint8_t SPI_flash_write (uint32_t adr, uint8_t *ptr, uint16_t length)
 uint8_t * SPI_flash_read (uint32_t adr, uint16_t length)
 {
     uint8_t buf[length + 4];
-    uint16_t i=0;
+    //uint16_t i=0;
 
     flash_state.prev_state = flash_state.state;
     flash_state.state = SPI_FLASH_READ;  

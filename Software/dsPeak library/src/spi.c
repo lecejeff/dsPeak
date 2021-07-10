@@ -570,7 +570,7 @@ void SPI_master_write_nonblock (uint8_t channel, uint8_t *data, uint16_t length,
 
 void SPI_master_release_port (uint8_t channel)
 {
-    uint16_t i = 0;
+    //uint16_t i = 0;
     switch (channel)
     {
         case SPI_2:
@@ -956,7 +956,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 {    
-    unsigned char test = 0;
+    //unsigned char test = 0;
 //    uint16_t i=0;  
 //    // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
 //    for (i=0; i<spi_struct[SPI_2].spi_last_tx_length; i++)

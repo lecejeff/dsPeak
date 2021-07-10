@@ -14,7 +14,7 @@
 //              void UART_send_tx_buffer (uint8_t channel);
 //              void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length);
 //
-// Includes  :  general.h
+// Includes  :  dspeak_generic.h
 //
 // Purpose   :  Driver for the dsPIC33EP UART core
 //              3x seperate UART channels on dsPeak :
@@ -30,7 +30,7 @@
 #ifndef __UART_H__
  #define __UART_H__
 
-#include "general.h"
+#include "dspeak_generic.h"
 
 #define UART_MAX_TX 64
 #define UART_MAX_RX 64 

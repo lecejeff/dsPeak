@@ -1,7 +1,7 @@
 #ifndef __dma_h__
 #define __dma_h__
 
-#include "general.h"
+#include "dspeak_generic.h"
 
 //------------------------------- DMA defines --------------------------------//
 // Library and peripheral-oriented defines

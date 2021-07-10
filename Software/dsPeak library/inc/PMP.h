@@ -1,7 +1,7 @@
 #ifndef __PMP_H_
 #define	__PMP_H_
 
-#include "general.h"
+#include "dspeak_generic.h"
 
 #define PMP_WRITE           0
 #define PMP_READ            1

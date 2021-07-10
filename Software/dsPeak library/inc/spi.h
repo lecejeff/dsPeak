@@ -12,7 +12,7 @@
 //              void SPI_flush_rxbuffer (uint8_t channel);
 //              uint8_t SPI_module_busy (uint8_t channel);
 //
-// Includes  :  general.h
+// Includes  :  dspeak_generic.h
 //           
 // Purpose   :  Driver for the dsPIC33E SPI peripheral
 //              4x seperate SPI channels on dsPeak :
@@ -29,7 +29,7 @@
 #ifndef __spi_h_
 #define __spi_h_
 
-#include "general.h"
+#include "dspeak_generic.h"
 #include "dma.h"
 
 //******************************************************************************
