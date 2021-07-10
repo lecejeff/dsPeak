@@ -54,7 +54,7 @@
 #pragma config APLK = OFF               // Auxiliary Segment Key bits (Aux Flash Write Protection and Code Protection is Disabled)
 // End of dsPIC33EP512MU814 configuration fuses ------------------------------//
 
-#include "general.h"
+#include "dspeak_generic.h"
 #include "adc.h"
 #include "rtcc.h"
 #include "timer.h"
@@ -1258,67 +1258,4 @@ void RGB_LED_set_color (uint32_t color)
     RGB_R_duty = (R * (RGB_PWM_frequency/255.0));
     RGB_G_duty = (G * (RGB_PWM_frequency/255.0));
     RGB_B_duty = (B * (RGB_PWM_frequency/255.0));
-}
-
-void hex_to_ascii (uint8_t ucByte, uint8_t *ucByteH, uint8_t *ucByteL)
-{
-    *ucByteH = ucByte >> 4;	   
-    *ucByteL = (ucByte & 0x0F);
-    if ((*ucByteH < 10) && (*ucByteH >= 0)) 
-    {
-        *ucByteH = *ucByteH + 0x30;			
-    }
-    
-    else if ((*ucByteH >= 0x0A) && (*ucByteH <= 0x0F))
-    {
-        *ucByteH = (*ucByteH + 0x37);		
-    }
-    
-    if ((*ucByteL < 10) && (*ucByteL >= 0))	
-    {
-        *ucByteL = (*ucByteL + 0x30);		
-    }
-    
-    else if ((*ucByteL >= 0x0A) && (*ucByteL <= 0x0F))
-    {
-        *ucByteL = (*ucByteL + 0x37);
-    }   
-}
-
-int bcd_to_decimal(uint8_t x) 
-{
-    return x - 6 * (x >> 4);
-}
-
-uint16_t dec2bcd(uint16_t num) // num is now 65535
-{
-    uint16_t ones = 0;
-    uint16_t tens = 0;
-    uint16_t temp = 0;
-
-    ones = num%10; // 65535%10 = 5
-    temp = num/10; // 65535/10 = 6553
-    tens = temp<<4;  // what's displayed is by tens is actually the lower
-                     // 4 bits of tens, so tens is 6553%16=9
-    return (tens + ones);// so the result is 95
-}
-
-uint8_t hex_to_dec (uint8_t hex)
-{
-    uint8_t val;
-    uint8_t decimal;
-    if(hex>='0' && hex<='9')  
-    {  
-        val = hex - 48;  
-    }  
-    else if(hex>='a' && hex<='f')  
-    {  
-        val = hex - 97 + 10;  
-    }  
-    else if(hex>='A' && hex<='F')  
-    {  
-        val = hex - 65 + 10;  
-    }
-    decimal = val * pow(16, 1);  
-    return decimal;    
 }
