@@ -9,9 +9,8 @@
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
 //****************************************************************************//
-
-#ifndef __dspeak_generic_H_
-#define	__dspeak_generic_H_
+#ifndef __dspeak_generic_h_
+#define	__dspeak_generic_h_
 
 // If using primary oscillator (20MHz) with PLL, uncomment #define POSC_20MHz
 #define POSC_20MHz_70MIPS
@@ -33,12 +32,6 @@
 #ifdef SOSC_32KHZ
     void dsPeak_sosc_32kHz_init (void);
 #endif
-
-#include <stdint.h>
-#include <xc.h>
-#include <libpic30.h>
-#include <dsp.h>
-#include <string.h>
 
 // dsPeak generic I/Os definition
 // Basically LEDs, Pushbutton, Encoder switch, buzzer, RGB LED
@@ -78,6 +71,11 @@
 #define DSPEAK_RGB_BLUE_STATE   LATBbits.LATB5    
 #define DSPEAK_RGB_BLUE_DIR     TRISBbits.TRISB5 
 
+#include <stdint.h>
+#include <xc.h>
+#include <libpic30.h>
+#include <dsp.h>
+#include <string.h>
 
 void hex_to_ascii (uint8_t in, uint8_t *out_h, uint8_t *out_l);
 int16_t bcd_to_decimal(uint8_t bcd);
