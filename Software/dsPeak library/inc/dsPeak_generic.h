@@ -18,6 +18,7 @@
 #ifdef POSC_20MHz_70MIPS
     #define FOSC 140000000UL
     #define FCY (FOSC/2)    // FCY of 70MIPS
+    void dsPeak_posc_20MHz_init (void);
 #endif
 
 // If using Fast RC oscillator (7.37MHz) with PLL, uncomment #define POSC_FRC
@@ -25,6 +26,12 @@
 #ifdef POSC_FRC_66MIPS
     #define FOSC 132660000L
     #define FCY (FOSC/2)    // FCY of 66.33MHz
+    void dsPeak_posc_FRC_init (void);
+#endif
+
+//#define SOSC_32KHZ
+#ifdef SOSC_32KHZ
+    void dsPeak_sosc_32kHz_init (void);
 #endif
 
 #include <stdint.h>
@@ -46,13 +53,13 @@
 #define DSPEAK_BTN4_DIR         TRISAbits.TRISA4
 
 // ---------------------- dsPeak on-board LEDs -------------------------------//
-#define DSPEAK_LED1_STATE       PORTHbits.RH8
+#define DSPEAK_LED1_STATE       LATHbits.LATH8
 #define DSPEAK_LED1_DIR         TRISHbits.TRISH8
-#define DSPEAK_LED2_STATE       PORTHbits.RH9
+#define DSPEAK_LED2_STATE       LATHbits.LATH9
 #define DSPEAK_LED2_DIR         TRISHbits.TRISH9
-#define DSPEAK_LED3_STATE       PORTHbits.RH10
+#define DSPEAK_LED3_STATE       LATHbits.LATH10
 #define DSPEAK_LED3_DIR         TRISHbits.TRISH10
-#define DSPEAK_LED4_STATE       PORTHbits.RH11
+#define DSPEAK_LED4_STATE       LATHbits.LATH11
 #define DSPEAK_LED4_DIR         TRISHbits.TRISH11
 
 // --------------------- dsPeak encoder pushbutton ---------------------------//
@@ -71,8 +78,7 @@
 #define DSPEAK_RGB_BLUE_STATE   LATBbits.LATB5    
 #define DSPEAK_RGB_BLUE_DIR     TRISBbits.TRISB5 
 
-void dsPeak_posc_20MHz_init (void);
-void dsPeak_posc_FRC_init (void);
+
 void hex_to_ascii (uint8_t in, uint8_t *out_h, uint8_t *out_l);
 int16_t bcd_to_decimal(uint8_t bcd);
 uint16_t dec_to_bcd(uint16_t dec);

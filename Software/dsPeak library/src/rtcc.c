@@ -21,10 +21,10 @@ void RTCC_write_time (RTCC_time t)
 {
     RCFGCALbits.RTCEN = 0;
     RCFGCALbits.RTCPTR = 3;
-    RTCVAL = dec2bcd(t.year) & 0x00FF;
-    RTCVAL = ((dec2bcd(t.month) << 8) | dec2bcd(t.date));
-    RTCVAL = ((dec2bcd(t.weekday) << 8) | dec2bcd(t.hour));
-    RTCVAL = ((dec2bcd(t.minute) << 8) | dec2bcd(t.second));
+    RTCVAL = dec_to_bcd(t.year) & 0x00FF;
+    RTCVAL = ((dec_to_bcd(t.month) << 8) | dec_to_bcd(t.date));
+    RTCVAL = ((dec_to_bcd(t.weekday) << 8) | dec_to_bcd(t.hour));
+    RTCVAL = ((dec_to_bcd(t.minute) << 8) | dec_to_bcd(t.second));
     RCFGCALbits.RTCEN = 1;
 }
 
