@@ -67,7 +67,7 @@
 #pragma config APL = OFF                // Auxiliary Segment Code-protect bit (Aux Flash Code protect is disabled)
 #pragma config APLK = OFF               // Auxiliary Segment Key bits (Aux Flash Write Protection and Code Protection is Disabled)
 // End of dsPIC33EP512MU814 configuration fuses ------------------------------//
-
+#include "lesson_one.h"
 #include "dspeak_generic.h"
 
 int main (void)
@@ -76,32 +76,24 @@ int main (void)
     RCONbits.SWDTEN = 0;                            // Watchdog timer disabled 
     INTCON1bits.NSTDIS = 0;                         // Nested interrupt enabled 
     
-    // Start by configuring the primary oscillator
+    // Start by configuring the primary oscillator (20MHz with PLL, 70MIPS)
     #ifdef POSC_20MHz_70MIPS
         dsPeak_posc_20MHz_init();
     #endif
 
+    // Alternatively, use FRC oscillator (7.37MHz with PLL, 66MIPS)
     #ifdef POSC_FRC_66MIPS
         dsPeak_posc_FRC_init();
     #endif
 
-    // Initialize the LED1 I/O port to an output. LED1 is on RH8
-    // First, the port must be initialized to an output. The register that sets
-    // the port to an output is TRISx (TRIstate, X being port letter)
-    // dsPIC mnemonic : 0 = output, 1 = input
-    TRISHbits.TRISH8 = 0;   // This line sets RH8 to an output
+    // Start the 32.768kHz secondary oscillator
+    #ifdef SOSC_32KHZ
+        dsPeak_sosc_32kHz_init();
+    #endif
     
-    // Then we must set the value of the output port to either 1 or 0 (VDD or GND)
-    // The LED is connected with a resistor to GND. A '1' will light the LED and
-    // a '0' will turn off the LED
-    // The register that sets the value of the port is LATx (LATch, X being port letter)
-    LATHbits.LATH8 = 1;     // This line sets RH8 to VDD and lights up LED1
-    
+    exercise_1_IO_ports();
     while (1)
     {
-        // In the while loop, we will make the LED flash using the delay function
-        __delay_ms(1000);                   // Halt program execution for 1000ms (1s)
-        LATHbits.LATH8 = !LATHbits.LATH8;   // Flip RH8 value 
     }
     return 0;
 }

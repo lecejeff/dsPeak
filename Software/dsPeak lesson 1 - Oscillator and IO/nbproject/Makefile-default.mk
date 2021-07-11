@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=src/main.c "../dsPeak library/src/dsPeak_generic.c"
+SOURCEFILES_QUOTED_IF_SPACED="../dsPeak library/src/dsPeak_generic.c" src/main.c src/lesson_one.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/src/main.o ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/src/main.o.d ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o ${OBJECTDIR}/src/main.o ${OBJECTDIR}/src/lesson_one.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o.d ${OBJECTDIR}/src/main.o.d ${OBJECTDIR}/src/lesson_one.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/src/main.o ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o
+OBJECTFILES=${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o ${OBJECTDIR}/src/main.o ${OBJECTDIR}/src/lesson_one.o
 
 # Source Files
-SOURCEFILES=src/main.c ../dsPeak library/src/dsPeak_generic.c
+SOURCEFILES=../dsPeak library/src/dsPeak_generic.c src/main.c src/lesson_one.c
 
 
 
@@ -95,30 +95,42 @@ MP_LINKER_FILE_OPTION=,--script=p33EP512MU814.gld
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: compile
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-${OBJECTDIR}/src/main.o: src/main.c  .generated_files/b690cddf5cf91c1c39a452eb1f27c70da3168625.flag .generated_files/ffae4d3dda27f593ac6804d3df07d954ace2c969.flag
-	@${MKDIR} "${OBJECTDIR}/src" 
-	@${RM} ${OBJECTDIR}/src/main.o.d 
-	@${RM} ${OBJECTDIR}/src/main.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  src/main.c  -o ${OBJECTDIR}/src/main.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/src/main.o.d"      -g -D__DEBUG   -mno-eds-warn  -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -I"../dsPeak library/inc" -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
-	
 ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o: ../dsPeak\ library/src/dsPeak_generic.c  .generated_files/b4a301877896ebf250f7870919a25eda2d3603f7.flag .generated_files/ffae4d3dda27f593ac6804d3df07d954ace2c969.flag
 	@${MKDIR} "${OBJECTDIR}/_ext/1293674451" 
 	@${RM} ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o.d 
 	@${RM} ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  "../dsPeak library/src/dsPeak_generic.c"  -o ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o.d"      -g -D__DEBUG   -mno-eds-warn  -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -I"../dsPeak library/inc" -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
+${OBJECTDIR}/src/main.o: src/main.c  .generated_files/b690cddf5cf91c1c39a452eb1f27c70da3168625.flag .generated_files/ffae4d3dda27f593ac6804d3df07d954ace2c969.flag
+	@${MKDIR} "${OBJECTDIR}/src" 
+	@${RM} ${OBJECTDIR}/src/main.o.d 
+	@${RM} ${OBJECTDIR}/src/main.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  src/main.c  -o ${OBJECTDIR}/src/main.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/src/main.o.d"      -g -D__DEBUG   -mno-eds-warn  -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -I"../dsPeak library/inc" -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+${OBJECTDIR}/src/lesson_one.o: src/lesson_one.c  .generated_files/85eb386683520a62f137a34e0d9e60389fa93aa.flag .generated_files/ffae4d3dda27f593ac6804d3df07d954ace2c969.flag
+	@${MKDIR} "${OBJECTDIR}/src" 
+	@${RM} ${OBJECTDIR}/src/lesson_one.o.d 
+	@${RM} ${OBJECTDIR}/src/lesson_one.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  src/lesson_one.c  -o ${OBJECTDIR}/src/lesson_one.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/src/lesson_one.o.d"      -g -D__DEBUG   -mno-eds-warn  -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -I"../dsPeak library/inc" -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
 else
+${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o: ../dsPeak\ library/src/dsPeak_generic.c  .generated_files/b02d5cda8ac772d880ddbdd57cdf7def5d16b6de.flag .generated_files/ffae4d3dda27f593ac6804d3df07d954ace2c969.flag
+	@${MKDIR} "${OBJECTDIR}/_ext/1293674451" 
+	@${RM} ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o.d 
+	@${RM} ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  "../dsPeak library/src/dsPeak_generic.c"  -o ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o.d"      -mno-eds-warn  -g -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -I"../dsPeak library/inc" -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
 ${OBJECTDIR}/src/main.o: src/main.c  .generated_files/8353da4a3bfe99e992322194443f35ed952a1361.flag .generated_files/ffae4d3dda27f593ac6804d3df07d954ace2c969.flag
 	@${MKDIR} "${OBJECTDIR}/src" 
 	@${RM} ${OBJECTDIR}/src/main.o.d 
 	@${RM} ${OBJECTDIR}/src/main.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  src/main.c  -o ${OBJECTDIR}/src/main.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/src/main.o.d"      -mno-eds-warn  -g -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -I"../dsPeak library/inc" -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
-${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o: ../dsPeak\ library/src/dsPeak_generic.c  .generated_files/b02d5cda8ac772d880ddbdd57cdf7def5d16b6de.flag .generated_files/ffae4d3dda27f593ac6804d3df07d954ace2c969.flag
-	@${MKDIR} "${OBJECTDIR}/_ext/1293674451" 
-	@${RM} ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o.d 
-	@${RM} ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE)  "../dsPeak library/src/dsPeak_generic.c"  -o ${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/_ext/1293674451/dsPeak_generic.o.d"      -mno-eds-warn  -g -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -I"../dsPeak library/inc" -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+${OBJECTDIR}/src/lesson_one.o: src/lesson_one.c  .generated_files/5f1fc51268d19dbe10f701d28bd1a6ebdaca867.flag .generated_files/ffae4d3dda27f593ac6804d3df07d954ace2c969.flag
+	@${MKDIR} "${OBJECTDIR}/src" 
+	@${RM} ${OBJECTDIR}/src/lesson_one.o.d 
+	@${RM} ${OBJECTDIR}/src/lesson_one.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  src/lesson_one.c  -o ${OBJECTDIR}/src/lesson_one.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/src/lesson_one.o.d"      -mno-eds-warn  -g -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -I"../dsPeak library/inc" -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
 endif
 
