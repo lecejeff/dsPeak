@@ -54,6 +54,8 @@
 #pragma config APLK = OFF               // Auxiliary Segment Key bits (Aux Flash Write Protection and Code Protection is Disabled)
 // End of dsPIC33EP512MU814 configuration fuses ------------------------------//
 
+void DSPIC_init (void);
+
 #include "dspeak_generic.h"
 #include "adc.h"
 #include "rtcc.h"
