@@ -32,8 +32,8 @@
 
 #include "dspeak_generic.h"
 
-#define UART_MAX_TX 64
-#define UART_MAX_RX 64 
+#define UART_MAX_TX 128
+#define UART_MAX_RX 128 
 
 #define UART_1 0
 #define UART_2 1
@@ -70,6 +70,7 @@ uint8_t UART_rx_done (uint8_t channel);
 uint8_t UART_tx_done (uint8_t channel);
 uint8_t * UART_get_rx_buffer (uint8_t channel);
 void UART_clear_rx_buffer (uint8_t channel);
+uint8_t UART_get_rx_buffer_length (uint8_t channel);
 void UART_send_tx_buffer (uint8_t channel);
 void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length);
 

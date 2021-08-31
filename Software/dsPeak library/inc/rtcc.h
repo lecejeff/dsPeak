@@ -3,6 +3,10 @@
 
 #include "dspeak_generic.h"
 
+// If the user wants to route the CLKO signal of the RTCC module to dsPeak buzzer
+// connected on RD8, uncomment the following define
+//#define RTCC_CLKO_ENABLE
+
 typedef struct
 {
     uint8_t second;

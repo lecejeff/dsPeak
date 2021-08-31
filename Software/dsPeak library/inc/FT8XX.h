@@ -20,7 +20,7 @@ void FT8XX_set_touch_tag (uint8_t prim_type, uint8_t prim_num, uint8_t tag_num);
 uint8_t FT8XX_read_touch_tag (void);
 uint8_t FT8XX_get_touch_tag (void);
 void FT8XX_clear_touch_tag (void);
-void FT8XX_touchpanel_init (void);
+void FT8XX_touchpanel_calibrate (void);
 STTouch FT8XX_touchpanel_read (STTouch touch_read);
 void FT8XX_start_new_dl (void);
 void FT8XX_update_screen_dl (void);  
@@ -49,7 +49,16 @@ void FT8XX_draw_point (uint16_t x, uint16_t y, uint16_t r);
 void FT8XX_modify_element_string (uint8_t number, uint8_t type, char *str);  
 void FT8XX_write_bitmap (const uint8_t *img_ptr, const uint8_t *lut_ptr, uint32_t img_length, uint32_t base_adr);    
 
-void FT8XX_CMD_tracker(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t tag);
+// Commands not related to graphics primitives
+void FT8XX_CMD_tracker(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t tag);
+void FT8XX_CMD_sketch (uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ptr, uint16_t format);
+void FT8XX_CMD_interrupt (uint32_t ms);
+void FT8XX_CMD_append (uint32_t ptr, uint32_t num);
+
+// FT8XX memory related commands
+void FT8XX_CMD_memzero (uint32_t ptr, uint32_t num);
+uint32_t FT8XX_CMD_memcrc (uint32_t ptr, uint32_t num);
+void FT8XX_CMD_memset (uint32_t ptr, uint32_t value, uint32_t num);
 
 #if MAX_GRADIENT_NB > 0
  void FT8XX_CMD_gradient(uint8_t number, uint16_t x0, uint16_t y0, uint32_t rgb0, uint16_t x1, uint16_t y1, uint32_t rgb1);
@@ -138,6 +147,7 @@ void FT8XX_CMD_tracker(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t t
 #if MAX_DIAL_NB > 0
  void FT8XX_CMD_dial (uint8_t number, uint16_t x, uint16_t y, uint16_t r, uint16_t opt, uint16_t val);
  void FT8XX_draw_dial (STDial *st_Dial);
+ void FT8XX_modify_dial (STDial *st_Dial, uint8_t type, uint16_t value);
  uint8_t FT8XX_get_dial_nb (void);
 #endif
 

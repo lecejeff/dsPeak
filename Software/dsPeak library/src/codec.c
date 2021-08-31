@@ -14,8 +14,6 @@
 #include "spi.h"
 
 STRUCT_CODEC CODEC_struct; 
-uint8_t sine_counter = 0;
-extern uint8_t record_flag;
 uint8_t codec_int_flag = 0;
 uint16_t rx_ch_left = 0;
 uint16_t rx_ch_right = 0;
@@ -33,7 +31,14 @@ void CODEC_init (uint8_t sys_fs)
     SPI_init(SPI_3, SPI_MODE0, 2, 0);   // PPRE = 3, primary prescale 1:4
                                         // SPRE = 0, Secondary prescale 1:8
                                         // Fspi = FCY / 32 = 2.175MHz
-        
+    
+    // Enable 1.8V output to CODEC
+    TRISKbits.TRISK1 = 0;               // Set CODEC_1V8_EN to output
+    LATKbits.LATK1 = 0;                 // Disable CODEC
+    __delay_ms(250);                     // Power-off delay
+    LATKbits.LATK1 = 1;                 // Enable 1.8V
+    __delay_ms(250);                     // Power-on delay
+    
     // Since SPI read is not supported, write default reset values to struct
     // registers to support the modify operation. Reset values taken from datasheet
     CODEC_struct.CHIP_DIG_POWER = 0;        // Every audio subsystem is disabled
@@ -125,7 +130,7 @@ void CODEC_init (uint8_t sys_fs)
     // Codec System MCLK and Sample Clock
     CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFF3, sys_fs<<2);
     // FOR 8kHz SAMPLING, REMOVE OTHERWISE
-    CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFF3F, 3 << 4);
+    // CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFF3F, 3 << 4);
     //
     CODEC_struct.CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, CODEC_struct.CHIP_CLK_CTRL, 0xFFFC, 3 << 0);
     
@@ -136,33 +141,26 @@ void CODEC_init (uint8_t sys_fs)
     // Set ADC and DAC to stereo
     CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xBFFF, 1<<14);
     CODEC_struct.CHIP_ANA_POWER = CODEC_spi_modify_write(CODEC_CHIP_ANA_POWER, CODEC_struct.CHIP_ANA_POWER, 0xFFBF, 1<<6);    
+   
+    // Route DAC to HPout
+    // CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
+    // CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818);    
     
-    // MicIn -> I2S out
-    // Route MicIn to ADC
-    CODEC_mic_config(MIC_BIAS_RES_2k, MIC_BIAS_VOLT_2V00, MIC_GAIN_30dB);
-    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 0 << 2);   // ADC input is microphone    
     // Route ADC to I2Sout
-    CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFFC, 0 << 0);        // I2S out data source is ADC
+    // CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFFC, 0 << 0);        // I2S out data source is ADC
     
     // I2S in -> HP Out
-    CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 1 << 4);   // DAC data source is I2S in
-    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
-    CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1010);  
-    
-    CODEC_unmute(ADC_MUTE);
-    CODEC_unmute(DAC_MUTE);
-    CODEC_unmute(HEADPHONE_MUTE);    
+    // CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 1 << 4);   // DAC data source is I2S in
+    // CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
+    // CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818);  
     
     // Route MicIn to ADC
-//    CODEC_mic_config(MIC_BIAS_RES_2k, MIC_BIAS_VOLT_2V00, MIC_GAIN_30dB);
-//    CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 0 << 4);   // DAC data source is ADC
-//    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 0 << 2);   // ADC input is microphone 
-//    // Route Dac to HP Out
-//     CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
-//     CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818);
-//     CODEC_unmute(ADC_MUTE);
-//     CODEC_unmute(DAC_MUTE);
-//     CODEC_unmute(HEADPHONE_MUTE);
+    // CODEC_mic_config(MIC_BIAS_RES_2k, MIC_BIAS_VOLT_2V00, MIC_GAIN_30dB);
+    // CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 0 << 4);   // DAC data source is ADC
+    // CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 0 << 2);   // ADC input is microphone 
+    // Route Dac to HP Out
+    // CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
+    // CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818);
 
     // ROute DAC to Line Out
 //    CODEC_struct.CHIP_LINE_OUT_CTRL = CODEC_spi_write(CODEC_CHIP_LINE_OUT_CTRL, 0x0322);   // Out current = 360uA, LO_VAG = 1.65V
@@ -170,28 +168,36 @@ void CODEC_init (uint8_t sys_fs)
 //    CODEC_unmute(ADC_MUTE);
 //    CODEC_unmute(DAC_MUTE);
 //    CODEC_unmute(HEADPHONE_MUTE);    
-       
-    // Route LineIn to ADC
-//    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 1 << 2);
-//    CODEC_struct.CHIP_ANA_ADC_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_ADC_CTRL, 0x0000);  // Gain of 0dB on ADC
-//    // Route ADC to DAC
-//    CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 0 << 4);   // DAC data source is ADC
-//    CODEC_struct.CHIP_DAC_VOL = CODEC_spi_write(CODEC_CHIP_DAC_VOL, 0x3C3C);    // 0dB gain on DAC
-//    // Route DAC output to HP
-//    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
-//    CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818); 
-//    CODEC_unmute(ADC_MUTE);
-//    CODEC_unmute(DAC_MUTE);
-//    CODEC_unmute(HEADPHONE_MUTE);     
-    
 
+#ifdef BRINGUP_DSPEAK_1    
+    // Route MicIn to ADC
+    CODEC_mic_config(MIC_BIAS_RES_2k, MIC_BIAS_VOLT_1V25, MIC_GAIN_40dB);
+    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 0 << 2);   // ADC input is microphone    
+    // Set DAC input to ADC
+    CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 0 << 4);   // DAC data source is ADC
+    CODEC_struct.CHIP_DAC_VOL = CODEC_spi_write(CODEC_CHIP_DAC_VOL, 0x3C3C);                // 0dB gain on DAC    
+    // Route DAC to LineOut
+    CODEC_struct.CHIP_LINE_OUT_CTRL = CODEC_spi_write(CODEC_CHIP_LINE_OUT_CTRL, 0x0322);    // Out current = 360uA, LO_VAG = 1.65V
+    CODEC_struct.CHIP_LINE_OUT_VOL = CODEC_spi_write(CODEC_CHIP_LINE_OUT_VOL, 0x0F0F);      // Recommended nominal for VDDIO = 3.3   
+#endif    
+       
+#ifdef BRINGUP_DSPEAK_2
+    // Route LineIn to ADC
+    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFFB, 1 << 2);
+    CODEC_struct.CHIP_ANA_ADC_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_ADC_CTRL, 0x0000);  // Gain of 0dB on ADC
+//    // Route ADC to DAC
+    CODEC_struct.CHIP_SSS_CTRL = CODEC_spi_modify_write(CODEC_CHIP_SSS_CTRL, CODEC_struct.CHIP_SSS_CTRL, 0xFFCF, 0 << 4);   // DAC data source is ADC
+    CODEC_struct.CHIP_DAC_VOL = CODEC_spi_write(CODEC_CHIP_DAC_VOL, 0x3C3C);    // 0dB gain on DAC
+//    // Route DAC output to HP
+    CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
+    CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818); 
+#endif  
     
-    //CODEC_mute(HEADPHONE_MUTE);  
-    // Route LineIn to HPOut (preliminary CODEC test)
-    //CODEC_struct.CHIP_ANA_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_CTRL, CODEC_struct.CHIP_ANA_CTRL, 0xFFBF, 1 << 6);
-    // Set HP out left and right volume
-    //CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, 0x1818);
-    //CODEC_unmute(HEADPHONE_MUTE);
+    // Unmute all channels
+    CODEC_unmute(ADC_MUTE);
+    CODEC_unmute(DAC_MUTE);
+    CODEC_unmute(HEADPHONE_MUTE);
+    CODEC_unmute(LINEOUT_MUTE);
 }
 
 uint16_t CODEC_spi_write (uint16_t adr, uint16_t data) 
@@ -217,14 +223,15 @@ void CODEC_mic_config (uint8_t bias_res, uint8_t bias_volt, uint8_t gain)
     // Set microphone bias voltage
     CODEC_struct.CHIP_MIC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_MIC_CTRL, CODEC_struct.CHIP_MIC_CTRL, 0xFF8F, bias_volt << 4);
     // Set microphone gain
-    CODEC_struct.CHIP_MIC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_MIC_CTRL, CODEC_struct.CHIP_MIC_CTRL, 0xFFFC, gain << 0);    
+    CODEC_set_mic_gain(gain);  
 }
 
-// Set DAC volume
-// Min is 0dB, max is -90dB, in 0.5dB step
-// 0 <= dac_vol_right <= 180, where 180 * 0.5 = -90dB
+
 void CODEC_set_dac_volume (uint8_t dac_vol_right, uint8_t dac_vol_left)
 {
+    // Set DAC volume
+    // Min is 0dB, max is -90dB, in 0.5dB step
+    // 0 <= dac_vol_L/R <= 180, where 180 * 0.5 = -90dB    
     if ((dac_vol_right >= 0) && (dac_vol_right <= 180))
     {
         CODEC_struct.dac_vol_right = dac_vol_right + 0x3C;  // 0x3C is 0dB base offset in SGTL5000       
@@ -251,6 +258,26 @@ void CODEC_set_hp_volume (uint8_t hp_vol_right, uint8_t hp_vol_left)
         CODEC_struct.hp_vol_left = hp_vol_left + 0x18;    // 0x18 is 0dB base offset in SGTL5000        
     }    
     CODEC_struct.CHIP_ANA_HP_CTRL = CODEC_spi_write(CODEC_CHIP_ANA_HP_CTRL, ((CODEC_struct.hp_vol_right << 8) | CODEC_struct.hp_vol_left));     
+}
+
+void CODEC_set_mic_gain (uint8_t gain)
+{
+    // Set microphone gain
+    CODEC_struct.CHIP_MIC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_MIC_CTRL, CODEC_struct.CHIP_MIC_CTRL, 0xFFFC, gain << 0);     
+}
+
+void CODEC_set_analog_gain (uint8_t range, uint8_t gain_right, uint8_t gain_left)
+{
+    // If range == 0, gain range from 0 to 22.5dB in step of 1.5dB, from 0x0 to 0xF
+    // If range == 1, gain range from -6 to 16.5dB in step of 1.5dB, from 0x0 to 0xF
+    if ((gain_right >= 0) && (gain_right <= 0xF))
+    {
+        CODEC_struct.CHIP_ANA_ADC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_ADC_CTRL, CODEC_struct.CHIP_ANA_ADC_CTRL, (0xFE0F | (range << 8)), gain_right << 4);
+    }
+    if ((gain_left >= 0) && (gain_right <= 0xF))
+    {
+        CODEC_struct.CHIP_ANA_ADC_CTRL = CODEC_spi_modify_write(CODEC_CHIP_ANA_ADC_CTRL, CODEC_struct.CHIP_ANA_ADC_CTRL, (0xFE0F | (range << 8)), gain_left << 0);
+    }
 }
 
 void CODEC_mute (uint8_t channel)
@@ -303,8 +330,10 @@ void CODEC_unmute (uint8_t channel)
     }   
 }
 
+
 void DCI_init (void)
 {
+    uint16_t i = 0;
     DCICON1bits.DCIEN = 0;  // Disable DCI module if it was in use
     IFS3bits.DCIIF = 0;     // Clear DCI interrupt flag
     IEC3bits.DCIIE = 0;     // Disable DCI interrupt
@@ -313,8 +342,8 @@ void DCI_init (void)
     DCICON1bits.CSCKD = 1;  // CSCK pin is an input when DCI module is enabled
     DCICON1bits.COFSD = 1;  // COFS pin is an input when DCI module is enabled
     DCICON1bits.CSCKE = 1;  // Sample incoming data on the rising edge of CSCK
-    DCICON2bits.WS = 0xF;   // DCI data word size is 16 bits
-    DCICON2bits.COFSG = 1;  // Two data word transfered per I2S frame (Right(16) + Left(16))
+    DCICON2bits.WS = 0xF;   // DCI data word size is 16 bits (standard)
+    DCICON2bits.COFSG = 1;  // Two data words transfered per I2S frame (Right(16) + Left(16))
     DCICON2bits.BLEN = 1;   // Enable interrupt after 2 data word transmitted
     DCICON3bits.BCG = 0;    // Clear baud-rate generator
     
@@ -333,6 +362,14 @@ void DCI_init (void)
     RPOR1bits.RP67R = 0x0B; // RD3 (RP67) assigned to I2S_DOUT
     RPINR24bits.CSDIR = 76; // RD12 (RPI76) assigned to I2S_DIN
     
+    for (; i < (2 * CODEC_BLOCK_TRANSFER); i++)
+    {
+        CODEC_struct.DCI_receive_buffer[i] = 0;  // Initialize buffer
+        CODEC_struct.DCI_transmit_buffer[i] = 0; // Initialize buffer       
+    }
+    CODEC_struct.DCI_receive_counter = 0;   // Initialize counter to 0
+    CODEC_struct.DCI_transmit_counter = 0;  // Initialize counter to 0
+    
     IPC15bits.DCIIP = 4;    // Make the DCI interrupt higher priority than nominal
     IEC3bits.DCIIE = 1;     // Enable DCI interrupt
     DCICON1bits.DCIEN = 1;  // Enable DCI module
@@ -349,23 +386,31 @@ uint8_t DCI_get_interrupt_state (void)
         return 0;
 }
 
+void DCI_transmit_enable (void)
+{
+    CODEC_struct.DCI_transmit_enable = 1;
+}
+
 void __attribute__((__interrupt__, no_auto_psv)) _DCIInterrupt(void)
 {
     IFS3bits.DCIIF = 0;      // clear DCI interrupt flag
     
-    rx_ch_left = RXBUF0;
-    rx_ch_right = RXBUF1;
-    LATCbits.LATC2 = 1;   
-    if (data_tx_ready == 1)
+    CODEC_struct.DCI_receive_buffer[CODEC_struct.DCI_receive_counter++] = RXBUF0;
+    CODEC_struct.DCI_receive_buffer[CODEC_struct.DCI_receive_counter++] = RXBUF1;  
+    if (CODEC_struct.DCI_receive_counter >= CODEC_BLOCK_TRANSFER)
     {
-        TXBUF0 = tx_ch_left;    
-        TXBUF1 = tx_ch_right; 
+        CODEC_struct.DCI_receive_counter = 0;
     }
-    else
+    
+    if (CODEC_struct.DCI_transmit_enable == 1)
     {
-        TXBUF0 = rx_ch_left;
-        TXBUF1 = rx_ch_right;
+        TXBUF0 = CODEC_struct.DCI_transmit_buffer[CODEC_struct.DCI_transmit_counter++];
+        TXBUF1 = CODEC_struct.DCI_transmit_buffer[CODEC_struct.DCI_transmit_counter++];   
+        if (CODEC_struct.DCI_transmit_counter >= CODEC_BLOCK_TRANSFER)
+        {
+            CODEC_struct.DCI_transmit_counter = 0;
+            CODEC_struct.DCI_transmit_enable = 0;
+        }
     }
     codec_int_flag = 1;
-    LATCbits.LATC2 = 0;
 }

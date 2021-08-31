@@ -71,6 +71,20 @@
 #define DSPEAK_RGB_BLUE_STATE   LATBbits.LATB5    
 #define DSPEAK_RGB_BLUE_DIR     TRISBbits.TRISB5 
 
+// ---------------------------- Bringup defines ----------------------------- //
+// Before release of the documentation, these defines should be removes
+//#define BRINGUP_DSPEAK_1
+#define BRINGUP_DSPEAK_2
+
+// To use USB_UART debug port on dsPeak, uncomment the following line
+#define UART_DEBUG_ENABLE  
+    
+    
+#define OUTPUT  0
+#define INPUT   1
+#define HIGH    1
+#define LOW     0    
+    
 #include <stdint.h>
 #include <xc.h>
 #include <libpic30.h>

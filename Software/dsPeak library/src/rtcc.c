@@ -4,8 +4,6 @@ RTCC_time rtcc_time;
 
 void RTCC_init (void)
 {
-    //TRISDbits.TRISD8 = 0;                     // RD8 configured as an output (RTCC_ALARM)
-    
     TRISCbits.TRISC14 = 1;
     CNPDCbits.CNPDC14 = 1;
     __builtin_write_OSCCONL(OSCCON | 0x02); // Enable secondary oscillator
@@ -14,7 +12,13 @@ void RTCC_init (void)
     __builtin_write_RTCWEN();               // Enable access to the RTC registers
     __delay_us(100);
     RCFGCALbits.RTCEN = 0;
-    ALCFGRPTbits.ALRMEN = 0;                // Disable the alarm as well (stops false alarms)
+    
+    // If using RTCC_output for 1Hz clock
+#ifdef RTCC_CLKO_ENABLE
+    TRISDbits.TRISD8 = 0;                       // RD8 configured as an output (RTCC_ALARM)
+    PADCFG1bits.RTSECSEL = 1;                   // Enable 1Hz clock on RTCC pin
+    RCFGCALbits.RTCOE = 1;                      // RTCC output is enabled
+#endif
 }
 
 void RTCC_write_time (RTCC_time t)

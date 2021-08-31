@@ -46,6 +46,8 @@
 
 #define CAN_MAXIMUM_BUS_FREQ    550000UL
 
+#define CAN_MAXIMUM_TX_RETRY    32
+
 typedef struct
 {
     uint8_t channel;              // Physical CAN channel
@@ -70,11 +72,15 @@ typedef struct
     uint8_t RB1;
     uint8_t RB0;
     uint8_t DLC;
-    uint8_t can_payload[8];
+    uint8_t can_tx_payload[8];
+    uint8_t can_rx_payload[8];
     uint16_t can_message[8];
+    
+    uint8_t error_ivr_flag;
+    uint16_t transmit_retry_counter;
 }CAN_struct;
 
-void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID,
+uint8_t CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID,
                         uint16_t EID, uint16_t rx_mask, uint16_t rx_sid);
 uint8_t CAN_init (CAN_struct *node);
 void CAN_fill_payload (CAN_struct *node, uint8_t *buf, uint8_t length);
@@ -82,8 +88,9 @@ uint8_t CAN_set_mode (CAN_struct *node, uint8_t mode);
 uint8_t CAN_get_mode (CAN_struct *node);
 uint16_t CAN_get_txmsg_errcnt (CAN_struct *node);
 uint16_t CAN_get_rxmsg_errcnt (CAN_struct *node);
+uint8_t CAN_get_errint_state (void);
 uint8_t CAN_send_txmsg (CAN_struct *node);
-uint16_t * CAN_parse_rxmsg (CAN_struct *node);
+uint8_t CAN_parse_rxmsg (CAN_struct *node);
 
 #endif	
 

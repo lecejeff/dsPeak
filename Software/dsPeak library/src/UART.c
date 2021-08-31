@@ -38,7 +38,10 @@ STRUCT_UART UART_struct[UART_QTY];
 // Define UART_x channel DMA buffers (either transmit, receive or both)
 __eds__ uint8_t uart1_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 __eds__ uint8_t uart2_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
+
+#ifdef UART_DEBUG_ENABLE
 __eds__ uint8_t uart3_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
+#endif
 
 //__eds__ uint16_t uart1_dma_rx_buf[UART_MAX_RX] __attribute__((eds,space(dma)));
 //__eds__ uint16_t uart2_dma_rx_buf[UART_MAX_RX] __attribute__((eds,space(dma)));
@@ -90,12 +93,12 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             
             if (baud > 115200)
             {
-                U1BRG = ((FCY / (4 * baud))-1); // Set baudrate using high speed mode formula
+                U1BRG = (uint16_t)((FCY / (4 * baud))-1); // Set baudrate using high speed mode formula
                 U1MODE = 0x8A08;                // Reset UART to 8-n-1, alt pins, and enable                      
             }
             else
             {
-                U1BRG = ((FCY / (16 * baud))-1);// Set baudrate using normal speed formula
+                U1BRG = (uint16_t)((FCY / (16 * baud))-1);// Set baudrate using normal speed formula
                 U1MODE = 0x8A00;                // Reset UART to 8-n-1, alt pins, and enable                
             }
             
@@ -146,8 +149,8 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             {
                 U2BRG = ((FCY / (16 * baud))-1);// Set baudrate using normal speed mode formula
                 U2MODE = 0x8000;                // Reset UART to 8-n-1, alt pins, and enable                
-            }
-
+            }  
+            
             U2STA  = 0x0440;                // Reset status register and enable TX & RX           
             IPC16bits.U2EIP = 3;            // Error interrupt priority
             IPC7bits.U2RXIP = 4;            // RX interrupt priority
@@ -162,6 +165,7 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             break;
             
         case UART_3: 
+#ifdef UART_DEBUG_ENABLE
             U3MODEbits.UEN = 0;             // Disable UART if it was previously used
             IEC5bits.U3EIE = 0;             // Disable UART error interrupt 
             IEC5bits.U3RXIE = 0;            // Disable UART receive interrupt   
@@ -187,34 +191,48 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             {
                 U3BRG = ((FCY / (16 * baud))-1);// Set baudrate using normal speed mode formula
                 U3MODE = 0x8000;                // Reset UART to 8-n-1, alt pins, and enable                
-            }
-
+            }      
+            
             U3STA  = 0x0440;                // Reset status register and enable TX & RX
             IPC20bits.U3EIP = 3;            // Error interrupt priority
             IPC20bits.U3RXIP = 4;           // RX interrupt priority
             IEC5bits.U3EIE = 1;             // Enable error interrupt
             IEC5bits.U3RXIE = 1;            // Enable receive interrupt
             
-            DMA_init(DMA_CH0);
-            DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-            DMA0REQ = DMAREQ_U3TX;
-            DMA0PAD = (volatile uint16_t)&U3TXREG;
-            DMA0STAH = __builtin_dmapage(uart3_dma_tx_buf);
-            DMA0STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
+//            DMA_init(DMA_CH0);
+//            DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
+//            DMA0REQ = DMAREQ_U3TX;
+//            DMA0PAD = (volatile uint16_t)&U3TXREG;
+//            DMA0STAH = __builtin_dmapage(uart3_dma_tx_buf);
+//            DMA0STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
+#endif
             break; 
             
         default:
             break;
     }
-    UART_struct[channel].UART_rx_length = rx_buf_length; // Set receive buffer length
+      
+    if (rx_buf_length > UART_MAX_RX)
+    {
+        UART_struct[channel].UART_rx_length = UART_MAX_RX;
+    }
+    else
+    {
+        UART_struct[channel].UART_rx_length = rx_buf_length;
+    }
     UART_struct[channel].UART_tx_done = 0;               // TX not done
     UART_struct[channel].UART_rx_done = 0;               // RX not done
     UART_struct[channel].UART_rx_counter = 0;            // Reset rx data counter
     UART_struct[channel].UART_tx_counter = 0;            // Reset tx data counter    
     // According to UART reference manual, users should add a software delay
     // between the UART enable and first transmission based on the baudrate
-    __delay_ms(1);
+    __delay_ms(25);
 }   
+
+uint8_t UART_get_rx_buffer_length (uint8_t channel)
+{
+    return UART_struct[channel].UART_rx_length;
+}
 
 //**************void UART_putc (uint8_t channel, uint8_t data)****************//
 //Description : Function transmits a single character on selected channel via
@@ -254,10 +272,12 @@ void UART_putc (uint8_t channel, uint8_t data)
     
     if (channel == UART_3)
     {
+#ifdef UART_DEBUG_ENABLE
         while(!U3STAbits.TRMT);
         UART_struct[channel].UART_tx_length = 1;
         UART_struct[channel].UART_tx_data[0] = data;
-        IEC5bits.U3TXIE = 1;      
+        IEC5bits.U3TXIE = 1;   
+#endif
     }    
 }  
 
@@ -303,6 +323,7 @@ void UART_putc_ascii (uint8_t channel, uint8_t data)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
+// Need to add a MAX_TX_OVERFLOW error mechanism to this function
 void UART_putstr (uint8_t channel, const char *str)
 {
     uint8_t i = 0;
@@ -336,7 +357,8 @@ void UART_putstr (uint8_t channel, const char *str)
             IEC1bits.U2TXIE = 1;              
             break;
             
-        case UART_3:
+        case UART_3:           
+#ifdef UART_DEBUG_ENABLE
             while(!U3STAbits.TRMT);
             for (; i < length; i++)
             {
@@ -344,7 +366,8 @@ void UART_putstr (uint8_t channel, const char *str)
             }               
             UART_struct[channel].UART_tx_length = length;      
             UART_struct[channel].UART_tx_done = UART_TX_IDLE;           
-            IEC5bits.U3TXIE = 1;                                  
+            IEC5bits.U3TXIE = 1;  
+#endif
             break;
             
         default:
@@ -399,6 +422,7 @@ void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)
             break;
             
         case UART_3:
+#ifdef UART_DEBUG_ENABLE
             while(!U3STAbits.TRMT); 
             for (; i < length; i++)
             {
@@ -407,12 +431,14 @@ void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)
             UART_struct[channel].UART_tx_length = length;      
             UART_struct[channel].UART_tx_done = UART_TX_IDLE;            
             IEC5bits.U3TXIE = 1;   
+#endif
             break;
             
         default:
             break;
     }
 }
+
 
 //***void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length)*****//
 //Description : Function sends a buffer of data of specified length to UART_x
@@ -472,7 +498,8 @@ void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length)
 //            }
             break;        
         
-        case UART_3:                  
+        case UART_3:    
+#ifdef UART_DEBUG_ENABLE
             if (DMA_get_txfer_state(DMA_CH0) == DMA_TXFER_DONE)  // If DMA channel is free, fill buffer and transmit
             {
                 if (U3STAbits.TRMT)         
@@ -487,6 +514,7 @@ void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length)
                     DMA0REQbits.FORCE = 1;
                 }
             }
+#endif
             break;
             
         default:
@@ -555,8 +583,10 @@ void UART_send_tx_buffer (uint8_t channel)
             break;
             
         case UART_3:
+#ifdef UART_DEBUG_ENABLE
             while(!U3STAbits.TRMT); 
             IEC5bits.U3TXIE = 1;
+#endif
             break;
             
         default:
@@ -594,7 +624,10 @@ uint8_t * UART_get_rx_buffer (uint8_t channel)
             break;
             
         case UART_3:
+#ifdef UART_DEBUG_ENABLE
             return &UART_struct[channel].UART_rx_data[0];
+#endif
+            return 0;
             break;
 
         default:
@@ -811,6 +844,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
     } 
 }
 
+#ifdef UART_DEBUG_ENABLE
 //**********************UART3 receive interrupt function**********************//
 //Description : UART3 receive interrupt.
 //
@@ -878,6 +912,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3TXInterrupt(void)
         }           
     }   
 }
+#endif
 
 void __attribute__((__interrupt__, no_auto_psv)) _U1ErrInterrupt(void)
 {
@@ -899,6 +934,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2ErrInterrupt(void)
     IFS4bits.U2EIF = 0;
 }
 
+#ifdef UART_DEBUG_ENABLE
 void __attribute__((__interrupt__, no_auto_psv)) _U3ErrInterrupt(void)
 {
     uint8_t temp = 0;   
@@ -908,3 +944,4 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3ErrInterrupt(void)
     UART_struct[UART_3].UART_rx_counter = 0;
     IFS5bits.U3EIF = 0;
 }
+#endif

@@ -99,8 +99,14 @@
 #define MIC_GAIN_40dB       3   //
 //----------------------------
 
+#define CODEC_INPUT_LINEIN  0
+#define CODEC_INPUT_I2S     1
+#define CODEC_INPUT_MIC
+#define CODEC_INPUT_
+
 // CODEC volume defines
-#define DAC_VOLUME_
+#define ADC_VOL_RANGE_DEFAULT   0
+#define ADC_VOL_RANGE_RED6DB    1
 
 #define SYS_FS_32kHz        0
 #define SYS_FS_44_1kHz      1
@@ -119,6 +125,10 @@
 #define DAC_MUTE            3
 
 #define SYS_MCLK    12000000    // SYS_MCLK is 12MHz
+
+// I2C BLOCK TRANSFER define
+// A single transfer is 2x words (4x bytes), one per channel (left and right)
+#define CODEC_BLOCK_TRANSFER 256    
 
 typedef struct
 {
@@ -176,17 +186,25 @@ typedef struct
     uint8_t dac_vol_right;
     uint8_t hp_vol_left;
     uint8_t hp_vol_right;
+    
+    uint16_t DCI_receive_buffer[CODEC_BLOCK_TRANSFER];
+    uint16_t DCI_transmit_buffer[CODEC_BLOCK_TRANSFER];
+    uint16_t DCI_transmit_counter;
+    uint16_t DCI_receive_counter;
+    uint8_t DCI_transmit_enable;
 }STRUCT_CODEC;
 
 void DCI_init (void);
 void CODEC_init (uint8_t sys_fs);
-uint16_t CODEC_spi_write (uint16_t adr, uint16_t data) ;
+uint16_t CODEC_spi_write (uint16_t adr, uint16_t data);
 uint16_t CODEC_spi_modify_write (uint16_t adr, uint16_t reg, uint16_t mask, uint16_t data);
 void CODEC_mute (uint8_t channel);
 void CODEC_unmute (uint8_t channel);
 void CODEC_mic_config (uint8_t bias_res, uint8_t bias_volt, uint8_t gain);
-void CODEC_set_input_route (uint8_t channel);
-void CODEC_set_output_route (uint8_t channel);
+void CODEC_set_input_route (uint8_t in_channel, uint8_t out_channel, uint8_t gain);
+void CODEC_set_output_route (uint8_t in_channel, uint8_t out_channel, uint8_t gain);
+void CODEC_set_mic_gain (uint8_t gain);
+void CODEC_set_analog_gain (uint8_t range, uint8_t gain_right, uint8_t gain_left);
 void CODEC_set_dac_volume (uint8_t dac_vol_right, uint8_t dac_vol_left);
 void CODEC_set_hp_volume (uint8_t hp_vol_right, uint8_t hp_vol_left);
 uint8_t DCI_get_interrupt_state (void);

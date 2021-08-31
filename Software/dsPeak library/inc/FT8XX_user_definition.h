@@ -20,11 +20,15 @@
 #define RIVERDI_480x272_RESISTIVE_FT800
 #ifdef RIVERDI_480x272_RESISTIVE_FT800
     #define TOUCH_PANEL_RESISTIVE
+    #define SCREEN_WIDTH 480
+    #define SCREEN_HEIGHT 272
 #endif
 
 //#define RIVERDI_800x480_CAPACITIVE_FT813
 #ifdef RIVERDI_800x480_CAPACITIVE_FT813
     #define TOUCH_PANEL_CAPACITIVE 
+    #define SCREEN_WIDTH 800
+    #define SCREEN_HEIGHT 480
 #endif
 
 // Definitions of the amount of primitives to compile
@@ -32,15 +36,15 @@
 #define MAX_RECT_NB 0
 #define MAX_GRADIENT_NB 1
 #define MAX_WINDOW_NB 0
-#define MAX_SLIDER_NB 0
-#define MAX_BUTTON_NB 0
-#define MAX_TEXT_NB 24
-#define MAX_NUMBER_NB 24
+#define MAX_SLIDER_NB 1
+#define MAX_BUTTON_NB 1
+#define MAX_TEXT_NB 12
+#define MAX_NUMBER_NB 7
 #define MAX_TOGGLE_NB 0
-#define MAX_DIAL_NB 0
+#define MAX_DIAL_NB 1
 #define MAX_PROGRESS_NB 0
 #define MAX_SCROLLBAR_NB 0
-#define MAX_CLOCK_NB 1
+#define MAX_CLOCK_NB 0
 #define MAX_GAUGE_NB 0
 #define MAX_KEYS_NB 0
 
@@ -105,6 +109,11 @@ extern STScrollbar st_Scrollbar[MAX_SCROLLBAR_NB]; // scroller struct initializa
 #endif
 
 #if MAX_DIAL_NB > 0
+#define DIAL_X      0
+#define DIAL_Y      1
+#define DIAL_R      2
+#define DIAL_OPT    3
+#define DIAL_VALUE  4
 typedef struct
 {
    uint16_t x;
@@ -312,6 +321,7 @@ typedef struct
 extern STTouch Touch_data;
 //
 
+#define FONT_15 15
 #define FONT_16 16
 #define FONT_17 17
 #define FONT_18 18

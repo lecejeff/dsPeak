@@ -802,8 +802,8 @@ void __attribute__((__interrupt__, no_auto_psv))_T8Interrupt(void)
     TIMER_struct[TIMER_8].int_state = 1;
 }
 
-//void __attribute__((__interrupt__, no_auto_psv))_T9Interrupt(void)
-//{
-//    IFS3bits.T9IF = 0;
-//    TIMER_struct[TIMER_9].int_state = 1;
-//}
+void __attribute__((__interrupt__, no_auto_psv))_T9Interrupt(void)
+{
+    IFS3bits.T9IF = 0;
+    TIMER_struct[TIMER_9].int_state = 1;
+}

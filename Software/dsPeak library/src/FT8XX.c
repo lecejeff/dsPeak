@@ -95,6 +95,7 @@ uint16_t ft8xx_lcd_pclk = 5;
 
 STTouch touch_data;
 uint8_t touch_tag;
+uint8_t slider_nb = 0;
 
 // Do not touch these variables
 uint16_t cmdBufferRd;            // Used to navigate command ring buffer
@@ -201,7 +202,7 @@ void FT8XX_init (void)
         FT8XX_wr8(REG_PWM_DUTY, duty); // Turn on backlight - ramp up slowly to full brighness
         __delay_ms(1);
     }
-    // If you want to calibrate the touchpanel, uncomment the following lines
+    // If you want to enable the touchpanel, uncomment the following lines
     #ifdef FT_80X_ENABLE
     FT8XX_wr8(REG_TOUCH_MODE, FT8XX_TOUCH_MODE_CONTINUOUS);    //Touch enabled
     #endif
@@ -210,7 +211,7 @@ void FT8XX_init (void)
         FT8XX_wr8(REG_CTOUCH_MODE, FT8XX_TOUCH_MODE_CONTINUOUS);      // Touch enabled
         FT8XX_wr8(REG_CTOUCH_EXTENDED, 1);                            // Compatibility mode
     #endif
-    //FT8XX_touchpanel_init();
+    FT8XX_touchpanel_calibrate();
 }
 
 //**********************void FT_touchpanel_init (void)************************//
@@ -226,7 +227,7 @@ void FT8XX_init (void)
 //
 //Intellitrol  08/07/2016
 //******************************************************************************
-void FT8XX_touchpanel_init (void)
+void FT8XX_touchpanel_calibrate (void)
 {
     FT8XX_start_new_dl();                    //Start new dlist
     FT8XX_write_dl_long(CLEAR(1, 1, 1));
@@ -272,6 +273,7 @@ uint8_t FT8XX_read_touch_tag (void)
         {
             touch_counter = 1;
             tag_flag = 0; 
+            touch_tag = 0;
         }                     
     }
 
@@ -1061,7 +1063,7 @@ void FT8XX_draw_button (STButton *st_Button)
     FT8XX_write_dl_int(st_Button->opt);  // primitive options
     while (cnt < st_Button->len)        // write button text until eos
     {
-        FT8XX_write_dl_int8_t(st_Button->str[cnt]);
+        FT8XX_write_dl_char(st_Button->str[cnt]);
         cnt++;
     }
 }
@@ -1602,6 +1604,35 @@ void FT8XX_draw_dial (STDial *st_Dial)
     FT8XX_write_dl_int(0);
 }
 
+void FT8XX_modify_dial (STDial *st_Dial, uint8_t type, uint16_t value)
+{
+    switch (type)
+    {
+        case DIAL_X:
+            st_Dial->x = value;
+        break;
+
+        case DIAL_Y:
+            st_Dial->y = value;
+        break;
+
+        case DIAL_R:
+            st_Dial->r = value;
+        break;
+
+        case DIAL_OPT:
+            st_Dial->opt = value;
+        break;
+
+        case DIAL_VALUE:
+            st_Dial->val = value;
+        break;
+
+        default:
+        break;
+    }
+}
+
 #endif //#if MAX_DIAL_NB > 0
 
 
@@ -2036,15 +2067,76 @@ void FT8XX_draw_keys(STKeys *st_Keys)
 
 #endif
 
-void FT8XX_CMD_tracker(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t tag)
+void FT8XX_CMD_tracker(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t tag)
 {
-    FT8XX_write_dl_long(CMD_TRACK);       //write FT command to draw a clock
+    FT8XX_write_dl_long(CMD_TRACK);   
     FT8XX_write_dl_int(x);  //write values to command
     FT8XX_write_dl_int(y);
     FT8XX_write_dl_int(w);
     FT8XX_write_dl_int(h);
     FT8XX_write_dl_int(tag); 
+    FT8XX_write_dl_int(0);
 }
+
+void FT8XX_CMD_sketch (uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t ptr, uint16_t format)
+{
+    FT8XX_write_dl_long(CMD_SKETCH);
+    FT8XX_write_dl_int(x);  //write values to command
+    FT8XX_write_dl_int(y);
+    FT8XX_write_dl_int(w);
+    FT8XX_write_dl_int(h);
+    FT8XX_write_dl_long(ptr); 
+    FT8XX_write_dl_int(format); 
+    FT8XX_write_dl_int(0);
+}
+
+void FT8XX_CMD_memzero (uint32_t ptr, uint32_t num)
+{
+    FT8XX_write_dl_long(CMD_MEMZERO);  
+    FT8XX_write_dl_long(ptr);      
+    FT8XX_write_dl_long(num);      
+}
+
+void FT8XX_CMD_interrupt (uint32_t ms)
+{
+    FT8XX_write_dl_long(CMD_INTERRUPT); 
+    FT8XX_write_dl_long(ms);                // Delay before interrupt triggers
+}
+
+void FT8XX_CMD_append (uint32_t ptr, uint32_t num)
+{
+    FT8XX_write_dl_long(CMD_APPEND);  
+    FT8XX_write_dl_long(ptr);      
+    FT8XX_write_dl_long(num);     
+}
+
+uint32_t FT8XX_CMD_memcrc (uint32_t ptr, uint32_t num)
+{
+    uint16_t x = FT8XX_rd16(REG_CMD_WRITE);
+    FT8XX_write_dl_long(CMD_APPEND);  
+    FT8XX_write_dl_long(ptr);      
+    FT8XX_write_dl_long(num);  
+    do
+    {
+        cmdBufferRd = FT8XX_rd16(REG_CMD_READ);
+        cmdBufferWr = FT8XX_rd16(REG_CMD_WRITE);
+    }   while ((cmdBufferWr != 0) && (cmdBufferWr != cmdBufferRd));
+    return FT8XX_rd32(RAM_CMD + x + 12);
+}
+
+void FT8XX_CMD_memset (uint32_t ptr, uint32_t value, uint32_t num)
+{
+    FT8XX_write_dl_long(CMD_MEMSET);  
+    FT8XX_write_dl_long(ptr);    
+    FT8XX_write_dl_long(value);   
+    FT8XX_write_dl_long(num); 
+    do
+    {
+        cmdBufferRd = FT8XX_rd16(REG_CMD_READ);
+        cmdBufferWr = FT8XX_rd16(REG_CMD_WRITE);
+    }   while ((cmdBufferWr != 0) && (cmdBufferWr != cmdBufferRd));
+}
+
 
 //********************void FT_clear_screen (uint32_t color)************************//
 //Description : FT function to clear primitives on screen and update backgrnd

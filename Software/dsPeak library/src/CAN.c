@@ -21,6 +21,8 @@
 __eds__ uint16_t CAN_MSG_BUFFER[32][8] __attribute__((eds, space(dma), aligned(32*16)));
 uint16_t CAN_RX_MSG[8] = {0};
 
+uint8_t can_error_interrupt_flag = 0;
+
 //void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID, uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)//
 //Description : Function initialize CAN structure parameters
 //
@@ -43,7 +45,7 @@ uint16_t CAN_RX_MSG[8] = {0};
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID,
+uint8_t CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID,
                         uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)
 {
     uint8_t i = 0;
@@ -54,7 +56,10 @@ void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint
     node->RX_MASK = rx_mask;
     node->RX_SID = rx_sid;
     node->txmsg_buffer_channel = 0; // Use CAN MSGBUF0 for message transmission
-    node->rxmsg_buffer_channel = 1; // Use CAN MSGBUF1 for message transmission
+    node->rxmsg_buffer_channel = 1; // Use CAN MSGBUF1 for message reception
+    
+    node->error_ivr_flag = 0;           // Invalid error flag reset
+    node->transmit_retry_counter = 0;   // Rransmit retry counter reset
     
     // See if these should be configured by default
     node->SRR = 0;
@@ -67,14 +72,17 @@ void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint
     // Initialize payload bytes to 0 by default
     for (; i<8; i++)
     {
-        node->can_payload[i] = 0;
+        node->can_tx_payload[i] = 0;
+        node->can_rx_payload[i] = 0;
     }
     
     // Set node CAN channel to CAN_MODE_CONFIG
     if (CAN_set_mode(node, CAN_MODE_CONFIG) == 0xFF)
     {
-        // Error while trying to set CAN operating mode
+        return 1;
     }
+    
+    return 0;
 }
 
 //********************uint8_t CAN_init (CAN_struct *node)*********************//
@@ -201,7 +209,7 @@ void CAN_fill_payload (CAN_struct *node, uint8_t *buf, uint8_t length)
     uint8_t i = 0;
     for (; i < length; i++)
     {
-        node->can_payload[i] = *buf++;
+        node->can_tx_payload[i] = *buf++;
     }
 }
 
@@ -243,31 +251,51 @@ uint8_t CAN_get_mode (CAN_struct *node)
     }
 }
 
+// Non-blocking
+// Return 0 on successful transmission
+// Return 1 if trying to send message but the CAN node is not in NORMAL mode
+// Return 2 if TXENn = 0 and trying to send a message using this TXENn buffer
+// Return 3 if trying to send a message but the module is already transmitting
 uint8_t CAN_send_txmsg (CAN_struct *node)
 {
-    if (CAN_get_mode(node)!=CAN_MODE_NORMAL)
+    // TXREQn = 0 is module is ready to send a CAN message
+    if (C1TR01CONbits.TXREQ0 == 0)
     {
-        // CAN bus is not in normal mode, cannot transfer message
-        return 1;
+        if (CAN_get_mode(node) != CAN_MODE_NORMAL)
+        {
+            // CAN bus is not in normal mode, cannot transfer message
+            return 1;
+        }
+        CAN_MSG_BUFFER[0][0] = ((node->SID << 2) | (node->SRR << 1) | node->IDE);
+        CAN_MSG_BUFFER[0][1] = node->EID & 0x3FFC0;
+        CAN_MSG_BUFFER[0][2] = (((node->EID & 0x0003F) << 10) | (node->RTR << 9)
+                                | (node->RB1 << 8) | (node->RB0 << 4) | (node->DLC));
+        CAN_MSG_BUFFER[0][3] = (uint16_t)((node->can_tx_payload[1]<<8) | node->can_tx_payload[0]);
+        CAN_MSG_BUFFER[0][4] = (uint16_t)((node->can_tx_payload[3]<<8) | node->can_tx_payload[2]);
+        CAN_MSG_BUFFER[0][5] = (uint16_t)((node->can_tx_payload[5]<<8) | node->can_tx_payload[4]);
+        CAN_MSG_BUFFER[0][6] = (uint16_t)((node->can_tx_payload[7]<<8) | node->can_tx_payload[6]);
+        CAN_MSG_BUFFER[0][7] = 0;
+
+        // From CAN Family reference manual p.36, "Setting the TXREQm bit when the 
+        // TXENn bit is '0' will result in unpredictable module behavior"
+        if (C1TR01CONbits.TXEN0 == 0)
+        {
+            return 2;                   
+        }
+        else
+            C1TR01CONbits.TXREQ0 = 0x1; 
+        return 0;
     }
-    CAN_MSG_BUFFER[0][0] = ((node->SID << 2) | (node->SRR << 1) | node->IDE);
-    CAN_MSG_BUFFER[0][1] = node->EID & 0x3FFC0;
-    CAN_MSG_BUFFER[0][2] = (((node->EID & 0x0003F) << 10) | (node->RTR << 9)
-                            | (node->RB1 << 8) | (node->RB0 << 4) | (node->DLC));
-    CAN_MSG_BUFFER[0][3] = (uint16_t)((node->can_payload[1]<<8) | node->can_payload[0]);
-    CAN_MSG_BUFFER[0][4] = (uint16_t)((node->can_payload[3]<<8) | node->can_payload[2]);
-    CAN_MSG_BUFFER[0][5] = (uint16_t)((node->can_payload[5]<<8) | node->can_payload[4]);
-    CAN_MSG_BUFFER[0][6] = (uint16_t)((node->can_payload[7]<<8) | node->can_payload[6]);
-    CAN_MSG_BUFFER[0][7] = 0;
-                 
-    C1TR01CONbits.TXREQ0 = 0x1; 
-    while (C1TR01CONbits.TXREQ0 == 1);
-    return 0;
+    
+    // Error, trying to send new message but the module is already transmitting
+    else
+    {
+        return 3;       
+    }
 }
 
-uint16_t * CAN_parse_rxmsg (CAN_struct *node)
+uint8_t CAN_parse_rxmsg (CAN_struct *node)
 {
-    uint8_t can_rx_payload[8] = {0};
     if ((CAN_MSG_BUFFER[node->rxmsg_buffer_channel][0] & 0x1FFC)>>2 == node->RX_SID)
     {
         CAN_RX_MSG[0] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][0];
@@ -278,15 +306,15 @@ uint16_t * CAN_parse_rxmsg (CAN_struct *node)
         CAN_RX_MSG[5] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][5];
         CAN_RX_MSG[6] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][6];
         CAN_RX_MSG[7] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][7];
-        can_rx_payload[0] = CAN_RX_MSG[3]&0x00FF;
-        can_rx_payload[1] = ((CAN_RX_MSG[3]&0xFF00)>>8);
-        can_rx_payload[2] = CAN_RX_MSG[4]&0x00FF;
-        can_rx_payload[3] = ((CAN_RX_MSG[4]&0xFF00)>>8);
-        can_rx_payload[4] = CAN_RX_MSG[5]&0x00FF;
-        can_rx_payload[5] = ((CAN_RX_MSG[5]&0xFF00)>>8);
-        can_rx_payload[6] = CAN_RX_MSG[6]&0x00FF;
-        can_rx_payload[7] = ((CAN_RX_MSG[6]&0xFF00)>>8);        
-        return &CAN_RX_MSG[0];
+        node->can_rx_payload[0] = CAN_RX_MSG[3];
+        node->can_rx_payload[1] = (CAN_RX_MSG[3] >> 8);
+        node->can_rx_payload[2] = CAN_RX_MSG[4];
+        node->can_rx_payload[3] = (CAN_RX_MSG[4] >> 8);
+        node->can_rx_payload[4] = CAN_RX_MSG[5];
+        node->can_rx_payload[5] = (CAN_RX_MSG[5] >> 8);
+        node->can_rx_payload[6] = CAN_RX_MSG[6];
+        node->can_rx_payload[7] = (CAN_RX_MSG[6] >> 8);        
+        return 1;
     }
     else
         return 0;
@@ -320,18 +348,39 @@ uint16_t CAN_get_rxmsg_errcnt (CAN_struct *node)
     }    
 }
 
+uint8_t CAN_get_errint_state (void)
+{
+    if (can_error_interrupt_flag == 1)
+    {
+        can_error_interrupt_flag = 0;
+        return 1;
+    }
+    else
+        return 0;
+}
+
 // ECAN1 event interrupt
 void __attribute__((__interrupt__, no_auto_psv))_C1Interrupt(void)
 {
     IFS2bits.C1IF = 0;      // clear interrupt flag
-    if( C1INTFbits.TBIF )
+    if(C1INTFbits.TBIF)
     {
         C1INTFbits.TBIF = 0;
     }
 
-    if( C1INTFbits.RBIF )
+    if(C1INTFbits.RBIF)
     {
         C1INTFbits.RBIF = 0;
+    }
+    
+    if (C1INTFbits.ERRIF)
+    {        
+        can_error_interrupt_flag = 1;
+        if (C1INTFbits.IVRIF)   // Invalid message interrupt triggered?
+        {
+            C1INTFbits.IVRIF = 0;
+        }
+        C1INTFbits.ERRIF = 0;
     }
 }
 
