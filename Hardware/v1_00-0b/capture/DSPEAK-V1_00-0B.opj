@@ -173,17 +173,17 @@
       (Path "Design Resources" ".\dspeak-v1_00-0b.dsn" "USER I/O")
       (Path "Design Resources" "Library")
       (Path "Layout")
-      (Select "Design Resources" ".\dspeak-v1_00-0b.dsn" "TOP schematic" "TOP"))
+      (Select "Design Resources" ".\dspeak-v1_00-0b.dsn" "USER I/O" "USER I/O"))
     (HierarchyView)
     (Doc
       (Type "COrCapturePMDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 0 284 0 888"))
+        (Placement "44 0 1 -1 -1 -1 -1 0 277 0 888"))
       (Tab 0))
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1590 24 929")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
         (Scroll "0 234")
         (Zoom "192")
         (Occurrence "/"))
@@ -194,8 +194,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1590 24 929")
-        (Scroll "-16 0")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "-20 0")
         (Zoom "100")
         (Occurrence "/P31"))
       (Path
@@ -205,8 +205,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1590 24 929")
-        (Scroll "-16 0")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "-20 0")
         (Zoom "100")
         (Occurrence "/P15"))
       (Path
@@ -216,8 +216,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1590 24 929")
-        (Scroll "-100 -5")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "-103 0")
         (Zoom "89")
         (Occurrence "/P16"))
       (Path
@@ -227,8 +227,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1590 24 929")
-        (Scroll "-100 -5")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "-103 0")
         (Zoom "89")
         (Occurrence "/P1"))
       (Path
@@ -238,8 +238,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1590 24 929")
-        (Scroll "-199 -8")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "-203 0")
         (Zoom "119")
         (Occurrence "/P14"))
       (Path
@@ -249,8 +249,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1590 24 929")
-        (Scroll "-199 -8")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "-203 0")
         (Zoom "119")
         (Occurrence "/P8"))
       (Path
@@ -260,8 +260,8 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1590 24 929")
-        (Scroll "-199 -8")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "-203 0")
         (Zoom "119")
         (Occurrence "/P4"))
       (Path
@@ -271,14 +271,36 @@
     (Doc
       (Type "COrSchematicDoc")
       (Frame
-        (Placement "44 0 1 -1 -1 -1 -1 5 1590 24 929")
-        (Scroll "-199 -8")
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "-203 0")
         (Zoom "119")
         (Occurrence "/P3"))
       (Path
          "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
       (Schematic "USB-UART")
-      (Page "USB-UART")))
+      (Page "USB-UART"))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "1260 596")
+        (Zoom "200")
+        (Occurrence "/P17"))
+      (Path
+         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
+      (Schematic "Motor driver")
+      (Page "MOTOR DRIVE"))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1597 24 773")
+        (Scroll "1471 250")
+        (Zoom "200")
+        (Occurrence "/P19"))
+      (Path
+         "C:\USERS\JEANF\DESKTOP\GIT\DSPEAK\HARDWARE\V1_00-0B\CAPTURE\DSPEAK-V1_00-0B.DSN")
+      (Schematic "USER I/O")
+      (Page "USER I/O")))
   (MPSSessionName "jeanf")
   (ISPCBBASICLICENSE "true")
   (PartMRUSelector

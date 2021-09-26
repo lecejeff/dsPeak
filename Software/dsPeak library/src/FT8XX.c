@@ -380,13 +380,6 @@ void FT8XX_host_command (uint8_t command)
 {
     uint8_t wr_data[3] = {command, 0, 0};
     SPI_master_write(SPI_1, wr_data, 3, FT8XX_EVE_CS);
-    // SPI.begin();                        // Command frame :
-    // digitalWrite(FT8XX_nCS_PIN, LOW);   // Set #CS low
-    // SPI.transfer(command);              // Byte 0 = command, see FT8XX_command_list
-    // SPI.transfer(0);                    // Byte 1 = dummy, send 0
-    // SPI.transfer(0);                    // Byte 2 = dummy, send 0
-    // SPI.end();                          
-    // digitalWrite(FT8XX_nCS_PIN, HIGH);  // Set #CS high
 }
 
 //**********************void FT_write_8bit (uint32_t adr, uint8_t data)******************//
@@ -411,15 +404,6 @@ void FT8XX_wr8 (uint32_t adr, uint8_t data)
     // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
     // byte 3 = data                                        // Write 8 bit data
-                                                            // Little endian
-    // SPI.begin();
-    // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((uint8_t)((adr >> 16) | MEM_WRITE));
-    // SPI.transfer((uint8_t)(adr >> 8));
-    // SPI.transfer(adr);
-    // SPI.transfer(data);
-    // SPI.end();
-    // digitalWrite(FT8XX_nCS_PIN, HIGH);
 }
 
 //*******************void FT_write_16bit (uint32_t adr, uint16_t data)********************//
@@ -445,16 +429,6 @@ void FT8XX_wr16 (uint32_t adr, uint16_t data)
     // byte 2 = adr;                                          //
     // byte 3 = (uint8_t)(data);                        // Write 16 bit data
     // byte 4 = (uint8_t)(data >> 8);                   // Little endian
-
-    // SPI.begin();
-    // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((uint8_t)((adr >> 16) | MEM_WRITE));
-    // SPI.transfer((uint8_t)(adr >> 8));
-    // SPI.transfer(adr);
-    // SPI.transfer(data);
-    // SPI.transfer((uint8_t)(data >> 8));
-    // SPI.end();
-    // digitalWrite(FT8XX_nCS_PIN, HIGH);
 }
 
 //*******************void FT_write_32bit (uint32_t adr, uint32_t data)********************//
@@ -482,18 +456,6 @@ void FT8XX_wr32 (uint32_t adr, uint32_t data)
     // byte 4 = (uint8_t)(data >> 8);                   // Little endian
     // byte 5 = (uint8_t)(data >> 16);                  //
     // byte 6 = (uint8_t)(data >> 24);                  //
-
-    // SPI.begin();
-    // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((uint8_t)((adr >> 16) | MEM_WRITE));
-    // SPI.transfer((uint8_t)(adr >> 8));
-    // SPI.transfer(adr);
-    // SPI.transfer(data);
-    // SPI.transfer((uint8_t)(data >> 8));
-    // SPI.transfer((uint8_t)(data >> 16));
-    // SPI.transfer((uint8_t)(data >> 24));
-    // SPI.end();
-    // digitalWrite(FT8XX_nCS_PIN, HIGH);
 }
 
 //*************************uint8_t FT_read_8bit (uint32_t adr)***************************//
@@ -515,22 +477,11 @@ uint8_t FT8XX_rd8 (uint32_t adr)
     SPI_master_write(SPI_1, data, 5, FT8XX_EVE_CS);    
     while(SPI_txfer_done(SPI_1)!= 1);
     return SPI_get_rx_buffer_index(SPI_1, 4);
-    // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
+    // byte 0 = (uint8_t)((adr >> 16) | MEM_READ);   // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
     // byte 3 = dummy                                       // send 0
     // byte 4 = rd8                                         // send 0, read 8-bit value from FT8XX
-    // uint8_t rd8 = 0;
-    // SPI.begin();
-    // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((uint8_t)((adr >> 16) | MEM_READ));
-    // SPI.transfer((uint8_t)(adr >> 8));
-    // SPI.transfer(adr);
-    // SPI.transfer(0);
-    // FT8XX_rd8 = SPI.transfer(0);
-    // SPI.end();
-    // digitalWrite(FT8XX_nCS_PIN, HIGH);
-    
 }
 
 //*************************uint16_t FT_read_16bit (uint32_t adr)**************************//
@@ -557,27 +508,12 @@ uint16_t FT8XX_rd16 (uint32_t adr)
     data_read2 = SPI_get_rx_buffer_index(SPI_1, 5); 
     rd16 = ((data_read2 << 8) | data_read1);
     return (rd16);
-    // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
+    // byte 0 = (uint8_t)((adr >> 16) | MEM_READ);   // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
     // byte 3 = dummy                                       // send 0
     // byte 4 = rd16, LSbyte                                // send 0, read less significant byte of the 16-bit data
     // byte 5 = rd16, MSbyte                                // send 0, read most significant byte of the 16-bit data
-
-
-    // SPI.begin();
-    // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((uint8_t)((adr >> 16) | MEM_READ));
-    // SPI.transfer((uint8_t)(adr >> 8));
-    // SPI.transfer(adr);
-    // SPI.transfer(0);
-    // data_read1 = SPI.transfer(0);
-    // data_read2 = SPI.transfer(0);
-    // SPI.end();
-    // digitalWrite(FT8XX_nCS_PIN, HIGH);
-
-    // rd16 = ((data_read2 << 8) | data_read1);
-    
 }
 
 //*************************uint32_t FT_read_32bit (uint32_t adr)**************************//
@@ -595,14 +531,6 @@ uint16_t FT8XX_rd16 (uint32_t adr)
 //******************************************************************************
 uint32_t FT8XX_rd32 (uint32_t adr)
 {
-    // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
-    // byte 1 = (uint8_t)(adr>>8);                    // 
-    // byte 2 = adr                                         //
-    // byte 3 = dummy                                       // send 0
-    // byte 4 = rd16, 0..7                                  // send 0, read bits 0..7 of the 32-bit data
-    // byte 5 = rd16, 8..15                                 // send 0, read bits 8..15 of the 32-bit data
-    // byte 6 = rd32, 16..23                                // send 0, read bits 16..23 of the 32-bit data
-    // byte 7 = rd32, 24..31                                // send 0, read bits 24..31 of the 32-bit data
     uint32_t data_read1, data_read2, data_read3, data_read4;
     uint32_t rd32 = 0x00000000;  
     uint8_t data[8] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0, 0, 0};
@@ -616,24 +544,15 @@ uint32_t FT8XX_rd32 (uint32_t adr)
     rd32 = (uint32_t)(rd32 | data_read3 << 16);
     rd32 = (uint32_t)(rd32 | data_read2 << 8);
     rd32 = (uint32_t)(rd32 | data_read1);
-    // SPI.begin();
-    // digitalWrite(FT8XX_nCS_PIN, LOW);
-    // SPI.transfer((uint8_t)((adr >> 16) | MEM_READ));
-    // SPI.transfer((uint8_t)(adr >> 8));
-    // SPI.transfer(adr);
-    // SPI.transfer(0);
-    // data_read1 = SPI.transfer(0);
-    // data_read2 = SPI.transfer(0);
-    // data_read3 = SPI.transfer(0);
-    // data_read4 = SPI.transfer(0);
-    // SPI.end();
-    // digitalWrite(FT8XX_nCS_PIN, HIGH);
-
-    // rd32 = (uint32_t)(data_read4 << 24);
-    // rd32 = (uint32_t)(rd32 | data_read3 << 16);
-    // rd32 = (uint32_t)(rd32 | data_read2 << 8);
-    // rd32 = (uint32_t)(rd32 | data_read1);
     return (rd32);
+    // byte 0 = (uint8_t)((adr >> 16) | MEM_READ);   // Write 24 bit ADR
+    // byte 1 = (uint8_t)(adr>>8);                    // 
+    // byte 2 = adr                                         //
+    // byte 3 = dummy                                       // send 0
+    // byte 4 = rd16, 0..7                                  // send 0, read bits 0..7 of the 32-bit data
+    // byte 5 = rd16, 8..15                                 // send 0, read bits 8..15 of the 32-bit data
+    // byte 6 = rd32, 16..23                                // send 0, read bits 16..23 of the 32-bit data
+    // byte 7 = rd32, 24..31                                // send 0, read bits 24..31 of the 32-bit data
 }
 
 //*************************void FT_start_new_dl (void)************************//

@@ -63,6 +63,7 @@ typedef struct
 
 void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq);
 void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq);
+uint32_t TIMER_get_freq (uint8_t timer);
 void TIMER_start (uint8_t timer);
 void TIMER_stop (uint8_t timer);
 uint8_t TIMER_get_state (uint8_t timer, uint8_t type);

@@ -15,6 +15,7 @@ void DMA_struct_init (uint8_t channel)
         DMA_struct[channel].state = DMA_STATE_UNASSIGNED;
         DMA_struct[channel].txfer_state = DMA_TXFER_DONE; 
     }
+    
     if (channel == DMA_ALL_INIT)
     {
         uint8_t i = 0;

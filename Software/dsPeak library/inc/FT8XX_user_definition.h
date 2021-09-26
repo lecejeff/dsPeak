@@ -32,14 +32,14 @@
 #endif
 
 // Definitions of the amount of primitives to compile
-#define MAX_STR_LEN 99
+#define MAX_STR_LEN 128
 #define MAX_RECT_NB 0
 #define MAX_GRADIENT_NB 1
 #define MAX_WINDOW_NB 0
 #define MAX_SLIDER_NB 1
-#define MAX_BUTTON_NB 1
-#define MAX_TEXT_NB 12
-#define MAX_NUMBER_NB 7
+#define MAX_BUTTON_NB 2
+#define MAX_TEXT_NB 16
+#define MAX_NUMBER_NB 9
 #define MAX_TOGGLE_NB 0
 #define MAX_DIAL_NB 1
 #define MAX_PROGRESS_NB 0

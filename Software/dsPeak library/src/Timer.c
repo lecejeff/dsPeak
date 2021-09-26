@@ -60,7 +60,7 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)
     // Minimum timer frequency : 1.09375MHz / freq, 0<=freq<=65535 = >>17Hz<<    
     // with 256x prescaler, clock freq is 70MHz / 256 = 273437.5Hz 
     // Minimum timer frequency : 273437 / freq, 0<=freq<=65535 = >>5Hz<<
-       
+    TIMER_struct[timer].freq = freq;
     TIMER_struct[timer].int_state = 0;
     TIMER_struct[timer].run_state = 0;
     switch(timer)
@@ -300,6 +300,11 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)
             }
             break;          
     }
+}
+
+uint32_t TIMER_get_freq (uint8_t timer)
+{
+    return TIMER_struct[timer].freq;
 }
 
 //void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)//

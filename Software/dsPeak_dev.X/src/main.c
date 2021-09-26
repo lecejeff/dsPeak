@@ -72,10 +72,13 @@ void DSPIC_init (void);
 #include "ST7735s.h"
 #include "dma.h"
 #include "i2c.h"
+#include "rot_encoder.h"
+#include "ividac_driver.h"
 
 #define SCREEN_ENABLE
 
 CAN_struct CAN_native;
+STRUCT_IVIDAC IVIDAC_struct[2];
 
 uint8_t i = 0;
 uint8_t state = 0;
@@ -172,18 +175,25 @@ extern uint16_t rx_ch_right;
 uint8_t *u485_rx_buf;
 uint8_t u485_data_flag = 0;
 
+uint16_t new_rpm_ain = 0;
 uint32_t tracker = 0, color = 0;
 uint16_t val = 0x7FFF;
 uint8_t tag = 0;
 uint8_t tag_val_write = 1;
 uint16_t track_upd = 0;
+uint8_t encoder_dir = 0;
+
+uint16_t encoder_rpm = 0;
+uint16_t encoder_tour = 0;
+
+uint16_t dac_out = 0;
 
 int main() 
 {
     DSPIC_init();
     RTCC_init();
     RTCC_write_time(clock);
-    
+        
     DSPEAK_LED1_DIR = 0;
     DSPEAK_LED1_STATE = 0;
     DSPEAK_LED2_DIR = 0;
@@ -200,12 +210,15 @@ int main()
     UART_putc(UART_3, 0x0A);
 #endif
 
-    //MOTOR_init(MOTOR_1, 30);
+    MOTOR_init(MOTOR_1, 30);
     //MOTOR_init(MOTOR_2, 30);  
     
-    //SPI_init(SPI_4, SPI_MODE0, PPRE_1_1, SPRE_8_1);     // Max sclk of 9MHz on SPI4 = divide by 8
-    //SPI_master_write(SPI_4, spi4_buf, 8, MIKROBUS2_CS);
-
+    SPI_init(SPI_4, SPI_MODE0, PPRE_1_1, SPRE_8_1);     // Max sclk of 9MHz on SPI4 = divide by 8
+    IVIDAC_init(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, IVIDAC_RESOLUTION_12BIT, AD5621_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);
+    IVIDAC_output_enable(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1);
+    
+    IVIDAC_init(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, IVIDAC_RESOLUTION_12BIT, AD5621_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);
+    IVIDAC_output_enable(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2);    
     //I2C_init(I2C_port_1, I2C_mode_master, 0);
     //I2C_buf[0] = 0x90;
     //I2C_buf[1] = 0x01;// Device config
@@ -286,7 +299,7 @@ int main()
     FT8XX_CMD_text(1, 19, 25, FONT_18, 0, "Designed by : Intellitrol");
     FT8XX_CMD_button(0, 330, 228, 140, 36, 27, 0, "Touch calibrate");
     FT8XX_set_touch_tag(FT_PRIM_BUTTON, 0, 2);
-    FT8XX_CMD_text(2, 226, 243, 18, 0, "Brightness"); 
+    FT8XX_CMD_text(2, 220, 240, 18, 0, "Brightness"); 
     
     FT8XX_CMD_text(3, 335, 7, 18, 0, "Analog inputs"); 
     FT8XX_CMD_text(4, 312, 27, 18, 0, "Identifier Raw value"); 
@@ -298,6 +311,11 @@ int main()
     FT8XX_CMD_text(10, 310, 175, 18, 0, "AN1  +-3V3"); 
     FT8XX_CMD_text(11, 310, 200, 18, 0, "AN2    POT"); 
     
+    FT8XX_CMD_text(12, 15, 155, 18, 0, "Rotary encoder direction"); 
+    FT8XX_CMD_text(13, 220, 155, 18, 0, "Backward"); 
+    FT8XX_CMD_text(14, 15, 172, 18, 0, "Rotary encoder tour"); 
+    FT8XX_CMD_text(15, 15, 190, 18, 0, "Rotary encoder velocity"); 
+    
     FT8XX_CMD_number(0, 415, 50, 18, 0, 32768);
     FT8XX_CMD_number(1, 415, 75, 18, 0, 32768);
     FT8XX_CMD_number(2, 415, 100, 18, 0, 32768);
@@ -305,13 +323,16 @@ int main()
     FT8XX_CMD_number(4, 415, 150, 18, 0, 32768);
     FT8XX_CMD_number(5, 415, 175, 18, 0, 32768);
     FT8XX_CMD_number(6, 415, 200, 18, 0, 32768);
-    
-    
-    
+    FT8XX_CMD_number(7, 220, 190, 18, 0, 0);
+    FT8XX_CMD_number(8, 220, 172, 18, 0, 42);
+       
     FT8XX_CMD_slider(0, 20, 245, 180, 10, 0, 65535, 65535);
     FT8XX_set_touch_tag(FT_PRIM_SLIDER, 0, 3);
-    FT8XX_CMD_dial(0, 100, 170, 50, 0, 0);
+    FT8XX_CMD_dial(0, 260, 75, 30, 0, 0);
     FT8XX_set_touch_tag(FT_PRIM_DIAL, 0, 4);
+   
+    FT8XX_CMD_button(1, 15, 210, 285, 22, 18, 0, "Rotary encoder switch");
+    FT8XX_set_touch_tag(FT_PRIM_BUTTON, 1, 5);
     
     FT8XX_start_new_dl();					// Start a new display list, reset ring buffer and ring pointer
     FT8XX_write_dl_long(TAG_MASK(1));
@@ -337,6 +358,10 @@ int main()
     FT8XX_draw_text(&st_Text[9]);
     FT8XX_draw_text(&st_Text[10]);
     FT8XX_draw_text(&st_Text[11]);
+    FT8XX_draw_text(&st_Text[12]);
+    FT8XX_draw_text(&st_Text[13]);
+    FT8XX_draw_text(&st_Text[14]);
+    FT8XX_draw_text(&st_Text[15]);
     
     FT8XX_draw_number(&st_Number[0]);
     FT8XX_draw_number(&st_Number[1]);
@@ -345,6 +370,8 @@ int main()
     FT8XX_draw_number(&st_Number[4]);
     FT8XX_draw_number(&st_Number[5]);
     FT8XX_draw_number(&st_Number[6]);
+    FT8XX_draw_number(&st_Number[7]);
+    FT8XX_draw_number(&st_Number[8]);
     
     FT8XX_write_dl_long(BEGIN(LINES));
     FT8XX_write_dl_long(VERTEX2II(305, 45, 0, 0));
@@ -375,6 +402,8 @@ int main()
     FT8XX_write_dl_long(COLOR_RGB(0, 0, 0));
     FT8XX_write_dl_long(TAG(st_Slider[0].touch_tag));
     FT8XX_draw_slider(&st_Slider[0]);  
+
+    FT8XX_draw_button(&st_Button[0]);
     
     FT8XX_write_dl_long(TAG(st_Dial[0].touch_tag));
     FT8XX_draw_dial(&st_Dial[0]);
@@ -387,18 +416,23 @@ int main()
     
 //    RGB_LED_set_color(0x000000);
 //    
-//    MOTOR_set_rpm(MOTOR_1, speed_rpm_table[0]);
+    //MOTOR_set_rpm(MOTOR_1, speed_rpm_table[0]);
 //    MOTOR_set_rpm(MOTOR_2, speed_rpm_table[0]);
 //    
 ////    // Timers init / start should be the last function calls made before while(1) 
     //TIMER_init(TIMER_1, TIMER_PRESCALER_1, 80000);
-    TIMER_init(TIMER_2, TIMER_PRESCALER_256, 60);
+    TIMER_init(TIMER_2, TIMER_PRESCALER_256, 30);
     TIMER_init(TIMER_3, TIMER_PRESCALER_256, 60);
     TIMER_init(TIMER_4, TIMER_PRESCALER_256, 5);
 //    TIMER_init(TIMER_5, TIMER_PRESCALER_256, 5);
+    
+    TIMER_init(TIMER_7, TIMER_PRESCALER_256, 30);
 //    TIMER_init(TIMER_7, TIMER_PRESCALER_256, QEI_get_fs(QEI_2));
-//    TIMER_init(TIMER_8, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
-//    TIMER_init(TIMER_9, TIMER_PRESCALER_1, 1000000);
+    TIMER_init(TIMER_8, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
+    
+    // Encoder initialization with associated velocity timer
+    TIMER_init(TIMER_9, TIMER_PRESCALER_256, 10); // Rotary encoder velocity (RPM) refresh rate is 30Hz 
+    ENCODER_init(TIMER_get_freq(TIMER_9));      // 
 //
 //    PMP_init(PMP_MODE_SRAM);
 //    for (i=0; i<10; i++)
@@ -423,9 +457,10 @@ int main()
     TIMER_start(TIMER_3);
     TIMER_start(TIMER_4);
 //    TIMER_start(TIMER_5);
+    TIMER_start(TIMER_7);
 //    TIMER_start(TIMER_7);
-//    TIMER_start(TIMER_8);
-//    TIMER_start(TIMER_9);
+    TIMER_start(TIMER_8);
+    TIMER_start(TIMER_9);
     DSPEAK_BTN1_DIR = 1;
     
 #ifdef UART_DEBUG_ENABLE
@@ -441,6 +476,9 @@ int main()
             CAN_tx_state = 0;
         }
      
+        encoder_dir = ENCODER_get_direction();
+        encoder_tour = ENCODER_get_position();
+        
         if (C1RXFUL1bits.RXFUL1 == 1)
         {
             C1RXFUL1bits.RXFUL1 = 0;
@@ -465,7 +503,15 @@ int main()
         if (TIMER_get_state(TIMER_2, TIMER_INT_STATE) == 1)
         {           
         #ifdef SCREEN_ENABLE 
-
+            if (encoder_dir == 0)
+            {
+                FT8XX_modify_element_string(13, FT_PRIM_TEXT, "Forward ");
+            }
+            else
+            {
+                FT8XX_modify_element_string(13, FT_PRIM_TEXT, "Backward");
+            }            
+            
             FT8XX_modify_number(&st_Number[0], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN12));
             FT8XX_modify_number(&st_Number[1], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN13));
             FT8XX_modify_number(&st_Number[2], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN14));
@@ -473,6 +519,8 @@ int main()
             FT8XX_modify_number(&st_Number[4], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN0));
             FT8XX_modify_number(&st_Number[5], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN1));
             FT8XX_modify_number(&st_Number[6], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN2));
+            FT8XX_modify_number(&st_Number[7], NUMBER_VAL, encoder_rpm);
+            FT8XX_modify_number(&st_Number[8], NUMBER_VAL, encoder_tour);
             //tracker = FT8XX_rd32(REG_TRACKER);
                        
             FT8XX_start_new_dl();					// Start a new display list, reset ring buffer and ring pointer
@@ -495,6 +543,11 @@ int main()
             FT8XX_draw_text(&st_Text[9]);
             FT8XX_draw_text(&st_Text[10]);
             FT8XX_draw_text(&st_Text[11]);
+            FT8XX_draw_text(&st_Text[12]);
+
+            FT8XX_draw_text(&st_Text[13]);
+            FT8XX_draw_text(&st_Text[14]);   
+            FT8XX_draw_text(&st_Text[15]); 
 
             FT8XX_draw_number(&st_Number[0]);
             FT8XX_draw_number(&st_Number[1]);
@@ -503,6 +556,8 @@ int main()
             FT8XX_draw_number(&st_Number[4]);
             FT8XX_draw_number(&st_Number[5]);
             FT8XX_draw_number(&st_Number[6]);
+            FT8XX_draw_number(&st_Number[7]);
+            FT8XX_draw_number(&st_Number[8]);
 
             FT8XX_write_dl_long(BEGIN(LINES));
             FT8XX_write_dl_long(VERTEX2II(305, 45, 0, 0));
@@ -544,7 +599,20 @@ int main()
             FT8XX_CMD_tracker(st_Dial[0].x, st_Dial[0].y, 1, 1, st_Dial[0].touch_tag);
             FT8XX_write_dl_long(TAG(st_Dial[0].touch_tag));
             FT8XX_draw_dial(&st_Dial[0]);
-
+            FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
+            
+            if (ENCODER_get_switch_state() == 0)     
+            {
+                
+                FT8XX_set_context_fcolor(0x00FF00);
+                FT8XX_draw_button(&st_Button[1]);
+            }
+            else
+            {
+                FT8XX_set_context_fcolor(0xFF0000);
+                FT8XX_draw_button(&st_Button[1]);
+            }
+            
             FT8XX_update_screen_dl();         		// Update display list  
                         
             tag = FT8XX_read_touch_tag();         
@@ -589,7 +657,7 @@ int main()
                 FT8XX_touchpanel_calibrate();
                 FT8XX_clear_touch_tag();
                 while(((FT8XX_rd32(REG_TOUCH_DIRECT_XY)) & 0x8000) == 0x0000);
-            }
+            }        
         #endif
         }
         
@@ -701,13 +769,33 @@ int main()
 ////            MOTOR_drive_perc(MOTOR_2, MOTOR_get_direction(MOTOR_2), new_pid_out2);
 //        }        
 //        
+        
+        if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
+        {
+            if (SPI_module_busy(SPI_4) == SPI_MODULE_FREE)
+            {
+                IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5621_OUTPUT_NORMAL, dac_out);
+                IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5621_OUTPUT_NORMAL, dac_out);
+                if (++dac_out > 0xFFF){dac_out = 0;}                    
+            }
+        }
+        
         // QEI velocity refresh rate
-//        if (TIMER_get_state(TIMER_8, TIMER_INT_STATE) == 1)
-//        {           
-////            QEI_calculate_velocity(QEI_1);  
-////            new_pid_out1 = MOTOR_drive_pid(MOTOR_1);
-////            MOTOR_drive_perc(MOTOR_1, MOTOR_get_direction(MOTOR_1), new_pid_out1);
-//        }
+        if (TIMER_get_state(TIMER_8, TIMER_INT_STATE) == 1)
+        {   
+            new_rpm_ain = (uint16_t)(((float)(ADC_get_raw_channel(&ADC_struct_AN2) / 1024.0))*QEI_get_max_rpm(QEI_1));
+            MOTOR_set_rpm(MOTOR_1, new_rpm_ain);
+            
+            QEI_calculate_velocity(QEI_1);  
+            new_pid_out1 = MOTOR_drive_pid(MOTOR_1);
+            MOTOR_drive_perc(MOTOR_1, MOTOR_get_direction(MOTOR_1), new_pid_out1);
+        }
+        
+        if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
+        {
+            encoder_rpm = ENCODER_get_velocity();
+
+        }
         
         // SWPWM RGB LED timer
         //if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)

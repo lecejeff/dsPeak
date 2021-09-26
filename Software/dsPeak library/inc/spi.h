@@ -69,7 +69,7 @@
 #define SPI_MODE2 2
 #define SPI_MODE3 3
 
-#define SPI_BUF_LENGTH 260
+#define SPI_BUF_LENGTH 256
 
 #define SPI_TX_IDLE         0
 #define SPI_TX_COMPLETE     1

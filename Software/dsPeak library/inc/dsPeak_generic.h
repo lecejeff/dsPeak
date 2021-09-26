@@ -73,8 +73,8 @@
 
 // ---------------------------- Bringup defines ----------------------------- //
 // Before release of the documentation, these defines should be removes
-//#define BRINGUP_DSPEAK_1
-#define BRINGUP_DSPEAK_2
+#define BRINGUP_DSPEAK_1
+//#define BRINGUP_DSPEAK_2
 
 // To use USB_UART debug port on dsPeak, uncomment the following line
 #define UART_DEBUG_ENABLE  
