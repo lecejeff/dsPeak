@@ -32,8 +32,8 @@
 
 #include "dspeak_generic.h"
 
-#define UART_MAX_TX 128
-#define UART_MAX_RX 128 
+#define UART_MAX_TX 6
+#define UART_MAX_RX 6 
 
 #define UART_1 0
 #define UART_2 1

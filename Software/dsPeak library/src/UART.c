@@ -626,13 +626,23 @@ uint8_t * UART_get_rx_buffer (uint8_t channel)
         case UART_3:
 #ifdef UART_DEBUG_ENABLE
             return &UART_struct[channel].UART_rx_data[0];
-#endif
+#else
             return 0;
+#endif
             break;
 
         default:
             return 0;
         break;
+    }
+}
+
+void UART_clear_rx_buffer (uint8_t channel)
+{
+    uint8_t i = 0;
+    for (; i < UART_MAX_RX; i++)
+    {
+        UART_struct[channel].UART_rx_data[i] = 0;
     }
 }
 

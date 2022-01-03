@@ -75,7 +75,7 @@ void DSPIC_init (void);
 #include "rot_encoder.h"
 #include "ividac_driver.h"
 
-#define SCREEN_ENABLE
+//#define SCREEN_ENABLE
 
 CAN_struct CAN_native;
 STRUCT_IVIDAC IVIDAC_struct[2];
@@ -187,6 +187,9 @@ uint16_t encoder_rpm = 0;
 uint16_t encoder_tour = 0;
 
 uint16_t dac_out = 0;
+uint8_t dac_step = 0;
+uint32_t counter_zero = 0;
+uint8_t ividac_write_once = 0;
 
 int main() 
 {
@@ -213,12 +216,18 @@ int main()
     MOTOR_init(MOTOR_1, 30);
     //MOTOR_init(MOTOR_2, 30);  
     
-    SPI_init(SPI_4, SPI_MODE0, PPRE_1_1, SPRE_8_1);     // Max sclk of 9MHz on SPI4 = divide by 8
-    IVIDAC_init(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, IVIDAC_RESOLUTION_12BIT, AD5621_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);
-    IVIDAC_output_enable(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1);
-    
+    SPI_init(SPI_4, SPI_MODE0, PPRE_4_1, SPRE_8_1);     // Max sclk of 9MHz on SPI4 = divide by 8
+#ifdef IVIDAC_RESOLUTION_12BIT
+    IVIDAC_init(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, IVIDAC_RESOLUTION_12BIT, AD5621_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);  
     IVIDAC_init(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, IVIDAC_RESOLUTION_12BIT, AD5621_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);
-    IVIDAC_output_enable(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2);    
+#endif
+    
+#ifdef IVIDAC_RESOLUTION_14BIT
+    IVIDAC_init(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, IVIDAC_RESOLUTION_14BIT, AD5641_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);  
+    IVIDAC_init(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, IVIDAC_RESOLUTION_14BIT, AD5641_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);    
+#endif
+    
+ 
     //I2C_init(I2C_port_1, I2C_mode_master, 0);
     //I2C_buf[0] = 0x90;
     //I2C_buf[1] = 0x01;// Device config
@@ -421,18 +430,18 @@ int main()
 //    
 ////    // Timers init / start should be the last function calls made before while(1) 
     //TIMER_init(TIMER_1, TIMER_PRESCALER_1, 80000);
-    TIMER_init(TIMER_2, TIMER_PRESCALER_256, 30);
+    TIMER_init(TIMER_2, TIMER_PRESCALER_256, 5);
     TIMER_init(TIMER_3, TIMER_PRESCALER_256, 60);
     TIMER_init(TIMER_4, TIMER_PRESCALER_256, 5);
 //    TIMER_init(TIMER_5, TIMER_PRESCALER_256, 5);
     
-    TIMER_init(TIMER_7, TIMER_PRESCALER_256, 30);
+    TIMER_init(TIMER_7, TIMER_PRESCALER_256, 50000);
 //    TIMER_init(TIMER_7, TIMER_PRESCALER_256, QEI_get_fs(QEI_2));
     TIMER_init(TIMER_8, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
     
     // Encoder initialization with associated velocity timer
-    TIMER_init(TIMER_9, TIMER_PRESCALER_256, 10); // Rotary encoder velocity (RPM) refresh rate is 30Hz 
-    ENCODER_init(TIMER_get_freq(TIMER_9));      // 
+    TIMER_init(TIMER_9, TIMER_PRESCALER_256, QEI_get_fs(QEI_1)); // Rotary encoder velocity (RPM) refresh rate is 30Hz 
+    ENCODER_init(QEI_get_fs(QEI_1));      // 
 //
 //    PMP_init(PMP_MODE_SRAM);
 //    for (i=0; i<10; i++)
@@ -469,13 +478,17 @@ int main()
     UART_putc(UART_3, 0x0A);
 #endif
     
+    IVIDAC_output_enable(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1);
+    IVIDAC_output_enable(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2);
+//    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x0000);
+//    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x0000);
     while (1)
     {  
         if (DSPEAK_BTN1_STATE == 0)
         {
             CAN_tx_state = 0;
-        }
-     
+        }     
+        
         encoder_dir = ENCODER_get_direction();
         encoder_tour = ENCODER_get_position();
         
@@ -772,12 +785,58 @@ int main()
         
         if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
         {
-            if (SPI_module_busy(SPI_4) == SPI_MODULE_FREE)
-            {
-                IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5621_OUTPUT_NORMAL, dac_out);
-                IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5621_OUTPUT_NORMAL, dac_out);
-                if (++dac_out > 0xFFF){dac_out = 0;}                    
-            }
+            //IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5621_OUTPUT_NORMAL, dac_out);
+            //IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5621_OUTPUT_NORMAL, dac_out);
+            //if (dac_out >= 0xFFF){dac_out = 0;}
+            //IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5621_OUTPUT_NORMAL, sine_dac[dac_out]);
+            //IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5621_OUTPUT_NORMAL, sine_dac[dac_out]);            
+            
+//#ifdef IVIDAC_RESOLUTION_12BIT
+//            if (dac_out >= 512){dac_out = 0;}
+//            IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5621_OUTPUT_NORMAL, sine_dac_512[dac_out]);
+//            IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5621_OUTPUT_NORMAL, sine_dac_512[dac_out]);  
+//#endif
+            
+//#ifdef IVIDAC_RESOLUTION_14BIT
+//            if (dac_out >= 256){dac_out = 0;}
+//            IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, sine_dac_256p_14b[dac_out]);
+//            IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, sine_dac_256p_14b[dac_out]); 
+//            dac_out++;
+//#endif            
+            IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, dac_out);
+            IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, dac_out);              
+            dac_out++;   
+            if (++dac_out > 0x3FFF){dac_out = 0;}
+//            {
+                //dac_out = 0;
+//                if (dac_step == 0)
+//                {
+//                    dac_step = 1;
+//                    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x3FFF);
+//                    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, 0x3FFF);                      
+//                }
+//                
+//                else if (dac_step == 1)
+//                {
+//                    dac_step = 2;
+//                    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x0000);
+//                    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, 0x0000);                      
+//                }
+//                
+//                else if (dac_step == 2)
+//                {
+//                    dac_step = 3;
+//                    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x3FFF);
+//                    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, 0x3FFF);                      
+//                }
+//                
+//                else if (dac_step == 3)
+//                {
+//                    dac_step = 0;
+//                    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x0000);
+//                    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, 0x0000);                      
+//                }                  
+//            }
         }
         
         // QEI velocity refresh rate
@@ -794,7 +853,6 @@ int main()
         if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
         {
             encoder_rpm = ENCODER_get_velocity();
-
         }
         
         // SWPWM RGB LED timer

@@ -78,7 +78,7 @@ void I2C_init (uint8_t port, uint8_t mode, uint8_t address)
         if (mode == I2C_mode_master)
         {
             I2C1CONbits.DISSLW = 1;     // Disable slew rate control      
-            I2C1BRG = I2C_FREQ_100k;    // Set I2C1 brg at 100kHz with Fcy = 66.33MIPS        
+            I2C1BRG = I2C_FREQ_400k;    // Set I2C1 brg at 400kHz       
             IFS1bits.MI2C1IF = 0;       // Clear master I2C interrupt flag  
             IPC4bits.MI2C1IP = 1;       // Set default priority 
             IEC1bits.MI2C1IE = 0;       // Disable I2C master interrupt    
@@ -339,6 +339,17 @@ uint8_t * I2C_get_rx_buffer (uint8_t port)
     return &i2c_struct[port].i2c_rx_data[0];
 }
 
+uint8_t I2C_get_ack_state (uint8_t port)
+{
+    if (port == I2C_port_1)
+    {
+        return I2C1STATbits.ACKSTAT;
+    }
+    else
+    {
+        return I2C2STATbits.ACKSTAT;
+    }         
+}
 
 // I2C1 slave interrupt routine 
 // Uncomment this section if I2C1 is used as a slave
