@@ -25,10 +25,8 @@
 #define I2C_port_2 1
 #define I2C_MODULE_QTY 2
 
-#define PULSE_GOBBLER_DELAY 
-
-#define I2C_FREQ_100k 690   
-#define I2C_FREQ_400k 165
+#define I2C_FREQ_100k 511
+#define I2C_FREQ_400k ((FCY / 400000)-2)  
 
 #define I2C_mode_master 0
 #define I2C_mode_slave 1
@@ -50,6 +48,7 @@ typedef struct
     uint8_t i2c_read_length;
     uint8_t i2c_done;
     uint8_t i2c_message_mode;
+    uint8_t ack_state;
 }STRUCT_I2C;
 
 void I2C_init (uint8_t port, uint8_t mode, uint8_t address);

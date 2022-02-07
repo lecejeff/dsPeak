@@ -37,6 +37,11 @@ uint16_t ENCODER_get_position (void)
     return ENCODER_struct.count_per_rev;
 }
 
+uint32_t ENCODER_get_fs (void)
+{
+    return ENCODER_struct.fs_velocity;
+}
+
 uint16_t ENCODER_get_velocity (void)
 {
     if (ENCODER_struct.velocity_counter > 0)

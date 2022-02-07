@@ -158,22 +158,22 @@ uint8_t CAN_init (CAN_struct *node)
                 // Use CAN TX buffer 0 for message transmission
                 // Use CAN RX buffer 1 for message reception
                 // DMA channel initialization, 1x channel for message transmission
-                DMA_init(DMA_CH1);
-                DMA1CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
-                DMA1REQ = DMAREQ_ECAN1TX;
-                DMA1PAD = (volatile uint16_t)&C1TXD;
-                DMA1STAH = __builtin_dmapage(CAN_MSG_BUFFER);
-                DMA1STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
-                DMA1CNT = 0x7;        
-                
-                // DMA channel initialization, 1x channel for message reception
                 DMA_init(DMA_CH2);
-                DMA2CON = DMA_SIZE_WORD | DMA_TXFER_RD_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
-                DMA2REQ = DMAREQ_ECAN1RX;
-                DMA2PAD = (volatile uint16_t)&C1RXD;
+                DMA2CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
+                DMA2REQ = DMAREQ_ECAN1TX;
+                DMA2PAD = (volatile uint16_t)&C1TXD;
                 DMA2STAH = __builtin_dmapage(CAN_MSG_BUFFER);
                 DMA2STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
-                DMA2CNT = 0x7;                 
+                DMA2CNT = 0x7;        
+                
+                // DMA channel initialization, 1x channel for message reception
+                DMA_init(DMA_CH3);
+                DMA3CON = DMA_SIZE_WORD | DMA_TXFER_RD_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
+                DMA3REQ = DMAREQ_ECAN1RX;
+                DMA3PAD = (volatile uint16_t)&C1RXD;
+                DMA3STAH = __builtin_dmapage(CAN_MSG_BUFFER);
+                DMA3STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
+                DMA3CNT = 0x7;                 
                 C1CTRL1bits.WIN = 1;                // Set at 1 to access CAN filter / mask registers                       
                 C1RXF1SIDbits.SID = node->RX_SID;   // Setup acceptance filter 1 SID
                 C1RXM1SIDbits.SID = node->RX_MASK;  // Setup acceptance mask 1
@@ -192,8 +192,8 @@ uint8_t CAN_init (CAN_struct *node)
                 C1INTEbits.TBIE = 1;
                 C1INTEbits.RBIE = 1;
                
-                DMA_enable(DMA_CH1);                // Enable DMA channel and interrupt  
-                DMA_enable(DMA_CH2);                // Enable DMA channel and interrupt 
+                DMA_enable(DMA_CH2);                // Enable DMA channel and interrupt  
+                DMA_enable(DMA_CH3);                // Enable DMA channel and interrupt 
                 return 0;
                 break;
 

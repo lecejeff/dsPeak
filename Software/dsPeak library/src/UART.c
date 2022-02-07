@@ -1,19 +1,6 @@
 //****************************************************************************//
 // File      :  UART.c
 //
-// Functions :  void UART_init (uint8_t channel, uint32_t baud, uint8_t buf_length);
-//              void UART_putc (uint8_t channel, uint8_t data);
-//              void UART_putstr (uint8_t channel, const char *str);
-//              void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length);
-//              void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length);
-//              void UART_putc_ascii (uint8_t channel, uint8_t data);
-//              uint8_t UART_rx_done (uint8_t channel);
-//              uint8_t UART_tx_done (uint8_t channel);
-//              uint8_t * UART_get_rx_buffer (uint8_t channel);
-//              void UART_clear_rx_buffer (uint8_t channel);
-//              void UART_send_tx_buffer (uint8_t channel);
-//              void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length);
-//
 // Includes  :  UART.h
 //              string.h
 //              DMA.h
@@ -24,8 +11,8 @@
 //              UART_2 : MikroBus 1 and 2 interface
 //              UART_3 : USB-UART debug interface
 //              
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022   
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
@@ -33,7 +20,8 @@
 #include "string.h"
 #include "DMA.h"
 
-STRUCT_UART UART_struct[UART_QTY];
+// Assume STRUCT_UART is declared in another c file
+extern STRUCT_UART UART_struct[UART_QTY];
 
 // Define UART_x channel DMA buffers (either transmit, receive or both)
 __eds__ uint8_t uart1_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
@@ -43,34 +31,35 @@ __eds__ uint8_t uart2_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 __eds__ uint8_t uart3_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 #endif
 
-//__eds__ uint16_t uart1_dma_rx_buf[UART_MAX_RX] __attribute__((eds,space(dma)));
-//__eds__ uint16_t uart2_dma_rx_buf[UART_MAX_RX] __attribute__((eds,space(dma)));
-//__eds__ uint16_t uart3_dma_rx_buf[UART_MAX_RX] __attribute__((eds,space(dma)));
-
-//***void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)***//
+//***void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud, 
+//                uint16_t tx_buf_length, uint16_t rx_buf_length)
 //Description : Function initialize UART channel at specified baudrate with 
 //              specified buffer length, which size cannot exceed 256 bytes
 //
 //Function prototype : void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
 //
-//Enter params       : uint8_t channel    : UART_x module
-//                   : uint32_t baud       : UART_x baudrate
-//                   : uint8_t rx_buf_length : UART_x RX buffer length
+//Enter params       : STRUCT_UART *str         : structure pointer type
+//                   : uint8_t channel          : UART channel
+//                   : uint32_t baud            : UART baudrate
+//                   : uint8_t tx_buf_length    : UART transmit buffer length
+//                   : uint8_t rx_buf_length    : UART receive buffer length
 //
 //Exit params        : None
 //
-//Function call      : UART_init(UART_1, 9600, 256);
+//Function call      : UART_init (&UART_x, UART_1, 115200, 32, 32)
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022  
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
+void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud, 
+                uint8_t tx_buf_length, uint8_t rx_buf_length)
 {
     switch (channel)
     {
-        case UART_1:
+        // On dsPeak, UART_1 is physically connected to RS-485 frontend
+        case UART_1:                        
             U1MODEbits.UEN = 0;             // Disable UART if it was previously used
             IEC4bits.U1EIE = 0;             // Disable UART error interrupt 
             IEC0bits.U1RXIE = 0;            // Disable UART receive interrupt   
@@ -82,6 +71,7 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             // UART1 input/output pin mapping
             TRISDbits.TRISD15 = 0;          // RD15 configured as an output (UART1_TX)           
             TRISDbits.TRISD14 = 1;          // RD14 configured as an input (UART1_RX)
+            CNPUDbits.CNPUD14 = 1;           // Since URXINV = 0, enable pull-up on RX pin
             TRISFbits.TRISF4 = 0;           // RF4 configured as an output (UART1_RTS)
             TRISFbits.TRISF5 = 1;           // RF5 configured as an input (UART1_CTS)
             
@@ -94,25 +84,27 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             if (baud > 115200)
             {
                 U1BRG = (uint16_t)((FCY / (4 * baud))-1); // Set baudrate using high speed mode formula
-                U1MODE = 0x8A08;                // Reset UART to 8-n-1, alt pins, and enable                      
+                U1MODE = 0x8A08;                // Reset UART to 8-n-1, alt pins, and enable 485 pin control                     
             }
             else
             {
                 U1BRG = (uint16_t)((FCY / (16 * baud))-1);// Set baudrate using normal speed formula
-                U1MODE = 0x8A00;                // Reset UART to 8-n-1, alt pins, and enable                
+                U1MODE = 0x8A00;                // Reset UART to 8-n-1, alt pins, and enable 485 pin control                  
             }
             
             U1STA = 0x0440;                 // Reset status register and enable TX & RX
             IPC16bits.U1EIP = 3;            // Error interrupt priority
-            IPC2bits.U1RXIP = 4;            // RX interrupt priority
+            IPC2bits.U1RXIP = 7;            // RX interrupt priority
             IEC4bits.U1EIE = 1;             // Enable error interrupt 
             IEC0bits.U1RXIE = 1;            // Enable receive interrupt  
-//            DMA_init(DMA_CH0);
-//            DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-//            DMA0REQ = DMAREQ_U3TX;
-//            DMA0PAD = (volatile uint16_t)&U3TXREG;
-//            DMA0STAH = __builtin_dmapage(uart1_dma_tx_buf);
-//            DMA0STAL = __builtin_dmaoffset(uart1_dma_tx_buf);
+            
+            DMA_init(DMA_CH0);
+            DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
+            DMA0REQ = DMAREQ_U1TX;
+            DMA0PAD = (volatile uint16_t)&U1TXREG;
+            DMA0STAH = __builtin_dmapage(uart1_dma_tx_buf);
+            DMA0STAL = __builtin_dmaoffset(uart1_dma_tx_buf);
+            str->DMA_channel = DMA_CH0; 
             break;
            
         case UART_2:
@@ -127,41 +119,45 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             // UART2 input/output pin mapping
             TRISFbits.TRISF1 = 0;           // RF1 configured as an output (UART2_TX)           
             TRISGbits.TRISG1 = 1;           // RG1 configured as an input (UART2_RX)
+            CNPUGbits.CNPUG1 = 1;           // Since URXINV = 0, enable pull-up on RX pin
 
             // UART2 peripheral pin mapping
             RPOR7bits.RP97R = 0x03;         // RF1 (RP97) assigned to UART2_TX
             RPINR19bits.U2RXR = 113;        // RG1 (RP113) assigned to UART2_RX
             
-            // MikroBus RS-485 click test --------------------------------------
-            // RE pin is MKB1_nCS
-            TRISHbits.TRISH15 = 0;  // RE, receiver enable
-            TRISDbits.TRISD0 = 0;   // DE, driver enable                       
-            LATHbits.LATH15 = 0;    // By default, pull the 485 transceiver in listen mode
-            LATDbits.LATD0 = 0;         
-            // -----------------------------------------------------------------
-            
             if (baud > 115200)
             {
                 U2BRG = ((FCY / (4 * baud))-1); // Set baudrate using high speed mode formula
-                U2MODE = 0x8008;                // Reset UART to 8-n-1, alt pins, and enable                      
+                U2MODE = 0x8008;                // Reset UART to 8-n-1, alt pins, and enable 
             }
             else
             {
                 U2BRG = ((FCY / (16 * baud))-1);// Set baudrate using normal speed mode formula
-                U2MODE = 0x8000;                // Reset UART to 8-n-1, alt pins, and enable                
+                U2MODE = 0x8000;                // Reset UART to 8-n-1, alt pins, and enable        
             }  
+
+            // MikroBus RS-485 click test --------------------------------------
+#ifdef RS485_CLICK_UART2
+            TRISHbits.TRISH15 = 0;  // RE, receiver enable
+            TRISDbits.TRISD0 = 0;   // DE, driver enable                       
+            LATHbits.LATH15 = 0;    // By default, pull the 485 transceiver in listen mode
+            LATDbits.LATD0 = 0;              
+#endif
             
+            // -----------------------------------------------------------------            
             U2STA  = 0x0440;                // Reset status register and enable TX & RX           
             IPC16bits.U2EIP = 3;            // Error interrupt priority
-            IPC7bits.U2RXIP = 4;            // RX interrupt priority
+            IPC7bits.U2RXIP = 7;            // RX interrupt priority
             IEC4bits.U2EIE = 1;             // Enable error interrupt
             IEC1bits.U2RXIE = 1;            // Enable receive interrupt
-//            DMA_init(DMA_CH0);
-//            DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-//            DMA0REQ = DMAREQ_U3TX;
-//            DMA0PAD = (volatile uint16_t)&U3TXREG;
-//            DMA0STAH = __builtin_dmapage(uart2_dma_tx_buf);
-//            DMA0STAL = __builtin_dmaoffset(uart2_dma_tx_buf);            
+            
+            DMA_init(DMA_CH1);
+            DMA1CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
+            DMA1REQ = DMAREQ_U2TX;
+            DMA1PAD = (volatile uint16_t)&U2TXREG;
+            DMA1STAH = __builtin_dmapage(uart2_dma_tx_buf);
+            DMA1STAL = __builtin_dmaoffset(uart2_dma_tx_buf);  
+            str->DMA_channel = DMA_CH1;
             break;
             
         case UART_3: 
@@ -177,6 +173,7 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             // UART3 input/output pin mapping
             TRISFbits.TRISF3 = 0;           // RF3 configured as an output (UART3_TX)
             TRISBbits.TRISB8 = 1;           // RB8 configured as an input (UART3_RX)
+            CNPUBbits.CNPUB8 = 1;           // Since URXINV = 0, enable pull-up on RX pin
             
             // UART3 peripheral pin mapping
             RPOR8bits.RP99R = 0x1B;         // RF3 (RP99) assigned to UART3_TX
@@ -199,12 +196,13 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             IEC5bits.U3EIE = 1;             // Enable error interrupt
             IEC5bits.U3RXIE = 1;            // Enable receive interrupt
             
-//            DMA_init(DMA_CH0);
-//            DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-//            DMA0REQ = DMAREQ_U3TX;
-//            DMA0PAD = (volatile uint16_t)&U3TXREG;
-//            DMA0STAH = __builtin_dmapage(uart3_dma_tx_buf);
-//            DMA0STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
+            DMA_init(DMA_CH5);
+            DMA5CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
+            DMA5REQ = DMAREQ_U3TX;
+            DMA5PAD = (volatile uint16_t)&U3TXREG;
+            DMA5STAH = __builtin_dmapage(uart3_dma_tx_buf);
+            DMA5STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
+            str->DMA_channel = DMA_CH5;
 #endif
             break; 
             
@@ -212,172 +210,270 @@ void UART_init (uint8_t channel, uint32_t baud, uint8_t rx_buf_length)
             break;
     }
       
-    if (rx_buf_length > UART_MAX_RX)
+    if (rx_buf_length > 255)
     {
-        UART_struct[channel].UART_rx_length = UART_MAX_RX;
+        str->rx_buf_length = 255;
     }
     else
     {
-        UART_struct[channel].UART_rx_length = rx_buf_length;
+        str->rx_buf_length = rx_buf_length;
     }
-    UART_struct[channel].UART_tx_done = 0;               // TX not done
-    UART_struct[channel].UART_rx_done = 0;               // RX not done
-    UART_struct[channel].UART_rx_counter = 0;            // Reset rx data counter
-    UART_struct[channel].UART_tx_counter = 0;            // Reset tx data counter    
+    
+    if (tx_buf_length > 255)
+    {
+        str->tx_buf_length = 255;
+    }
+    else
+    {
+        str->tx_buf_length = tx_buf_length;
+    }
+    
+    str->tx_done = UART_TX_COMPLETE;// TX not done
+    str->tx_length = 0;             // TX not done
+    str->rx_done = 0;               // RX not done
+    str->rx_counter = 0;            // Reset rx data counter
+    str->tx_counter = 0;            // Reset tx data counter
+    str->UART_channel = channel;    
     // According to UART reference manual, users should add a software delay
     // between the UART enable and first transmission based on the baudrate
-    __delay_ms(25);
+    __delay_ms(100);
 }   
 
-uint8_t UART_get_rx_buffer_length (uint8_t channel)
+//************uint8_t UART_get_rx_buffer_length (STRUCT_UART *str)************//
+//Description : Function returns the receive buffer length of the structure
+//
+//Function prototype : uint8_t UART_get_rx_buffer_length (STRUCT_UART *str)
+//
+//Enter params       : STRUCT_UART *str : structure pointer type
+//
+//Exit params        : None
+//
+//Function call      : uint8_t = UART_get_rx_buffer_length(&UART_x);
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022   
+// Jean-Francois Bilodeau, Ing.
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
+uint8_t UART_get_rx_buffer_length (STRUCT_UART *str)
 {
-    return UART_struct[channel].UART_rx_length;
+    return str->rx_buf_length;
 }
 
-//**************void UART_putc (uint8_t channel, uint8_t data)****************//
+uint8_t UART_get_trmt_state (STRUCT_UART *str)
+{
+    switch (str->UART_channel)
+    {
+        case UART_1:
+            return U1STAbits.TRMT;
+            break;
+            
+        case UART_2:
+            return U2STAbits.TRMT;
+            break;
+            
+        case UART_3:
+            return U3STAbits.TRMT;
+            break;
+            
+        default: 
+            return 0;
+            break;
+    }
+}
+
+//*************void UART_putc (STRUCT_UART *str, uint8_t data)****************//
 //Description : Function transmits a single character on selected channel via
 //              interrupt.
+//              This function halts execution until TRMT bit of the selected 
+//              UART channel is equal to "1" -> empty
 //
-//Function prototype : void UART_putc (uint8_t channel, uint8_t data)
+//Function prototype : void UART_putc (STRUCT_UART *str, uint8_t data)
 //
-//Enter params       : uint8_t channel : UART_x channel
-//                   : uint8_t data : byte of data
+//Enter params       : STRUCT_UART *str     : structure pointer type
+//                   : uint8_t data         : byte of data
 //
 //Exit params        : None
 //
 //Function call      : UART_putc(UART_1, 'A');
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022   
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_putc (uint8_t channel, uint8_t data)
-{ 
-    if (channel == UART_1)
-    {
-        while(!U1STAbits.TRMT);                     // Wait for TX shift reg to be empty    
-        UART_struct[channel].UART_tx_length = 1;    // Set TX length
-        UART_struct[channel].UART_tx_data[0] = data;// Fill buffer
-        IEC0bits.U1TXIE = 1;                        // Enable interrupt, which sets the TX interrupt flag
-    }
-
-    if (channel == UART_2)
-    {
-        while(!U2STAbits.TRMT);
-        UART_struct[channel].UART_tx_length = 1;
-        UART_struct[channel].UART_tx_data[0] = data;
-        IEC1bits.U2TXIE = 1;        
-    }
-    
-    if (channel == UART_3)
-    {
-#ifdef UART_DEBUG_ENABLE
-        while(!U3STAbits.TRMT);
-        UART_struct[channel].UART_tx_length = 1;
-        UART_struct[channel].UART_tx_data[0] = data;
-        IEC5bits.U3TXIE = 1;   
-#endif
-    }    
-}  
-
-//************void UART_putc_ascii (uint8_t channel, uint8_t data)************//
-//Description : Function converts byte to 2 corresponding ascii characters and 
-//              send them through UART
-//
-//Function prototype : void UART_putc_ascii (uint8_t channel, uint8_t data)
-//
-//Enter params       : uint8_t channel : UART_x channel
-//                   : uint8_t data : byte of data
-//
-//Exit params        : None
-//
-//Function call      : UART_putc_ascii(UART_1, 'A');
-//
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
-// jeanfrancois.bilodeau@hotmail.fr
-// www.github.com/lecejeff/dspeak
-//****************************************************************************//
-void UART_putc_ascii (uint8_t channel, uint8_t data)
+void UART_putc (STRUCT_UART *str, uint8_t data)
 {
-    uint8_t buf[2];
-    hex_to_ascii(data, &buf[0], &buf[1]);   // Convert byte to ascii values
-    UART_putbuf(channel, buf, 2);           // Send both values through UART
-}
-
-//**************void UART_putstr (uint8_t channel, char *str)*****************//
-//Description : Function sends a string of character through UART_x channel
-//
-//Function prototype : void UART_putstr (uint8_t channel, char *str)
-//
-//Enter params       : uint8_t channel : UART_x channel
-//                   : uint8_t *str : ascii string of character
-//
-//Exit params        : None
-//
-//Function call      : UART_putstr(UART_1, "Sending command through UART_x");
-//
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
-// jeanfrancois.bilodeau@hotmail.fr
-// www.github.com/lecejeff/dspeak
-//****************************************************************************//
-// Need to add a MAX_TX_OVERFLOW error mechanism to this function
-void UART_putstr (uint8_t channel, const char *str)
-{
-    uint8_t i = 0;
-    uint8_t length = strlen(str);
-    switch (channel)
+    switch(str->UART_channel)
     {
         case UART_1:
-            while(!U1STAbits.TRMT);                             // Wait for TX shift register to be empty
-            for (; i < length; i++)
-            {
-                UART_struct[channel].UART_tx_data[i] = *str++;  // Copy data into transmit buffer  
-            }               
-            UART_struct[channel].UART_tx_length = length;       // Set the transmit length
-            UART_struct[channel].UART_tx_done = UART_TX_IDLE;   // Clear the TX done flag
-            IEC0bits.U1TXIE = 1;                                // Enable TX interrupt which sets the TX interrupt flag                 
+            while(!U1STAbits.TRMT);     // Wait for TX shift reg to be empty    
+            str->tx_length = 1;    // Set TX length
+            str->tx_buf[0] = data;// Fill buffer                
+            IEC0bits.U1TXIE = 1;        // Enable interrupt, which sets the TX interrupt flag            
             break;
             
         case UART_2:
             while(!U2STAbits.TRMT);
-            // MikroBus RS-485 click test ------------------------------------------
-            // Put the transceiver in transmit mode
-            LATHbits.LATH15 = 1;    // RE = 1
-            LATDbits.LATD0 = 1;     // DE = 1
-            //----------------------------------------------------------------------               
-            for (; i < length; i++)
-            {
-                UART_struct[channel].UART_tx_data[i] = *str++;
-            }               
-            UART_struct[channel].UART_tx_length = length;
-            UART_struct[channel].UART_tx_done = UART_TX_IDLE;         
-            IEC1bits.U2TXIE = 1;              
+            str->tx_length = 1;    // Set TX length
+            str->tx_buf[0] = data;// Fill buffer    
+            IEC1bits.U2TXIE = 1;               
             break;
             
-        case UART_3:           
+        case UART_3:
 #ifdef UART_DEBUG_ENABLE
             while(!U3STAbits.TRMT);
+            str->tx_length = 1;    // Set TX length
+            str->tx_buf[0] = data;// Fill buffer    
+            IEC5bits.U3TXIE = 1;   
+#endif            
+            break;
+    }  
+}  
+
+//***********void UART_putc_ascii (STRUCT_UART *str, uint8_t data)************//
+//Description : Function converts byte to 2 corresponding ascii characters and 
+//              send them through UART
+//              This function halts execution until TRMT bit of the selected 
+//              UART channel is equal to "1" -> empty
+//
+//Function prototype : void UART_putc_ascii (STRUCT_UART *str, uint8_t data)
+//
+//Enter params       : STRUCT_UART *str     : structure pointer type
+//                   : uint8_t data         : byte of data
+//
+//Exit params        : None
+//
+//Function call      : UART_putc_ascii(&UART_x, 'A');
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022   
+// Jean-Francois Bilodeau, Ing.
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
+void UART_putc_ascii (STRUCT_UART *str, uint8_t data)
+{
+    uint8_t buf[2];
+    hex_to_ascii(data, &buf[0], &buf[1]);   // Convert byte to ascii values
+    UART_putbuf(str, buf, 2);               // Send both values through UART
+}
+
+//********void UART_putstr (STRUCT_UART *str, const char *string)*************//
+//Description : Function sends a string of character through UART_x channel
+//              This function halts execution until TRMT bit of the selected 
+//              UART channel is equal to "1" -> empty              
+//
+//Function prototype : void UART_putstr (STRUCT_UART *str, const char *string)
+//
+//Enter params       : STRUCT_UART *str     : structure pointer type
+//                   : const char *string   : string of character
+//
+//Exit params        : None
+//
+//Function call      : UART_putstr(&UART_x, "Sending command through UART_x");
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022  
+// Jean-Francois Bilodeau, Ing.
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
+// Need to add a MAX_TX_OVERFLOW error mechanism to this function
+void UART_putstr (STRUCT_UART *str, const char *string)
+{
+    uint8_t i = 0;
+    uint8_t length = strlen(string);
+
+    // Wait for previous transaction to be completed
+    while (UART_tx_done(str) != UART_TX_COMPLETE);
+    
+    // Saturate strlen to UART_MAX_TX define
+    if (length > str->tx_buf_length)
+    {
+        length = str->tx_buf_length;
+    }
+
+    // Fill TX buffer
+    for (; i < length; i++)
+    {
+        str->tx_buf[i] = *string++;   // Copy data into transmit buffer  
+    }               
+    str->tx_length = length;           // Set the transmit length
+    str->tx_done = UART_TX_IDLE;       // Clear the TX done flag
+    UART_send_tx_buffer(str);
+}
+
+//********void UART_putstr (STRUCT_UART *str, const char *string)*************//
+//Description : Function sends a string of character through UART_x channel
+//              This function halts execution until TRMT bit of the selected 
+//              UART channel is equal to "1" -> empty              
+//
+//Function prototype : void UART_putstr (STRUCT_UART *str, const char *string)
+//
+//Enter params       : STRUCT_UART *str     : structure pointer type
+//                   : const char *string   : string of character
+//
+//Exit params        : None
+//
+//Function call      : UART_putstr(&UART_x, "Sending command through UART_x");
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022  
+// Jean-Francois Bilodeau, Ing.
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
+uint8_t UART_putstr_dma (STRUCT_UART *str, const char *string)
+{
+    uint8_t i = 0;
+    uint8_t length = strlen(string);
+
+    // Wait for previous transaction to be completed
+    if (DMA_get_txfer_state(str->DMA_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
+    {
+        if (UART_get_trmt_state(str) == 1)            // TRMT empty and ready to accept new data         
+        {    
+            // Saturate strlen to UART_MAX_TX define
+            if (length > str->tx_buf_length)
+            {
+                length = str->tx_buf_length;
+            }
+
+            // Fill TX buffer
             for (; i < length; i++)
             {
-                UART_struct[channel].UART_tx_data[i] = *str++;
-            }               
-            UART_struct[channel].UART_tx_length = length;      
-            UART_struct[channel].UART_tx_done = UART_TX_IDLE;           
-            IEC5bits.U3TXIE = 1;  
-#endif
-            break;
+                if (str->UART_channel == UART_1)
+                {
+                    uart1_dma_tx_buf[i] = *string++;
+                }
+                else if (str->UART_channel == UART_2)
+                {
+                    uart2_dma_tx_buf[i] = *string++;
+                }
+                else if (str->UART_channel == UART_3)
+                {
+                    uart3_dma_tx_buf[i] = *string++;
+                }
+                else
+                    return 0;
+            }  
             
-        default:
-            break;
+            DMA_set_txfer_length(str->DMA_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+            DMA_enable(str->DMA_channel);
+            UART_send_tx_buffer(str);
+            DMA_force_txfer(str->DMA_channel);   
+            return 1;
+        }
+        else
+            return 0;
     }
+    else
+        return 0;
 }
 
 //******void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)******//
 //Description : Function sends a buffer of data of specified length to UART_x
 //              channel
+//              This function halts execution until TRMT bit of the selected 
+//              UART channel is equal to "1" -> empty   
 //
 //Function prototype : void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)
 //
@@ -389,327 +485,316 @@ void UART_putstr (uint8_t channel, const char *str)
 //
 //Function call      : UART_putbuf(UART_1, buf, 256);
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022   
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_putbuf (uint8_t channel, uint8_t *buf, uint8_t length)
+void UART_putbuf (STRUCT_UART *str, uint8_t *buf, uint8_t length)
 {
     uint8_t i = 0;
-    switch (channel)
+    
+    // Wait for previous transaction to have completed
+    while (UART_tx_done(str) != UART_TX_COMPLETE);
+    
+    // Saturate write length
+    if (length > str->tx_buf_length)
     {
-        case UART_1:
-            while(!U1STAbits.TRMT);                             // Wait for TX shift register to be empty 
-            for (; i < length; i++)
-            {
-                UART_struct[channel].UART_tx_data[i] = *buf++;  // Copy data into transmit buffer   
-            }               
-            UART_struct[channel].UART_tx_length = length;       // Set the transmit length  
-            UART_struct[channel].UART_tx_done = UART_TX_IDLE;   // Clear the TX done flag       
-            IEC0bits.U1TXIE = 1;                                // Enable TX interrupt which sets the TX interrupt flag                                         
-            break;
-            
-        case UART_2:
-            while(!U2STAbits.TRMT);
-            for (; i < length; i++)
-            {
-                UART_struct[channel].UART_tx_data[i] = *buf++; 
-            }               
-            UART_struct[channel].UART_tx_length = length;      
-            UART_struct[channel].UART_tx_done = UART_TX_IDLE;                 
-            IEC1bits.U2TXIE = 1;                                               
-            break;
-            
-        case UART_3:
-#ifdef UART_DEBUG_ENABLE
-            while(!U3STAbits.TRMT); 
-            for (; i < length; i++)
-            {
-                UART_struct[channel].UART_tx_data[i] = *buf++;
-            }               
-            UART_struct[channel].UART_tx_length = length;      
-            UART_struct[channel].UART_tx_done = UART_TX_IDLE;            
-            IEC5bits.U3TXIE = 1;   
-#endif
-            break;
-            
-        default:
-            break;
+        length = str->tx_buf_length;
     }
+    
+    // Fill transmit buffer, set transmit length and TX done flag to idle
+    for (; i < length; i++)
+    {
+        str->tx_buf[i] = *buf++;    // Copy data into transmit buffer   
+    }               
+    str->tx_length = length;        // Set the transmit length  
+    str->tx_done = UART_TX_IDLE;    // Clear the TX done flag  
+    UART_send_tx_buffer(str);
 }
 
 
-//***void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length)*****//
+//***uint8_t UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)*****//
 //Description : Function sends a buffer of data of specified length to UART_x
 //              channel using DMA
 //
-//Function prototype : void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length)
+//Function prototype : void UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)
 //
-//Enter params       : uint8_t channel : UART_x channel
-//                   : uint8_t *buf : byte buffer
-//                   : uint8_t length : buffer length in bytes
+//Enter params       : STRUCT_UART *str : structure pointer type
+//                   : uint8_t *buf     : write buffer
+//                   : uint8_t length   : write length in bytes
 //
-//Exit params        : None
+//Exit params        : uint8_t
 //
-//Function call      : UART_putbuf_dma(UART_1, buf, 256);
+//Function call      : UART_putbuf_dma(&UART_x, buf, length(buf));
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022  
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_putbuf_dma (uint8_t channel, uint8_t *buf, uint8_t length)
+uint8_t UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)
 {
-    uint8_t i = 0;
-    switch (channel)
+    uint8_t i = 0;               
+    if (DMA_get_txfer_state(str->DMA_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
     {
-        case UART_1:                  
-//            if (DMA_get_txfer_state(DMA_CH0) == DMA_TXFER_DONE)  // If DMA channel is free, fill buffer and transmit
-//            {
-//                if (U1STAbits.TRMT)         
-//                {
-//                    for (; i < length; i++)
-//                    {
-//                        uart1_dma_tx_buf[i] = *buf++;
-//                    }
-//                    DMA0CNT = length - 1;                           // 0 = 1 txfer, so substract 1  
-//                    DMA_enable(DMA_CH0);
-//                    IEC0bits.U1TXIE = 1;                            // Enable transmission
-//                    DMA0REQbits.FORCE = 1;
-//                }
-//            }
-            break;
-            
-        case UART_2:                  
-//            if (DMA_get_txfer_state(DMA_CH0) == DMA_TXFER_DONE)  // If DMA channel is free, fill buffer and transmit
-//            {
-//                if (U2STAbits.TRMT)         
-//                {
-//                    for (; i < length; i++)
-//                    {
-//                        uart2_dma_tx_buf[i] = *buf++;
-//                    }
-//                    DMA0CNT = length - 1;                           // 0 = 1 txfer, so substract 1  
-//                    DMA_enable(DMA_CH0);
-//                    IEC1bits.U2TXIE = 1;                            // Enable transmission
-//                    DMA0REQbits.FORCE = 1;
-//                }
-//            }
-            break;        
-        
-        case UART_3:    
-#ifdef UART_DEBUG_ENABLE
-            if (DMA_get_txfer_state(DMA_CH0) == DMA_TXFER_DONE)  // If DMA channel is free, fill buffer and transmit
+        if (UART_get_trmt_state(str) == 1)            // TRMT empty and ready to accept new data         
+        {
+            for (; i < length; i++)
             {
-                if (U3STAbits.TRMT)         
+                if (str->UART_channel == UART_1)
                 {
-                    for (; i < length; i++)
-                    {
-                        uart3_dma_tx_buf[i] = *buf++;
-                    }
-                    DMA0CNT = length - 1;                           // 0 = 1 txfer, so substract 1  
-                    DMA_enable(DMA_CH0);
-                    IEC5bits.U3TXIE = 1;                            // Enable transmission
-                    DMA0REQbits.FORCE = 1;
+                    uart1_dma_tx_buf[i] = *buf++;
                 }
-            }
+
+                else if (str->UART_channel == UART_2)
+                {
+                    uart2_dma_tx_buf[i] = *buf++;
+                }
+
+                else if (str->UART_channel == UART_3)
+                {
+#ifdef UART_DEBUG_ENABLE                            
+                    uart3_dma_tx_buf[i] = *buf++;
 #endif
-            break;
-            
-        default:
-            break;
-    }    
+                }
+
+                else
+                    return 0;
+            }                      
+            DMA_set_txfer_length(str->DMA_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+            DMA_enable(str->DMA_channel);
+            UART_send_tx_buffer(str);
+            DMA_force_txfer(str->DMA_channel);
+            return 1;
+        }
+        else
+            return 0;
+    }
+    else
+        return 0;       
 }
 
-//*void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length)**//
+//**void UART_fill_tx_buffer (STRUCT_UART *str, uint8_t *data, uint8_t length)**//
 //Description : Function fills the TX buffer and set it's length in the struct
 //
-//Function prototype : void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length)
+//Function prototype : void UART_fill_tx_buffer (STRUCT_UART *str, uint8_t *data, uint8_t length)
 //
-//Enter params       : uint8_t channel : UART_x channel
-//                   : uint8_t *data : buffer
-//                   : uint8_t length : buffer length in bytes
+//Enter params       : STRUCT_UART *str : structure pointer type
+//                   : uint8_t *data    : write buffer
+//                   : uint8_t length   : write length
 //
 //Exit params        : None
 //
-//Function call      : UART_fill_tx_buffer(UART_x, data, length(data));
+//Function call      : UART_fill_tx_buffer(&UART_x, buf, length(buf));
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022 
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_fill_tx_buffer (uint8_t channel, uint8_t *data, uint8_t length)
+void UART_fill_tx_buffer (STRUCT_UART *str, uint8_t *data, uint8_t length)
 {
     uint8_t i = 0;
-    for (; i<length; i++)
+    
+    // Wait for previous transaction to be complete
+    while (UART_tx_done(str) != UART_TX_COMPLETE);
+    
+    // Saturate write length
+    if (length > str->tx_buf_length)
     {
-        UART_struct[channel].UART_tx_data[i] = *data++; // Fill the transmit buffer
+        length = str->tx_buf_length;
+    }
+    
+    for (; i < length; i++)
+    {
+        str->tx_buf[i] = *data++; // Fill the transmit buffer
     }           
-    UART_struct[channel].UART_tx_length = length;       // Write TX buffer length
-    UART_struct[channel].UART_tx_done = UART_TX_IDLE;   // Set transfer state to IDLE
+    str->tx_length = length;       // Write TX buffer length
+    str->tx_done = UART_TX_IDLE;   // Set transfer state to IDLE
 }
 
-//*****************void UART_send_tx_buffer (uint8_t channel)***************//
-//Description : To be used in complement of UART_fill_tx_buffer() to send the 
-//              content of the previously filled TX buffer to UART_x channel
+//*****************void UART_send_tx_buffer (STRUCT_UART *str)****************//
+//Description : Used complementary to UART_fill_tx_buffer
+//              Functions sets the str UART channel interrupt flag to start the
+//              transmission of the frame written in UART_fill_tx_buffer
 //
-//Function prototype : void UART_send_tx_buffer (uint8_t channel)
+//Function prototype : void UART_send_tx_buffer (STRUCT_UART *str)
 //
-//Enter params       : uint8_t channel : UART_x channel
+//Enter params       : STRUCT_UART *str : structure pointer type
 //
 //Exit params        : None
 //
 //Function call      : UART_send_tx_buffer(UART_1);
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022   
+// Jean-Francois Bilodeau, Ing
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_send_tx_buffer (uint8_t channel)
+void UART_send_tx_buffer (STRUCT_UART *str)
 {
-    switch(channel)
+    switch(str->UART_channel)
     {
         case UART_1:
-            while(!U1STAbits.TRMT); // Wait for TX shift reg to be empty   
             IEC0bits.U1TXIE = 1;    // Enable TX interrupt, which set the TX interrupt flag
             break;
             
         case UART_2:
-            while(!U2STAbits.TRMT);
+#ifdef RS485_CLICK_UART2
+            // Put the transceiver in transmit mode           
+            LATDbits.LATD0 = 1;     // DE = 1
+            LATHbits.LATH15 = 1;    // RE = 1
+#endif            
             IEC1bits.U2TXIE = 1;
+
             break;
             
         case UART_3:
 #ifdef UART_DEBUG_ENABLE
-            while(!U3STAbits.TRMT); 
             IEC5bits.U3TXIE = 1;
 #endif
             break;
-            
-        default:
-            break;
     }
 }
 
-//**************uint8_t * UART_get_rx_buffer (uint8_t channel)****************//
+//*************uint8_t * UART_get_rx_buffer (STRUCT_UART *str)****************//
 //Description : Function returns a pointer to the first element of the 
-//              receive buffer on UART_x channel
+//              receive buffer of the str
 //
-//Function prototype : uint8_t * UART_get_rx_buffer (uint8_t channel)
+//Function prototype : uint8_t * UART_get_rx_buffer (STRUCT_UART *str)
 //
-//Enter params       : uint8_t channel : UART_x channel
+//Enter params       : STRUCT_UART *str : structure pointer type
 //
-//Exit params        : uint8_t * : pointer to receive buffer
+//Exit params        : uint8_t
 //
-//Function call      : ptr = UART_get_rx_buffer(UART_1);
+//Function call      : uint8_t = UART_get_rx_buffer(&UART_x);
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022  
+// Jean-Francois Bilodeau, Ing
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t * UART_get_rx_buffer (uint8_t channel)
+uint8_t * UART_get_rx_buffer (STRUCT_UART *str)
 {
-    switch (channel)
-    {
-        case UART_1:
-            return &UART_struct[channel].UART_rx_data[0];
-            break;
-            
-        case UART_2:
-            return &UART_struct[channel].UART_rx_data[0];
-            break;
-            
-        case UART_3:
-#ifdef UART_DEBUG_ENABLE
-            return &UART_struct[channel].UART_rx_data[0];
-#else
-            return 0;
-#endif
-            break;
-
-        default:
-            return 0;
-        break;
-    }
+    return &str->rx_buf[0];
 }
 
-void UART_clear_rx_buffer (uint8_t channel)
+
+//******void UART_clear_rx_buffer (STRUCT_UART *str, uint8_t clr_byte)********//
+//Description : Function clears the str rx_buf to clr_byte value            
+//
+//Function prototype : void UART_clear_rx_buffer (STRUCT_UART *str, uint8_t clr_byte)
+//
+//Enter params       : STRUCT_UART *str     : structure pointer type
+//                   : const char *string   : string of character
+//
+//Exit params        : None
+//
+//Function call      : UART_clear_rx_buffer(&UART_x, 0);
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022  
+// Jean-Francois Bilodeau, Ing.
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
+void UART_clear_rx_buffer (STRUCT_UART *str, uint8_t clr_byte)
 {
     uint8_t i = 0;
-    for (; i < UART_MAX_RX; i++)
+    for (; i <= str->rx_buf_length; i++)
     {
-        UART_struct[channel].UART_rx_data[i] = 0;
+        str->rx_buf[i] = clr_byte;
     }
+    str->rx_counter = 0;
 }
 
-//*****************uint8_t UART_rx_done (uint8_t channel)*********************//
-//Description : Function checks the UART_struct[channel].UART_rx_done bit.
-//              If set, a receive operation was completed, the function clears
-//              the bit and returns 1. Otherwise, function returns 0
+//****************uint8_t UART_rx_done (STRUCT_UART *str)*********************//
+//Description : Function checks the str rx_done flag
+//              If rx_done = 1, the reception of the frame is over, returns 1
+//              If rx_done = 0, the reception of the frame is still in progress, returns 0
 //
-//Function prototype : uint8_t UART_rx_done (uint8_t channel)
+//Function prototype : uint8_t UART_rx_done (STRUCT_UART *str)
 //
-//Enter params       : uint8_t channel : UART_x channel
+//Enter params       : STRUCT_UART *str : structure pointer type
 //
-//Exit params        : uint8_t : 1(done), 0(rx is not done)
+//Exit params        : uint8_t
 //
-//Function call      : UART_receive = UART_rx_done(UART_1);
+//Function call      : uint8_t = UART_rx_done(UART_1);
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022  
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t UART_rx_done (uint8_t channel)
+uint8_t UART_rx_done (STRUCT_UART *str)
 {
-    if ((channel == UART_1) || (channel == UART_2) || (channel == UART_3))
+    if (str->rx_done == UART_RX_COMPLETE)
     {
-        if (UART_struct[channel].UART_rx_done == UART_RX_COMPLETE)
-        {  
-            UART_struct[channel].UART_rx_done = UART_RX_IDLE;
-            return UART_RX_COMPLETE;
-        }
-        else return UART_RX_IDLE;        
+        str->rx_done = UART_RX_IDLE;
+        return UART_RX_COMPLETE;
     }
     else
         return UART_RX_IDLE;
 }
 
-//*****************uint8_t UART_tx_done (uint8_t channel)*********************//
-//Description : Function checks the UART_struct[channel].UART_tx_done bit.
-//              If set, a transmit operation was completed, the function clears
-//              the bit and returns 1. Otherwise, function returns 0
+//*****************uint8_t UART_tx_done (STRUCT_UART *str)********************//
+//Description : Function checks the str UART channel transmit shift register empty bit TRMT
+//              If TRMT = 1 (last transmission completed), returns 1
+//              If TMRT = 0 (transmission in progress or queued), return 0
 //
-//Function prototype : uint8_t UART_tx_done (uint8_t channel)
+//Function prototype : uint8_t UART_tx_done (STRUCT_UART *str)
 //
-//Enter params       : uint8_t channel : UART_x channel
+//Enter params       : STRUCT_UART *str : structure pointer type
 //
-//Exit params        : uint8_t : 1(done), 0(tx is not done)
+//Exit params        : uint8_t
 //
-//Function call      : UART_receive = UART_tx_done(UART_1);
+//Function call      : uint8_t = UART_tx_done(&UART_x);
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022   
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t UART_tx_done (uint8_t channel)
+uint8_t UART_tx_done (STRUCT_UART *str)
 {
-    if ((channel == UART_1) || (channel == UART_2) || (channel == UART_3))
+    switch (str->UART_channel)
     {
-        if (UART_struct[channel].UART_tx_done == UART_TX_COMPLETE)
-        {  
-            UART_struct[channel].UART_tx_done = UART_TX_IDLE;
-            return UART_TX_COMPLETE;
-        }
-        else return UART_TX_IDLE;        
-    }
-    else
-        return UART_TX_IDLE;  
+        case UART_1:
+            if (str->tx_done == UART_TX_COMPLETE)
+            {
+                str->tx_done = UART_TX_IDLE;
+                return UART_TX_COMPLETE;  
+            }
+            else
+                return UART_TX_IDLE;
+            break;
+            
+        case UART_2:
+            if (str->tx_done == UART_TX_COMPLETE)
+            {
+                str->tx_done = UART_TX_IDLE;                
+                return UART_TX_COMPLETE;
+            }
+            else
+                return UART_TX_IDLE;            
+            break;
+
+        case UART_3:
+#ifdef UART_DEBUG_ENABLE
+            if (str->tx_done == UART_TX_COMPLETE)
+            {
+                str->tx_done = UART_TX_IDLE;                
+                return UART_TX_COMPLETE;
+            }
+            else
+                return UART_TX_IDLE;                  
+#endif
+            break; 
+            
+        default :
+            return UART_TX_COMPLETE;  
+            break;
+    }       
 }
 
 //**********************UART1 receive interrupt function**********************//
@@ -721,23 +806,32 @@ uint8_t UART_tx_done (uint8_t channel)
 //
 //Exit params        : None
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022 
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
 {
     IFS0bits.U1RXIF = 0;      // clear RX interrupt flag
-    if (UART_struct[UART_1].UART_rx_counter < UART_struct[UART_1].UART_rx_length)           // Waiting for more data?
+    uint8_t temp;
+    if (UART_struct[UART_1].rx_counter < UART_struct[UART_1].rx_buf_length)           // Waiting for more data?
     {
-        UART_struct[UART_1].UART_rx_data[UART_struct[UART_1].UART_rx_counter++] = U1RXREG;  // Yes, copy it from the UxRXREG
+        UART_struct[UART_1].rx_buf[UART_struct[UART_1].rx_counter++] = U1RXREG;  // Yes, copy it from the UxRXREG
     }
 
-    if (UART_struct[UART_1].UART_rx_counter >= UART_struct[UART_1].UART_rx_length)          // All data received?
+    if (UART_struct[UART_1].rx_counter >= UART_struct[UART_1].rx_buf_length)          // All data received?
     {
-        UART_struct[UART_1].UART_rx_done = UART_RX_COMPLETE;                                // Yes, set the RX done flag
-        UART_struct[UART_1].UART_rx_counter = 0;                                            // Clear the RX counter
+        // Empty rxreg from any parasitic data
+        if (U1STAbits.URXDA)
+        {
+            while (U1STAbits.URXDA)
+            {
+                temp = U1RXREG;
+            }
+        }
+        UART_struct[UART_1].rx_done = UART_RX_COMPLETE;                                // Yes, set the RX done flag
+        UART_struct[UART_1].rx_counter = 0;                                            // Clear the RX counter
     }
 }
 
@@ -750,31 +844,32 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
 //
 //Exit params        : None
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022 
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
 {
     IFS0bits.U1TXIF = 0;                                // clear TX interrupt flag
-    if (UART_struct[UART_1].UART_tx_length == 1)        // Single transmission
+    if (UART_struct[UART_1].tx_length == 1)        // Single transmission
     {
-        U1TXREG = UART_struct[UART_1].UART_tx_data[0]; // Transfer data to UART transmit buffer
-        UART_struct[UART_1].UART_tx_done = 1;          // Set the TX done flag
+        U1TXREG = UART_struct[UART_1].tx_buf[0]; // Transfer data to UART transmit buffer
+        UART_struct[UART_1].tx_done = UART_TX_COMPLETE;          // Set the TX done flag
         IEC0bits.U1TXIE = 0;                           // Disable TX interrupt (no more data to send)
     }  
 
-    if (UART_struct[UART_1].UART_tx_length > 1)        // Multiple transmission
+    if (UART_struct[UART_1].tx_length > 1)        // Multiple transmission
     {
-        if (UART_struct[UART_1].UART_tx_counter < UART_struct[UART_1].UART_tx_length)           // At least 1 more byte to transfer 
+        if (UART_struct[UART_1].tx_counter < UART_struct[UART_1].tx_length)         // At least 1 more byte to transfer 
         {
-            U1TXREG = UART_struct[UART_1].UART_tx_data[UART_struct[UART_1].UART_tx_counter++];  // Copy TX data to UART TX buffer            
-            if (UART_struct[UART_1].UART_tx_counter == UART_struct[UART_1].UART_tx_length)      // More data to send?
+            U1TXREG = UART_struct[UART_1].tx_buf[UART_struct[UART_1].tx_counter++]; // Copy TX data to UART TX buffer            
+            if (UART_struct[UART_1].tx_counter == UART_struct[UART_1].tx_length)    // More data to send?
             {
-                UART_struct[UART_1].UART_tx_done = UART_TX_COMPLETE;                            // Set the TX done flag
-                UART_struct[UART_1].UART_tx_counter = 0;                                        // Clear TX counter
-                IEC0bits.U1TXIE = 0;                                                            // Disable TX interrupt (no more data to send)
+                while(!U1STAbits.TRMT);
+                UART_struct[UART_1].tx_done = UART_TX_COMPLETE;                     // Set the TX done flag
+                UART_struct[UART_1].tx_counter = 0;                                 // Clear TX counter
+                IEC0bits.U1TXIE = 0;                                                // Disable TX interrupt (no more data to send)
             }               
         }           
     }   
@@ -789,23 +884,32 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
 //
 //Exit params        : None
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022 
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
 {
     IFS1bits.U2RXIF = 0;      // clear RX interrupt flag
-    if (UART_struct[UART_2].UART_rx_counter < UART_struct[UART_2].UART_rx_length)           // Waiting for more data?
+    uint8_t temp=0;
+    if (UART_struct[UART_2].rx_counter < UART_struct[UART_2].rx_buf_length)           // Waiting for more data?
     {
-        UART_struct[UART_2].UART_rx_data[UART_struct[UART_2].UART_rx_counter++] = U2RXREG;  // Yes, copy it from the UxRXREG
+        UART_struct[UART_2].rx_buf[UART_struct[UART_2].rx_counter++] = U2RXREG;  // Yes, copy it from the UxRXREG
     }
 
-    if (UART_struct[UART_2].UART_rx_counter >= UART_struct[UART_2].UART_rx_length)          // All data received?
-    {
-        UART_struct[UART_2].UART_rx_done = UART_RX_COMPLETE;                                // Yes, set the RX done flag
-        UART_struct[UART_2].UART_rx_counter = 0;                                            // Clear the RX counter
+    if (UART_struct[UART_2].rx_counter >= UART_struct[UART_2].rx_buf_length)          // All data received?
+    {       
+        // Empty rxreg from any parasitic data
+        if (U2STAbits.URXDA)
+        {
+            while (U2STAbits.URXDA)
+            {
+                temp = U2RXREG;
+            }
+        }                                                 
+        UART_struct[UART_2].rx_done = UART_RX_COMPLETE;                                // Yes, set the RX done flag
+        UART_struct[UART_2].rx_counter = 0;                                            // Clear the RX counter
     }  
 }
 
@@ -818,37 +922,39 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
 //
 //Exit params        : None
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022 
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
 {
     IFS1bits.U2TXIF = 0;      
-    if (UART_struct[UART_2].UART_tx_length == 1)
+    if (UART_struct[UART_2].tx_length == 1)
     {
-        U2TXREG = UART_struct[UART_2].UART_tx_data[0];
-        UART_struct[UART_2].UART_tx_done = 1;       
+        U2TXREG = UART_struct[UART_2].tx_buf[0];
+        UART_struct[UART_2].tx_done = UART_TX_COMPLETE;       
         IEC1bits.U2TXIE = 0;                          
     }  
 
-    if (UART_struct[UART_2].UART_tx_length > 1)
+    if (UART_struct[UART_2].tx_length > 1)
     {
-        if (UART_struct[UART_2].UART_tx_counter < UART_struct[UART_2].UART_tx_length)
+        if (UART_struct[UART_2].tx_counter < UART_struct[UART_2].tx_length)
         {
-            U2TXREG = UART_struct[UART_2].UART_tx_data[UART_struct[UART_2].UART_tx_counter++];         
-            if (UART_struct[UART_2].UART_tx_counter == UART_struct[UART_2].UART_tx_length)
+            U2TXREG = UART_struct[UART_2].tx_buf[UART_struct[UART_2].tx_counter++];         
+            if (UART_struct[UART_2].tx_counter == UART_struct[UART_2].tx_length)
             {
-                UART_struct[UART_2].UART_tx_done = 1;     
-                UART_struct[UART_2].UART_tx_counter = 0;  
-                IEC1bits.U2TXIE = 0; 
+#ifdef RS485_CLICK_UART2
                 while(!U2STAbits.TRMT);
                 // MikroBus RS-485 click test ------------------------------------------
                 // Put the transceiver in receive mode
                 LATHbits.LATH15 = 0;    // RE = 0
                 LATDbits.LATD0 = 0;     // DE = 0
-                //----------------------------------------------------------------------                        
+                //----------------------------------------------------------------------  
+#endif                
+                UART_struct[UART_2].tx_done = UART_TX_COMPLETE;     
+                UART_struct[UART_2].tx_counter = 0;  
+                IEC1bits.U2TXIE = 0;
             }               
         }           
     } 
@@ -864,23 +970,32 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
 //
 //Exit params        : None
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022 
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U3RXInterrupt(void)
 {
     IFS5bits.U3RXIF = 0;      // clear RX interrupt flag
-    if (UART_struct[UART_3].UART_rx_counter < UART_struct[UART_3].UART_rx_length)           // Waiting for more data?
+    uint8_t temp=0;
+    if (UART_struct[UART_3].rx_counter < UART_struct[UART_3].rx_buf_length)           // Waiting for more data?
     {
-        UART_struct[UART_3].UART_rx_data[UART_struct[UART_3].UART_rx_counter++] = U3RXREG;  // Yes, copy it from the UxRXREG
+        UART_struct[UART_3].rx_buf[UART_struct[UART_3].rx_counter++] = U3RXREG;  // Yes, copy it from the UxRXREG
     }
 
-    if (UART_struct[UART_3].UART_rx_counter >= UART_struct[UART_3].UART_rx_length)          // All data received?
+    if (UART_struct[UART_3].rx_counter >= UART_struct[UART_3].rx_buf_length)          // All data received?
     {
-        UART_struct[UART_3].UART_rx_done = UART_RX_COMPLETE;                                // Yes, set the RX done flag
-        UART_struct[UART_3].UART_rx_counter = 0;                                            // Clear the RX counter
+        // Empty rxreg from any parasitic data
+        if (U3STAbits.URXDA)
+        {
+            while (U3STAbits.URXDA)
+            {
+                temp = U3RXREG;
+            }
+        } 
+        UART_struct[UART_3].rx_done = UART_RX_COMPLETE;                                // Yes, set the RX done flag
+        UART_struct[UART_3].rx_counter = 0;                                            // Clear the RX counter
     }  
 }
 
@@ -893,30 +1008,30 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3RXInterrupt(void)
 //
 //Exit params        : None
 //
-// Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021  
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022 
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _U3TXInterrupt(void)
 {
     IFS5bits.U3TXIF = 0;      // clear TX interrupt flag
-    if (UART_struct[UART_3].UART_tx_length == 1)
+    if (UART_struct[UART_3].tx_length == 1)
     {
-        U3TXREG = UART_struct[UART_3].UART_tx_data[0]; 
-        UART_struct[UART_3].UART_tx_done = 1;          
+        U3TXREG = UART_struct[UART_3].tx_buf[0]; 
+        UART_struct[UART_3].tx_done = UART_TX_COMPLETE;          
         IEC5bits.U3TXIE = 0;                        
     }  
 
-    if (UART_struct[UART_3].UART_tx_length > 1)
+    if (UART_struct[UART_3].tx_length > 1)
     {
-        if (UART_struct[UART_3].UART_tx_counter < UART_struct[UART_3].UART_tx_length)
+        if (UART_struct[UART_3].tx_counter < UART_struct[UART_3].tx_length)
         {
-            U3TXREG = UART_struct[UART_3].UART_tx_data[UART_struct[UART_3].UART_tx_counter++];             
-            if (UART_struct[UART_3].UART_tx_counter == UART_struct[UART_3].UART_tx_length)
+            U3TXREG = UART_struct[UART_3].tx_buf[UART_struct[UART_3].tx_counter++];             
+            if (UART_struct[UART_3].tx_counter == UART_struct[UART_3].tx_length)
             {
-                UART_struct[UART_3].UART_tx_done = 1;     
-                UART_struct[UART_3].UART_tx_counter = 0;   
+                UART_struct[UART_3].tx_done = UART_TX_COMPLETE;     
+                UART_struct[UART_3].tx_counter = 0;   
                 IEC5bits.U3TXIE = 0;                    
             }               
         }           
@@ -930,7 +1045,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1ErrInterrupt(void)
     // Must clear the overrun error to keep UART receiving
     U1STAbits.OERR = 0; 
     temp = U1RXREG;
-    UART_struct[UART_1].UART_rx_counter = 0;
+    UART_struct[UART_1].rx_counter = 0;
     IFS4bits.U1EIF = 0;
 }
 
@@ -940,7 +1055,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2ErrInterrupt(void)
     /* Must clear the overrun error to keep UART receiving */
     U2STAbits.OERR = 0; 
     temp = U2RXREG;
-    UART_struct[UART_2].UART_rx_counter = 0;
+    UART_struct[UART_2].rx_counter = 0;
     IFS4bits.U2EIF = 0;
 }
 
@@ -951,7 +1066,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3ErrInterrupt(void)
     /* Must clear the overrun error to keep UART receiving */
     U3STAbits.OERR = 0; 
     temp = U3RXREG;
-    UART_struct[UART_3].UART_rx_counter = 0;
+    UART_struct[UART_3].rx_counter = 0;
     IFS5bits.U3EIF = 0;
 }
 #endif

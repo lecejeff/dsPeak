@@ -6,8 +6,8 @@
 //
 // Purpose   : dsPeak development project
 //
-// Intellitrol                   MPLab X v5.45                        13/01/2021  
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Intellitrol                   MPLab X v5.45                        06/02/2022  
+// Jean-Francois Bilodeau, Ing.
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
@@ -79,6 +79,7 @@ void DSPIC_init (void);
 
 CAN_struct CAN_native;
 STRUCT_IVIDAC IVIDAC_struct[2];
+STRUCT_UART UART_struct[UART_QTY];
 
 uint8_t i = 0;
 uint8_t state = 0;
@@ -109,7 +110,6 @@ uint8_t rs485_state = 0;
 uint8_t pid_out = 0;
 uint8_t color_counter = 0;
 uint32_t color_888 = 0;
-
 
 uint16_t RGB_PWM_frequency = 60;
 uint8_t RGB_PWM_counter = 0;
@@ -172,8 +172,11 @@ extern __eds__ uint8_t spi2_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(
 extern uint16_t rx_ch_left;
 extern uint16_t rx_ch_right;
 
-uint8_t *u485_rx_buf;
-uint8_t u485_data_flag = 0;
+uint8_t *u485_rx_buf1;
+uint8_t *u485_rx_buf2;
+uint8_t u485_1_data_flag = 0;
+uint8_t u485_2_data_flag = 0;
+uint8_t counter_485 = 0;
 
 uint16_t new_rpm_ain = 0;
 uint32_t tracker = 0, color = 0;
@@ -190,7 +193,12 @@ uint16_t dac_out = 0;
 uint8_t dac_step = 0;
 uint32_t counter_zero = 0;
 uint8_t ividac_write_once = 0;
+uint8_t btn1_debounce = 1;
+uint8_t btn4_debounce = 1;
 
+uint8_t buf_485_native[32] = {'M','e','s','s','a','g','e',' ','s','e','n','t',' ','f','r','o','m',' ','n','a','t','i','v','e',' ','p','o','r','t','!','\r','\n'};
+
+uint8_t buf_485_mikrob[32] = {'M','e','s','s','a','g','e',' ','s','e','n','t',' ','f','r','o','m',' ','M','i','k','r','o','B',' ','p','o','r','t','!','\r','\n'};
 int main() 
 {
     DSPIC_init();
@@ -207,26 +215,24 @@ int main()
     DSPEAK_LED4_STATE = 0;     
 
 #ifdef UART_DEBUG_ENABLE
-    UART_init(UART_3, 115200, UART_MAX_RX);
-    UART_putstr(UART_3, "dsPeak UART debug port is enabled");
-    UART_putc(UART_3, 0x0D);
-    UART_putc(UART_3, 0x0A);
+    UART_init(&UART_struct[UART_3], UART_3, 115200, UART_MAX_TX, UART_MAX_RX);
+    UART_putstr_dma(&UART_struct[UART_3], "dsPeak UART debug port with DMA is enabled\r\n");
 #endif
 
-    MOTOR_init(MOTOR_1, 30);
+    //MOTOR_init(MOTOR_1, 30);
     //MOTOR_init(MOTOR_2, 30);  
     
-    SPI_init(SPI_4, SPI_MODE0, PPRE_4_1, SPRE_8_1);     // Max sclk of 9MHz on SPI4 = divide by 8
-#ifdef IVIDAC_RESOLUTION_12BIT
-    IVIDAC_init(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, IVIDAC_RESOLUTION_12BIT, AD5621_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);  
-    IVIDAC_init(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, IVIDAC_RESOLUTION_12BIT, AD5621_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);
-#endif
-    
-#ifdef IVIDAC_RESOLUTION_14BIT
-    IVIDAC_init(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, IVIDAC_RESOLUTION_14BIT, AD5641_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);  
-    IVIDAC_init(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, IVIDAC_RESOLUTION_14BIT, AD5641_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);    
-#endif
-    
+//    SPI_init(SPI_4, SPI_MODE0, PPRE_4_1, SPRE_8_1);     // Max sclk of 9MHz on SPI4 = divide by 8
+//#ifdef IVIDAC_RESOLUTION_12BIT
+//    IVIDAC_init(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, IVIDAC_RESOLUTION_12BIT, AD5621_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);  
+//    IVIDAC_init(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, IVIDAC_RESOLUTION_12BIT, AD5621_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);
+//#endif
+//    
+//#ifdef IVIDAC_RESOLUTION_14BIT
+//    IVIDAC_init(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, IVIDAC_RESOLUTION_14BIT, AD5641_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);  
+//    IVIDAC_init(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, IVIDAC_RESOLUTION_14BIT, AD5641_OUTPUT_NORMAL, IVIDAC_OUTPUT_DISABLE);    
+//#endif
+//    
  
     //I2C_init(I2C_port_1, I2C_mode_master, 0);
     //I2C_buf[0] = 0x90;
@@ -247,29 +253,29 @@ int main()
     //SPI_flash_write_enable();
     //SPI_flash_erase(CMD_CHIP_ERASE, 0);    
     
-    CODEC_init(SYS_FS_48kHz);
+    //CODEC_init(SYS_FS_48kHz);
     
-    // Enable RS-485 port
-    UART_init(UART_1, 460800, 25); // -> Str sent : dsPeakx sent this message     
-//    TRISCbits.TRISC2 = 0;   
-//    TRISCbits.TRISC3 = 0;
-//    TRISCbits.TRISC4 = 0;
-//    LATCbits.LATC3 = 1;
-//    LATCbits.LATC4 = 1;
+    // Enable dsPeak native RS-485 port @ 460800bps
+    UART_init(&UART_struct[UART_1], UART_1, 460800, 32, 32);
     
-#ifdef BRINGUP_DSPEAK_1    
-    CAN_init_struct(&CAN_native, CAN_1, 500000, 0x0123, 0, 0x0300, 0x0300);
-    CAN_init(&CAN_native);
-    CAN_set_mode(&CAN_native, CAN_MODE_NORMAL);
-    CAN_fill_payload(&CAN_native, can_buf_1, 8);
+#ifdef RS485_CLICK_UART2
+    // Enable RS-485 Click6 RS-485 interface on MikroBus port @ 460800bps
+    UART_init(&UART_struct[UART_2], UART_2, 460800, 32, 32);
 #endif
     
-#ifdef BRINGUP_DSPEAK_2
-    CAN_init_struct(&CAN_native, CAN_1, 500000, 0x0300, 0, 0x0123, 0x0123);
-    CAN_init(&CAN_native);
-    CAN_set_mode(&CAN_native, CAN_MODE_NORMAL);
-    CAN_fill_payload(&CAN_native, can_buf_2, 8);    
-#endif
+//#ifdef BRINGUP_DSPEAK_1    
+//    CAN_init_struct(&CAN_native, CAN_1, 500000, 0x0123, 0, 0x0300, 0x0300);
+//    CAN_init(&CAN_native);
+//    CAN_set_mode(&CAN_native, CAN_MODE_NORMAL);
+//    CAN_fill_payload(&CAN_native, can_buf_1, 8);
+//#endif
+//    
+//#ifdef BRINGUP_DSPEAK_2
+//    CAN_init_struct(&CAN_native, CAN_1, 500000, 0x0300, 0, 0x0123, 0x0123);
+//    CAN_init(&CAN_native);
+//    CAN_set_mode(&CAN_native, CAN_MODE_NORMAL);
+//    CAN_fill_payload(&CAN_native, can_buf_2, 8);    
+//#endif
 //    
     ADC_init_struct(&ADC_struct_AN12, ADC_PORT_1, ADC_CHANNEL_AN12, 
                     ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
@@ -418,31 +424,12 @@ int main()
     FT8XX_draw_dial(&st_Dial[0]);
     
     FT8XX_update_screen_dl();         		// Update display list 
-
 #endif
-    
-    //UART_putbuf_dma(UART_3, (uint8_t *)"dsPeak - UART3 test 12345ABCDEF", strlen("dsPeak - UART3 test 12345ABCDEF"));
-    
 //    RGB_LED_set_color(0x000000);
 //    
-    //MOTOR_set_rpm(MOTOR_1, speed_rpm_table[0]);
-//    MOTOR_set_rpm(MOTOR_2, speed_rpm_table[0]);
-//    
-////    // Timers init / start should be the last function calls made before while(1) 
-    //TIMER_init(TIMER_1, TIMER_PRESCALER_1, 80000);
-    TIMER_init(TIMER_2, TIMER_PRESCALER_256, 5);
-    TIMER_init(TIMER_3, TIMER_PRESCALER_256, 60);
-    TIMER_init(TIMER_4, TIMER_PRESCALER_256, 5);
-//    TIMER_init(TIMER_5, TIMER_PRESCALER_256, 5);
-    
-    TIMER_init(TIMER_7, TIMER_PRESCALER_256, 50000);
-//    TIMER_init(TIMER_7, TIMER_PRESCALER_256, QEI_get_fs(QEI_2));
-    TIMER_init(TIMER_8, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
-    
-    // Encoder initialization with associated velocity timer
-    TIMER_init(TIMER_9, TIMER_PRESCALER_256, QEI_get_fs(QEI_1)); // Rotary encoder velocity (RPM) refresh rate is 30Hz 
-    ENCODER_init(QEI_get_fs(QEI_1));      // 
-//
+//    MOTOR_set_rpm(MOTOR_1, speed_rpm_table[0]);
+//    MOTOR_set_rpm(MOTOR_2, speed_rpm_table[0]);  
+
 //    PMP_init(PMP_MODE_SRAM);
 //    for (i=0; i<10; i++)
 //    {
@@ -460,62 +447,107 @@ int main()
 //    ST7735_init();
 //    color = RGB888_to_RGB565(0x00FF00);
 //    ST7735_Clear(color);
-            
-    //TIMER_start(TIMER_1);
+          
+    
+    
+    
+    // Timers init / start should be the last function calls made before while(1) 
+    TIMER_init(TIMER_1, TIMER_PRESCALER_256, 1000);
+    TIMER_init(TIMER_2, TIMER_PRESCALER_256, 30);
+    TIMER_init(TIMER_3, TIMER_PRESCALER_256, 1000);
+    TIMER_init(TIMER_4, TIMER_PRESCALER_256, 5);
+    TIMER_init(TIMER_5, TIMER_PRESCALER_256, 5);
+    TIMER_init(TIMER_6, TIMER_PRESCALER_256, 5);
+    TIMER_init(TIMER_7, TIMER_PRESCALER_256, 50000);
+    TIMER_init(TIMER_8, TIMER_PRESCALER_256, 5);
+    
+    // Encoder initialization with associated velocity timer   
+    ENCODER_init(30); 
+    TIMER_init(TIMER_9, TIMER_PRESCALER_256, ENCODER_get_fs());
+                                  // 
+
+    TIMER_start(TIMER_1);
     TIMER_start(TIMER_2);
     TIMER_start(TIMER_3);
     TIMER_start(TIMER_4);
-//    TIMER_start(TIMER_5);
+    TIMER_start(TIMER_5);
     TIMER_start(TIMER_7);
-//    TIMER_start(TIMER_7);
     TIMER_start(TIMER_8);
     TIMER_start(TIMER_9);
-    DSPEAK_BTN1_DIR = 1;
     
 #ifdef UART_DEBUG_ENABLE
-    UART_putstr(UART_3, "Program while(1) starts here");
-    UART_putc(UART_3, 0x0D);
-    UART_putc(UART_3, 0x0A);
+    UART_putstr_dma(&UART_struct[UART_3], "Program while(1) starts here\r\n");
 #endif
-    
-    IVIDAC_output_enable(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1);
-    IVIDAC_output_enable(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2);
-//    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x0000);
-//    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x0000);
+  
     while (1)
-    {  
+    {            
+        encoder_dir = ENCODER_get_direction();
+        encoder_tour = ENCODER_get_position();             
+        
         if (DSPEAK_BTN1_STATE == 0)
         {
-            CAN_tx_state = 0;
-        }     
-        
-        encoder_dir = ENCODER_get_direction();
-        encoder_tour = ENCODER_get_position();
-        
-        if (C1RXFUL1bits.RXFUL1 == 1)
-        {
-            C1RXFUL1bits.RXFUL1 = 0;
-            if (CAN_parse_rxmsg(&CAN_native) == 1)
+            if (++btn1_debounce > 25)
             {
-                DSPEAK_LED4_STATE = !DSPEAK_LED4_STATE;
-                #ifdef UART_DEBUG_ENABLE
-                UART_putstr(UART_3, "CAN RX data = ");
-                UART_putbuf(UART_3, &CAN_native.can_rx_payload[0], 8);             
-                UART_putc(UART_3, 0x0D);
-                UART_putc(UART_3, 0x0A);
-                #endif
+                btn1_debounce = 25;
+                if (do_once == 0)
+                {
+                    do_once = 1;
+                    UART_putstr_dma(&UART_struct[UART_1], "Message sent from native port!\r\n");
+                }
             }
+        }
+        else
+        {
+            if (--btn1_debounce < 1)
+            {
+                btn1_debounce = 1;
+                do_once = 0;
+            }
+        }
+
+        if (UART_rx_done(&UART_struct[UART_1]) == UART_RX_COMPLETE)
+        {            
+            u485_rx_buf1 = UART_get_rx_buffer(&UART_struct[UART_1]);
+            UART_putbuf_dma(&UART_struct[UART_3], u485_rx_buf1, 32);
+            UART_clear_rx_buffer(&UART_struct[UART_1], '0');
+            u485_1_data_flag = 1;
+            DSPEAK_LED1_STATE = 1;
         } 
 
-        if (UART_rx_done(UART_1) == UART_RX_COMPLETE)
-        {
-            u485_rx_buf = UART_get_rx_buffer(UART_1);
-            DSPEAK_LED3_STATE = !DSPEAK_LED3_STATE;
+        if (UART_rx_done(&UART_struct[UART_2]) == UART_RX_COMPLETE)
+        {           
+            u485_rx_buf2 = UART_get_rx_buffer(&UART_struct[UART_2]);
+            UART_putbuf_dma(&UART_struct[UART_3], u485_rx_buf2, 32);
+            UART_clear_rx_buffer(&UART_struct[UART_2], '0');
+            u485_2_data_flag = 1; 
+            DSPEAK_LED2_STATE = 1;
         }         
+        
+        if (TIMER_get_state(TIMER_1, TIMER_INT_STATE) == 1)
+        {
+            if (u485_1_data_flag == 1)
+            {                
+                u485_1_data_flag = 0;
+                UART_putstr_dma(&UART_struct[UART_1], "Message sent from native port!\r\n");
+                DSPEAK_LED1_STATE = 0;
+            }            
+        }       
+
+        if (TIMER_get_state(TIMER_3, TIMER_INT_STATE) == 1)
+        {
+#ifdef RS485_CLICK_UART2               
+            if (u485_2_data_flag == 1)
+            {                
+                u485_2_data_flag = 0;
+                UART_putstr_dma(&UART_struct[UART_2], "Message sent from MikroB port!\r\n");
+                DSPEAK_LED2_STATE = 0;
+            }              
+#endif               
+        }   
         
         if (TIMER_get_state(TIMER_2, TIMER_INT_STATE) == 1)
         {           
-        #ifdef SCREEN_ENABLE 
+#ifdef SCREEN_ENABLE 
             if (encoder_dir == 0)
             {
                 FT8XX_modify_element_string(13, FT_PRIM_TEXT, "Forward ");
@@ -633,11 +665,6 @@ int main()
             
             if (tag != 0)
             {
-                //#ifdef UART_DEBUG_ENABLE
-//                UART_putstr(UART_3, "FT8XX TAG value = ");
-//                UART_putc_ascii(UART_3, tag);
-//                UART_putc(UART_3, 0x0D);
-//                UART_putc(UART_3, 0x0A);
                 
                 if ((tracker & 0x0000FFFF) == st_Slider[0].touch_tag)
                 {
@@ -653,15 +680,6 @@ int main()
                     track_upd = ((tracker&0xFFFF0000)>>16);
                     FT8XX_modify_dial(&st_Dial[0], DIAL_VALUE, track_upd);
                 }
-                
-//                UART_putstr(UART_3, "FT8XX TRACKER value = ");
-//                UART_putc_ascii(UART_3, ((tracker&0xFF000000)>>24));
-//                UART_putc_ascii(UART_3, ((tracker&0x00FF0000)>>16));
-//                UART_putc_ascii(UART_3, ((tracker&0x0000FF00)>>8));
-//                UART_putc_ascii(UART_3, tracker);
-//                UART_putc(UART_3, 0x0D);
-//                UART_putc(UART_3, 0x0A);                
-//                #endif
             }
             
             if (tag == st_Button[0].touch_tag)
@@ -671,107 +689,128 @@ int main()
                 FT8XX_clear_touch_tag();
                 while(((FT8XX_rd32(REG_TOUCH_DIRECT_XY)) & 0x8000) == 0x0000);
             }        
-        #endif
+#endif
+        } 
+        
+        if (TIMER_get_state(TIMER_4, TIMER_INT_STATE) == 1)
+        {
+        }  
+        
+        if (TIMER_get_state(TIMER_5, TIMER_INT_STATE) == 1)
+        {
+            if (++color_counter > TIMER_get_freq(TIMER_5))
+            {
+                color_counter = 0;
+                //UART_putstr_dma(&UART_struct[UART_3], "Timer 5 tick\r\n");              
+            }
+        } 
+        
+        if (TIMER_get_state(TIMER_6, TIMER_INT_STATE) == 1)
+        {
+            
+        } 
+        
+        if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
+        {
+            
         }
         
-        if (TIMER_get_state(TIMER_3, TIMER_INT_STATE) == 1)
-        { 
-            if (++counter_sec >= 60)
-            {    
-                if (CAN_tx_state == 0)
-                {
-                    CAN_tx_return = CAN_send_txmsg(&CAN_native);
-                    #ifdef UART_DEBUG_ENABLE
-                    UART_putstr(UART_3, "CAN tx error counter = ");
-                    UART_putc_ascii(UART_3, retry_counter);
-                    UART_putc(UART_3, 0x0D);
-                    UART_putc(UART_3, 0x0A);
-                    #endif                    
-                    DSPEAK_LED1_STATE = !DSPEAK_LED1_STATE;
-                }
+        if (TIMER_get_state(TIMER_8, TIMER_INT_STATE) == 1)
+        {
+            
+        } 
+               
+        if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
+        {
+            encoder_rpm = ENCODER_get_velocity();
+        }
+ 
+//        if (C1RXFUL1bits.RXFUL1 == 1)
+//        {
+//            C1RXFUL1bits.RXFUL1 = 0;
+//            if (CAN_parse_rxmsg(&CAN_native) == 1)
+//            {
+//                DSPEAK_LED4_STATE = !DSPEAK_LED4_STATE;
+//                #ifdef UART_DEBUG_ENABLE
+//                UART_putstr(UART_3, "CAN RX data = ");
+//                UART_putbuf(UART_3, &CAN_native.can_rx_payload[0], 8);             
+//                UART_putc(UART_3, 0x0D);
+//                UART_putc(UART_3, 0x0A);
+//                #endif
+//            }
+//        } 
 
-                if (CAN_tx_return == 3)     // Remote node did not acknowledge
-                {
-                    retry_counter = CAN_get_txmsg_errcnt(&CAN_native);
-                    if (retry_counter > CAN_MAXIMUM_TX_RETRY)
-                    {
-                        CAN_tx_state = 1;
-                        C1TR01CONbits.TXREQ0 = 0x0; 
-                    }
-                }
-                              
-                RTCC_read_time();
-                hour = RTCC_get_time_parameter(RTC_HOUR);
-                minute = RTCC_get_time_parameter(RTC_MINUTE);
-                second = RTCC_get_time_parameter(RTC_SECOND);
-                #ifdef SCREEN_ENABLE
-                //FT8XX_modify_clock_hms(&st_Clock[0], hour, minute, second);
-                #endif
-                counter_sec = 0; 
-            }
-        }        
+//        if (UART_rx_done(UART_1) == UART_RX_COMPLETE)
+//        {
+//            u485_rx_buf = UART_get_rx_buffer(UART_1);
+//            DSPEAK_LED3_STATE = !DSPEAK_LED3_STATE;
+//        }          
+        
+//        if (TIMER_get_state(TIMER_3, TIMER_INT_STATE) == 1)
+//        { 
+//            if (++counter_sec >= 60)
+//            {    
+//                if (CAN_tx_state == 0)
+//                {
+//                    CAN_tx_return = CAN_send_txmsg(&CAN_native);
+//                    #ifdef UART_DEBUG_ENABLE
+//                    UART_putstr(UART_3, "CAN tx error counter = ");
+//                    UART_putc_ascii(UART_3, retry_counter);
+//                    UART_putc(UART_3, 0x0D);
+//                    UART_putc(UART_3, 0x0A);
+//                    #endif                    
+//                    DSPEAK_LED1_STATE = !DSPEAK_LED1_STATE;
+//                }
+//
+//                if (CAN_tx_return == 3)     // Remote node did not acknowledge
+//                {
+//                    retry_counter = CAN_get_txmsg_errcnt(&CAN_native);
+//                    if (retry_counter > CAN_MAXIMUM_TX_RETRY)
+//                    {
+//                        CAN_tx_state = 1;
+//                        C1TR01CONbits.TXREQ0 = 0x0; 
+//                    }
+//                }
+//                              
+//                RTCC_read_time();
+//                hour = RTCC_get_time_parameter(RTC_HOUR);
+//                minute = RTCC_get_time_parameter(RTC_MINUTE);
+//                second = RTCC_get_time_parameter(RTC_SECOND);
+//                #ifdef SCREEN_ENABLE
+//                //FT8XX_modify_clock_hms(&st_Clock[0], hour, minute, second);
+//                #endif
+//                counter_sec = 0; 
+//            }
+//        }        
 
         // RS-485 test
-        if (TIMER_get_state(TIMER_4, TIMER_INT_STATE) == 1)
-        { 
-            if (++counter_timer4 > 5)
-            {         
-                counter_timer4 = 0;
-                #ifdef BRINGUP_DSPEAK_1
-                UART_putstr(UART_1, "dsPeak1 sent this message");                 
-                #ifdef UART_DEBUG_ENABLE
-                UART_putstr(UART_3, "RS-485 data rx'd = ");
-                UART_putbuf(UART_3, u485_rx_buf, 25);             
-                UART_putc(UART_3, 0x0D);
-                UART_putc(UART_3, 0x0A);                      
-                #endif
-                DSPEAK_LED2_STATE = !DSPEAK_LED2_STATE;
-                #endif
-
-                #ifdef BRINGUP_DSPEAK_2
-                UART_putstr(UART_1, "dsPeak2 sent this message"); 
-                #ifdef UART_DEBUG_ENABLE
-                UART_putstr(UART_3, "RS-485 data rx'd = ");
-                UART_putbuf(UART_3, u485_rx_buf, UART_get_rx_buffer_length(UART_1));             
-                UART_putc(UART_3, 0x0D);
-                UART_putc(UART_3, 0x0A);                      
-                #endif         
-                DSPEAK_LED2_STATE = !DSPEAK_LED2_STATE;
-                #endif
-            }
-        }
-            
-//        if (TIMER_get_state(TIMER_5, TIMER_INT_STATE) == 1)
-//        {
-//            switch(color_counter)
-//            {
-//                case 0:
-//                    color = RGB888_to_RGB565(0x000000);
-//                    break;
-//                case 1:
-//                    color = RGB888_to_RGB565(0x0000FF);
-//                    break; 
-//                case 2:
-//                    color = RGB888_to_RGB565(0x00FF00);
-//                    break;
-//                case 3:
-//                    color = RGB888_to_RGB565(0x00FFFF);
-//                    break;      
-//                case 4:
-//                    color = RGB888_to_RGB565(0xFF0000);
-//                    break;
-//                case 5:
-//                    color = RGB888_to_RGB565(0xFF00FF);
-//                    break;      
-//                case 6:
-//                    color = RGB888_to_RGB565(0xFFFF00);
-//                    break;
-//                case 7:
-//                    color = RGB888_to_RGB565(0xFFFFFF);
-//                    break;                          
+//        if (TIMER_get_state(TIMER_4, TIMER_INT_STATE) == 1)
+//        { 
+//            if (++counter_timer4 > 5)
+//            {         
+//                counter_timer4 = 0;
+//                #ifdef BRINGUP_DSPEAK_1
+//                UART_putstr(UART_1, "dsPeak1 sent this message");                 
+//                #ifdef UART_DEBUG_ENABLE
+//                UART_putstr(UART_3, "RS-485 data rx'd = ");
+//                UART_putbuf(UART_3, u485_rx_buf, 25);             
+//                UART_putc(UART_3, 0x0D);
+//                UART_putc(UART_3, 0x0A);                      
+//                #endif
+//                DSPEAK_LED2_STATE = !DSPEAK_LED2_STATE;
+//                #endif
+//
+//                #ifdef BRINGUP_DSPEAK_2
+//                UART_putstr(UART_1, "dsPeak2 sent this message"); 
+//                #ifdef UART_DEBUG_ENABLE
+//                UART_putstr(UART_3, "RS-485 data rx'd = ");
+//                UART_putbuf(UART_3, u485_rx_buf, UART_get_rx_buffer_length(UART_1));             
+//                UART_putc(UART_3, 0x0D);
+//                UART_putc(UART_3, 0x0A);                      
+//                #endif         
+//                DSPEAK_LED2_STATE = !DSPEAK_LED2_STATE;
+//                #endif
 //            }
-//            if (++color_counter > 7){color_counter = 0;}
-//            //ST7735_Clear(color); 
 //        }
         
         // QEI velocity refresh rate
@@ -783,8 +822,8 @@ int main()
 //        }        
 //        
         
-        if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
-        {
+        //if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
+        //{
             //IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5621_OUTPUT_NORMAL, dac_out);
             //IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5621_OUTPUT_NORMAL, dac_out);
             //if (dac_out >= 0xFFF){dac_out = 0;}
@@ -803,10 +842,10 @@ int main()
 //            IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, sine_dac_256p_14b[dac_out]); 
 //            dac_out++;
 //#endif            
-            IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, dac_out);
-            IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, dac_out);              
-            dac_out++;   
-            if (++dac_out > 0x3FFF){dac_out = 0;}
+//            IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, dac_out);
+//            IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, dac_out);              
+//            dac_out++;   
+//            if (++dac_out > 0x3FFF){dac_out = 0;}
 //            {
                 //dac_out = 0;
 //                if (dac_step == 0)
@@ -837,24 +876,19 @@ int main()
 //                    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, 0x0000);                      
 //                }                  
 //            }
-        }
+        //}
         
         // QEI velocity refresh rate
-        if (TIMER_get_state(TIMER_8, TIMER_INT_STATE) == 1)
-        {   
-            new_rpm_ain = (uint16_t)(((float)(ADC_get_raw_channel(&ADC_struct_AN2) / 1024.0))*QEI_get_max_rpm(QEI_1));
-            MOTOR_set_rpm(MOTOR_1, new_rpm_ain);
-            
-            QEI_calculate_velocity(QEI_1);  
-            new_pid_out1 = MOTOR_drive_pid(MOTOR_1);
-            MOTOR_drive_perc(MOTOR_1, MOTOR_get_direction(MOTOR_1), new_pid_out1);
-        }
-        
-        if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
-        {
-            encoder_rpm = ENCODER_get_velocity();
-        }
-        
+//        if (TIMER_get_state(TIMER_8, TIMER_INT_STATE) == 1)
+//        {   
+//            new_rpm_ain = (uint16_t)(((float)(ADC_get_raw_channel(&ADC_struct_AN2) / 1024.0))*QEI_get_max_rpm(QEI_1));
+//            MOTOR_set_rpm(MOTOR_1, new_rpm_ain);
+//            
+//            QEI_calculate_velocity(QEI_1);  
+//            new_pid_out1 = MOTOR_drive_pid(MOTOR_1);
+//            MOTOR_drive_perc(MOTOR_1, MOTOR_get_direction(MOTOR_1), new_pid_out1);
+//        }
+
         // SWPWM RGB LED timer
         //if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
         //{                   
@@ -879,33 +913,9 @@ void DSPIC_init (void)
     INTCON1bits.NSTDIS = 0;                         // Nested interrupt enabled 
     RCONbits.SWDTEN=0;                              // Watchdog timer disabled 
     
-    // Configure PLL prescaler, PLL postscaler, PLL divisor
-    // Input HS OSC 20MHz. Output required is 140MHz for 70MIPS  
-    // Configure PLL prescaler (N1), PLL postscaler (N2), PLL divisor (M)
-    // Where Fout = Fin * (M / (N1 x N2))
-    // M = PLLDIV + 2
-    // N1 = PLLPRE + 2
-    // N2 = 2 x (PLLPOST + 1)
-    // Refer to dsPIC33E FRM - Oscillator (DS70850C) p.23 figure 7-8 for PLL
-    // limitations for the M, N1 and N2 values
-    //
-    // PLLPRE = 3, N1 = 5
-    // PLLDIV = 68, M = 70
-    // PLLPOST = 0, N2 = 2
-    // Fout = 20MHz * (140 / (10*2)) = 140MHz = 70MIPS
-    PLLFBDbits.PLLDIV = 68; 
-    CLKDIVbits.PLLPOST = 0;
-    CLKDIVbits.PLLPRE = 3;
+    dsPeak_posc_20MHz_init();
     
-    // Initiate Clock Switch to Primary oscillator with PLL
-    __builtin_write_OSCCONH(0x03);
-    __builtin_write_OSCCONL(OSCCON | 0x01);
-    // Wait for Clock switch to occur
-    while (OSCCONbits.COSC!= 0b011);    // While COSC doesn't read back Primary Oscillator config
-    // Wait for PLL to lock
-    while (OSCCONbits.LOCK!= 1);
-    
-    // Set default system time
+    // At power-up, set default system time
     clock.second = 0;
     clock.minute = 20;
     clock.hour = 16;
@@ -914,6 +924,15 @@ void DSPIC_init (void)
     clock.month = 4;
     clock.year = 2020;
     
+    DSPEAK_LED1_DIR = 0;
+    DSPEAK_LED1_DIR = 0;
+    DSPEAK_LED1_DIR = 0;
+    DSPEAK_LED1_DIR = 0;
+    
+    DSPEAK_BTN1_DIR = 1;
+    DSPEAK_BTN4_DIR = 1;
+    
+    // At power-up, disable all analog pins
     ANSELA = 0;
     ANSELB = 0;
     ANSELC = 0;
@@ -921,6 +940,7 @@ void DSPIC_init (void)
     ANSELE = 0;
     ANSELG = 0;
 
+    // At power-up, initialize DMA struct to default POR
     DMA_struct_init(DMA_ALL_INIT);
 }
 

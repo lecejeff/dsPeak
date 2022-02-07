@@ -25,6 +25,7 @@ void ENCODER_init (uint32_t fs_velocity);
 uint8_t ENCODER_get_direction (void);
 uint16_t ENCODER_get_velocity (void);
 uint16_t ENCODER_get_position (void);
+uint32_t ENCODER_get_fs (void);
 uint8_t ENCODER_get_switch_state (void);
 uint16_t ENCODER_get_velocity (void);
 void ENCODER_interrupt_handle (void);

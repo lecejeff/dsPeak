@@ -79,6 +79,10 @@
 // To use USB_UART debug port on dsPeak, uncomment the following line
 #define UART_DEBUG_ENABLE  
     
+// MikroBus various ClickBOard bringup defines
+// To use RS-485 CLICK 6 on UART_2
+#define RS485_CLICK_UART2
+    
     
 #define OUTPUT  0
 #define INPUT   1

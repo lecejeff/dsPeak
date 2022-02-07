@@ -29,5 +29,6 @@ void EEPROM_write_buf (STRUCT_EEPROM *mem, uint8_t base_address, uint8_t *buf, u
 void EEPROM_write_page (STRUCT_EEPROM *mem, uint8_t base_address, uint8_t *buf, uint8_t length);
 uint8_t EEPROM_get_status (STRUCT_EEPROM *mem);
 uint8_t EEPROM_discovered (STRUCT_EEPROM *mem);
+uint8_t EEPROM_discover (STRUCT_EEPROM *mem, uint8_t base_adr, uint8_t end_adr);
 
 #endif

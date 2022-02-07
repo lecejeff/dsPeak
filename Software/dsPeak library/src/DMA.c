@@ -2,11 +2,12 @@
 STRUCT_DMA DMA_struct[DMA_QTY];
 
 // DMA channel usage
-// DMA_CH0 -> UART3 transmit
-// DMA_CH1 -> CAN1_TX
+// DMA_CH0 -> UART1_TX
+// DMA_CH1 -> UART2_TX
 // DMA_CH2 -> CAN1_RX
-// DMA_CH3 -> SPI_TX
+// DMA_CH3 -> CAN1_TX
 // DMA_CH4 -> SPI_RX
+// DMA_CH5 -> UART3 TX debug port
 
 void DMA_struct_init (uint8_t channel)
 {   
@@ -372,6 +373,150 @@ void DMA_enable (uint8_t channel)
     }
 }
 
+void DMA_force_txfer (uint8_t channel)
+{
+    switch (channel)
+    {
+        case DMA_CH0:
+            DMA0REQbits.FORCE = 1;                     
+            break;
+            
+        case DMA_CH1:
+            DMA1REQbits.FORCE = 1;               
+            break;
+
+        case DMA_CH2:
+            DMA2REQbits.FORCE = 1;            
+            break;
+
+        case DMA_CH3:
+            DMA3REQbits.FORCE = 1;           
+            break;
+
+        case DMA_CH4:
+            DMA4REQbits.FORCE = 1;            
+            break;
+
+        case DMA_CH5:
+            DMA5REQbits.FORCE = 1;
+            break;
+
+        case DMA_CH6:
+            DMA6REQbits.FORCE = 1;
+            break;
+
+        case DMA_CH7:
+            DMA7REQbits.FORCE = 1;
+            break;
+
+        case DMA_CH8:
+            DMA8REQbits.FORCE = 1;
+            break;
+
+        case DMA_CH9:
+            DMA9REQbits.FORCE = 1;
+            break;
+
+        case DMA_CH10:
+            DMA10REQbits.FORCE = 1;
+            break;
+
+        case DMA_CH11:
+            DMA11REQbits.FORCE = 1;
+            break;
+
+        case DMA_CH12:
+            DMA12REQbits.FORCE = 1;
+            break;
+
+        case DMA_CH13:
+            DMA13REQbits.FORCE = 1;
+            break;
+
+        case DMA_CH14:
+            DMA14REQbits.FORCE = 1;            
+            break;     
+            
+        default:
+            break;
+    }    
+}
+
+void DMA_set_txfer_length(uint8_t channel, uint16_t length)
+{
+    // Saturate DMA tx length
+    if (length > DMA_MAX_TX_LENGTH)
+    {
+        length = DMA_MAX_TX_LENGTH;
+    }
+    
+    switch (channel)
+    {
+        case DMA_CH0:
+            DMA0CNT = length;                    
+            break;
+            
+        case DMA_CH1:
+            DMA1CNT = length;                 
+            break;
+
+        case DMA_CH2:
+            DMA2CNT = length;             
+            break;
+
+        case DMA_CH3:
+            DMA3CNT = length;            
+            break;
+
+        case DMA_CH4:
+            DMA4CNT = length;             
+            break;
+
+        case DMA_CH5:
+            DMA5CNT = length;   
+            break;
+
+        case DMA_CH6:
+            DMA6CNT = length;   
+            break;
+
+        case DMA_CH7:
+            DMA7CNT = length;   
+            break;
+
+        case DMA_CH8:
+            DMA8CNT = length;   
+            break;
+
+        case DMA_CH9:
+            DMA9CNT = length;   
+            break;
+
+        case DMA_CH10:
+            DMA10CNT = length;   
+            break;
+
+        case DMA_CH11:
+            DMA11CNT = length;   
+            break;
+
+        case DMA_CH12:
+            DMA12CNT = length;   
+            break;
+
+        case DMA_CH13:
+            DMA13CNT = length;   
+            break;
+
+        case DMA_CH14:
+            DMA14CNT = length;             
+            break;     
+            
+        default:
+            break;
+    }
+}
+
 uint8_t DMA_get_txfer_state (uint8_t channel)
 {
     if (DMA_struct[channel].txfer_state == DMA_TXFER_DONE)
@@ -391,6 +536,12 @@ void __attribute__((__interrupt__, no_auto_psv))_DMA0Interrupt(void)
 void __attribute__((__interrupt__, no_auto_psv))_DMA1Interrupt(void)
 {
     IFS0bits.DMA1IF = 0;
+#ifdef RS485_CLICK_UART2    
+    while(!U2STAbits.TRMT);
+    // Put the transceiver in receive mode
+    LATDbits.LATD0 = 0;     // DE = 0
+    LATHbits.LATH15 = 0;    // RE = 0    
+#endif
     DMA_struct[DMA_CH1].txfer_state = DMA_TXFER_DONE;
 }
 

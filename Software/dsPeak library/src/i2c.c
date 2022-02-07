@@ -51,12 +51,13 @@ void I2C_init (uint8_t port, uint8_t mode, uint8_t address)
     if (port == I2C_port_1)
     {   
         // Initialize I2C port struct variables
-        i2c_struct[port].i2c_tx_counter = 0;                  // Reset state machine variables
-        i2c_struct[port].i2c_rx_counter = 0;                  //
-        i2c_struct[port].i2c_write_length = I2C_MSG_LENGTH;   //
-        i2c_struct[port].i2c_read_length = I2C_MSG_LENGTH;    //
-        i2c_struct[port].i2c_int_counter = 0;                 //
-        i2c_struct[port].i2c_done = 0;                        // Bus is free          
+        i2c_struct[port].i2c_tx_counter = 0;                    // Reset state machine variables
+        i2c_struct[port].i2c_rx_counter = 0;                    //
+        i2c_struct[port].i2c_write_length = I2C_MSG_LENGTH;     //
+        i2c_struct[port].i2c_read_length = I2C_MSG_LENGTH;      //
+        i2c_struct[port].i2c_int_counter = 0;                   //
+        i2c_struct[port].i2c_done = 0;                          // Bus is free  
+        i2c_struct[port].ack_state = 1;                         // NACK by default
         if (mode == I2C_mode_slave)
         {
             // Module register initializations
@@ -77,8 +78,9 @@ void I2C_init (uint8_t port, uint8_t mode, uint8_t address)
         
         if (mode == I2C_mode_master)
         {
-            I2C1CONbits.DISSLW = 1;     // Disable slew rate control      
-            I2C1BRG = I2C_FREQ_400k;    // Set I2C1 brg at 400kHz       
+            I2C1CONbits.I2CEN = 0;      // Disable module if it was in use
+            I2C1CONbits.DISSLW = 1;     // Disable slew rate control 
+            I2C1BRG = I2C_FREQ_100k;    // Set I2C1 brg at 400kHz       
             IFS1bits.MI2C1IF = 0;       // Clear master I2C interrupt flag  
             IPC4bits.MI2C1IP = 1;       // Set default priority 
             IEC1bits.MI2C1IE = 0;       // Disable I2C master interrupt    
@@ -86,7 +88,7 @@ void I2C_init (uint8_t port, uint8_t mode, uint8_t address)
         }        
     }
     
-    if (port == I2C_port_2)
+    else if (port == I2C_port_2)
     {        
         // Initialize I2C port struct variables
         i2c_struct[port].i2c_tx_counter = 0;                  // Reset state machine variables
@@ -94,7 +96,8 @@ void I2C_init (uint8_t port, uint8_t mode, uint8_t address)
         i2c_struct[port].i2c_write_length = EEPROM_TX_LENGTH;   //
         i2c_struct[port].i2c_read_length = EEPROM_RX_LENGTH;    //
         i2c_struct[port].i2c_int_counter = 0;                 //
-        i2c_struct[port].i2c_done = 0;                        // Bus is free          
+        i2c_struct[port].i2c_done = 0;                        // Bus is free  
+        i2c_struct[port].ack_state = 1;                         // NACK by default        
         if (mode == I2C_mode_slave)
         {
             // Module register initializations
@@ -115,8 +118,9 @@ void I2C_init (uint8_t port, uint8_t mode, uint8_t address)
                 
         if (mode == I2C_mode_master)
         {
+            I2C1CONbits.I2CEN = 0;      // Disable module if it was in use
             I2C2CONbits.DISSLW = 1;     // Disable slew rate control      
-            I2C2BRG = I2C_FREQ_100k;    // Set I2C1 brg at 400KHz with Fcy = 68.1984MIPS        
+            I2C2BRG = (uint16_t)I2C_FREQ_100k;    // Set I2C1 brg at 400KHz with Fcy = 68.1984MIPS        
             IFS3bits.MI2C2IF = 0;       // Clear master I2C interrupt flag  
             IPC12bits.MI2C2IP = 4;      // Set default priority to 4 
             IEC3bits.MI2C2IE = 0;       // Disable I2C master interrupt    
@@ -341,14 +345,7 @@ uint8_t * I2C_get_rx_buffer (uint8_t port)
 
 uint8_t I2C_get_ack_state (uint8_t port)
 {
-    if (port == I2C_port_1)
-    {
-        return I2C1STATbits.ACKSTAT;
-    }
-    else
-    {
-        return I2C2STATbits.ACKSTAT;
-    }         
+    return i2c_struct[port].ack_state;    
 }
 
 // I2C1 slave interrupt routine 
@@ -356,7 +353,6 @@ uint8_t I2C_get_ack_state (uint8_t port)
 void __attribute__((__interrupt__, no_auto_psv)) _SI2C1Interrupt(void)
 {   
     uint8_t temp = 0;
-
     // Address + W received, write data to slave
     if ((!I2C1STATbits.D_A) && (!I2C1STATbits.R_W))
     {
@@ -425,11 +421,13 @@ void __attribute__((__interrupt__, no_auto_psv)) _SI2C1Interrupt(void)
 // Uncomment these lines if the I2C2 is used as master
 void __attribute__((__interrupt__, no_auto_psv)) _MI2C1Interrupt(void)
 {
+    static uint8_t ack_adr = 0;    
     if (i2c_struct[I2C_port_1].i2c_message_mode == I2C_WRITE) // write
     {
         if (i2c_struct[I2C_port_1].i2c_int_counter == 0)
         {
             IFS1bits.MI2C1IF = 0;   // Lower interrupt flag 
+            ack_adr = 0;            // ack address flag low
             I2C1TRN = i2c_struct[I2C_port_1].i2c_tx_data[i2c_struct[I2C_port_1].i2c_tx_counter]; //send adr
             i2c_struct[I2C_port_1].i2c_int_counter++;
             i2c_struct[I2C_port_1].i2c_tx_counter++;  
@@ -437,6 +435,13 @@ void __attribute__((__interrupt__, no_auto_psv)) _MI2C1Interrupt(void)
 
         else if (i2c_struct[I2C_port_1].i2c_int_counter == 1) // send data
         {
+            // Do once, scan ack state form when the address byte was sent, see if the device responded
+            if (ack_adr == 0)
+            {
+                ack_adr = 1;
+                i2c_struct[I2C_port_1].ack_state = I2C1STATbits.ACKSTAT;
+            }
+            
             if (i2c_struct[I2C_port_1].i2c_tx_counter < i2c_struct[I2C_port_1].i2c_write_length)//send data
             {  
                 IFS1bits.MI2C1IF = 0;   // Lower interrupt flag  
@@ -457,6 +462,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _MI2C1Interrupt(void)
             i2c_struct[I2C_port_1].i2c_int_counter = 0;         // Reset interrupt counter
             i2c_struct[I2C_port_1].i2c_tx_counter = 0;          // Reset transmit counter
             i2c_struct[I2C_port_1].i2c_done = 0;                // Bus is free, transaction over
+            ack_adr = 0;
             IEC1bits.MI2C1IE = 0;                               // Disable SSP interrupt
             IFS1bits.MI2C1IF = 0;                               // Lower interrupt flag
         }
@@ -570,6 +576,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _MI2C2Interrupt(void)
 
         else if (i2c_struct[I2C_port_2].i2c_int_counter == 1) // send data
         {
+            i2c_struct[I2C_port_2].ack_state = I2C_get_ack_state(I2C_port_2);
             if (i2c_struct[I2C_port_2].i2c_tx_counter < i2c_struct[I2C_port_2].i2c_write_length)//send data
             {  
                 IFS3bits.MI2C2IF = 0;   // Lower interrupt flag  
