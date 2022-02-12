@@ -102,6 +102,9 @@ uint16_t cmdBufferRd;            // Used to navigate command ring buffer
 uint16_t cmdBufferWr = 0x0000;   // Used to navigate command ring buffer
 uint16_t cmdOffset = 0x0000;    // Used to navigate command rung buffer
 
+extern STRUCT_SPI spi_struct[SPI_QTY];
+STRUCT_SPI *EVE_spi = &spi_struct[SPI_1];   // Assign EVE_spi to SPI_1
+
 //***************************uint8_t FT_init (void))*******************************//
 //Description : Function initializes FT8XXX display to given parameters
 //
@@ -121,9 +124,10 @@ void FT8XX_init (void)
     uint8_t duty = 0, gpio = 0, reg_id_value = 0;
    
     // Initialize FT8XX SPI port. SPI1 maximum clock frequency for full duplex is 9MHz
-    SPI_init(SPI_1, SPI_MODE0, 2, 0);   // PPRE = 2, primary prescale 1:4
-                                        // SPRE = 0, Secondary prescale 8:1
-                                        // Fspi = FCY / 8 = 8.75MHz
+    SPI_init(EVE_spi, SPI_1, SPI_MODE0, 2, 0, SPI_BUF_LENGTH, SPI_BUF_LENGTH);      
+                                                    // PPRE = 2, primary prescale 1:4
+                                                    // SPRE = 0, Secondary prescale 8:1
+                                                    // Fspi = FCY / 8 = 8.75MHz
     // Set FT8XXX nINT pin to input
     TRISBbits.TRISB9 = 1;
     
@@ -379,7 +383,9 @@ void FT8XX_set_touch_tag (uint8_t prim_type, uint8_t prim_num, uint8_t tag_num)
 void FT8XX_host_command (uint8_t command)
 {
     uint8_t wr_data[3] = {command, 0, 0};
-    SPI_master_write(SPI_1, wr_data, 3, FT8XX_EVE_CS);
+    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
+    SPI_load_tx_buffer(EVE_spi, wr_data, 3);
+    SPI_master_write(EVE_spi, FT8XX_EVE_CS);
 }
 
 //**********************void FT_write_8bit (uint32_t adr, uint8_t data)******************//
@@ -399,7 +405,9 @@ void FT8XX_host_command (uint8_t command)
 void FT8XX_wr8 (uint32_t adr, uint8_t data)
 {
     uint8_t wr_data[4] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data};
-    SPI_master_write(SPI_1, wr_data, 4, FT8XX_EVE_CS);
+    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
+    SPI_load_tx_buffer(EVE_spi, wr_data, 4);
+    SPI_master_write(EVE_spi, FT8XX_EVE_CS);
     // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
@@ -423,7 +431,9 @@ void FT8XX_wr8 (uint32_t adr, uint8_t data)
 void FT8XX_wr16 (uint32_t adr, uint16_t data)
 {
     uint8_t wr_data[5] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data, data >> 8};
-    SPI_master_write(SPI_1, wr_data, 5, FT8XX_EVE_CS);    
+    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
+    SPI_load_tx_buffer(EVE_spi, wr_data, 5);
+    SPI_master_write(EVE_spi, FT8XX_EVE_CS);    
     // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);     // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                      // 
     // byte 2 = adr;                                          //
@@ -448,7 +458,9 @@ void FT8XX_wr16 (uint32_t adr, uint16_t data)
 void FT8XX_wr32 (uint32_t adr, uint32_t data)
 {
     uint8_t wr_data[7] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data, data >> 8, data >> 16, data >> 24};
-    SPI_master_write(SPI_1, wr_data, 7, FT8XX_EVE_CS);      
+    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
+    SPI_load_tx_buffer(EVE_spi, wr_data, 7);
+    SPI_master_write(EVE_spi, FT8XX_EVE_CS);      
     // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);     // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                      //
     // byte 2 = adr;                                          //
@@ -474,9 +486,11 @@ void FT8XX_wr32 (uint32_t adr, uint32_t data)
 uint8_t FT8XX_rd8 (uint32_t adr)
 {
     uint8_t data[5] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0};
-    SPI_master_write(SPI_1, data, 5, FT8XX_EVE_CS);    
-    while(SPI_txfer_done(SPI_1)!= 1);
-    return SPI_get_rx_buffer_index(SPI_1, 4);
+    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
+    SPI_load_tx_buffer(EVE_spi, data, 5);
+    SPI_master_write(EVE_spi, FT8XX_EVE_CS);    
+    while(SPI_txfer_done(EVE_spi)!= 1);
+    return SPI_get_rx_buffer_index(EVE_spi, 4);
     // byte 0 = (uint8_t)((adr >> 16) | MEM_READ);   // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
@@ -502,10 +516,12 @@ uint16_t FT8XX_rd16 (uint32_t adr)
     uint8_t data_read1, data_read2;
     uint16_t rd16 = 0;    
     uint8_t data[6] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0};
-    SPI_master_write(SPI_1, data, 6, FT8XX_EVE_CS);    
-    while(SPI_txfer_done(SPI_1)!= 1);
-    data_read1 = SPI_get_rx_buffer_index(SPI_1, 4);    
-    data_read2 = SPI_get_rx_buffer_index(SPI_1, 5); 
+    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
+    SPI_load_tx_buffer(EVE_spi, data, 6);
+    SPI_master_write(EVE_spi, FT8XX_EVE_CS);    
+    while(SPI_txfer_done(EVE_spi)!= 1);
+    data_read1 = SPI_get_rx_buffer_index(EVE_spi, 4);    
+    data_read2 = SPI_get_rx_buffer_index(EVE_spi, 5); 
     rd16 = ((data_read2 << 8) | data_read1);
     return (rd16);
     // byte 0 = (uint8_t)((adr >> 16) | MEM_READ);   // Write 24 bit ADR
@@ -534,12 +550,14 @@ uint32_t FT8XX_rd32 (uint32_t adr)
     uint32_t data_read1, data_read2, data_read3, data_read4;
     uint32_t rd32 = 0x00000000;  
     uint8_t data[8] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0, 0, 0};
-    SPI_master_write(SPI_1, data, 8, FT8XX_EVE_CS);    
-    while(SPI_txfer_done(SPI_1)!= 1);
-    data_read1 = SPI_get_rx_buffer_index(SPI_1, 4);    
-    data_read2 = SPI_get_rx_buffer_index(SPI_1, 5); 
-    data_read3 = SPI_get_rx_buffer_index(SPI_1, 6);    
-    data_read4 = SPI_get_rx_buffer_index(SPI_1, 7);     
+    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
+    SPI_load_tx_buffer(EVE_spi, data, 8);
+    SPI_master_write(EVE_spi, FT8XX_EVE_CS);    
+    while(SPI_txfer_done(EVE_spi)!= 1);
+    data_read1 = SPI_get_rx_buffer_index(EVE_spi, 4);    
+    data_read2 = SPI_get_rx_buffer_index(EVE_spi, 5); 
+    data_read3 = SPI_get_rx_buffer_index(EVE_spi, 6);    
+    data_read4 = SPI_get_rx_buffer_index(EVE_spi, 7);     
     rd32 = (uint32_t)(data_read4 << 24);
     rd32 = (uint32_t)(rd32 | data_read3 << 16);
     rd32 = (uint32_t)(rd32 | data_read2 << 8);

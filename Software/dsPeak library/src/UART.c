@@ -20,16 +20,15 @@
 #include "string.h"
 #include "DMA.h"
 
-// Assume STRUCT_UART is declared in another c file
-extern STRUCT_UART UART_struct[UART_QTY];
+STRUCT_UART UART_struct[UART_QTY];
 
 // Define UART_x channel DMA buffers (either transmit, receive or both)
 __eds__ uint8_t uart1_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 __eds__ uint8_t uart2_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
-
 #ifdef UART_DEBUG_ENABLE
 __eds__ uint8_t uart3_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 #endif
+__eds__ uint8_t uart4_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 
 //***void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud, 
 //                uint16_t tx_buf_length, uint16_t rx_buf_length)
@@ -104,7 +103,7 @@ void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud,
             DMA0PAD = (volatile uint16_t)&U1TXREG;
             DMA0STAH = __builtin_dmapage(uart1_dma_tx_buf);
             DMA0STAL = __builtin_dmaoffset(uart1_dma_tx_buf);
-            str->DMA_channel = DMA_CH0; 
+            str->DMA_tx_channel = DMA_CH0; 
             break;
            
         case UART_2:
@@ -157,7 +156,7 @@ void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud,
             DMA1PAD = (volatile uint16_t)&U2TXREG;
             DMA1STAH = __builtin_dmapage(uart2_dma_tx_buf);
             DMA1STAL = __builtin_dmaoffset(uart2_dma_tx_buf);  
-            str->DMA_channel = DMA_CH1;
+            str->DMA_tx_channel = DMA_CH1;
             break;
             
         case UART_3: 
@@ -202,8 +201,47 @@ void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud,
             DMA5PAD = (volatile uint16_t)&U3TXREG;
             DMA5STAH = __builtin_dmapage(uart3_dma_tx_buf);
             DMA5STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
-            str->DMA_channel = DMA_CH5;
+            str->DMA_tx_channel = DMA_CH5;
 #endif
+            break; 
+
+        case UART_4: 
+            U4MODEbits.UEN = 0;             // Disable UART if it was previously used
+            IEC5bits.U4EIE = 0;             // Disable UART error interrupt 
+            IEC5bits.U4RXIE = 0;            // Disable UART receive interrupt   
+            IEC5bits.U4TXIE = 0;            // Disable UART transmit interupt
+            IFS5bits.U4EIF = 0;             // Clear UART error interrupt flag
+            IFS5bits.U4RXIF = 0;            // Clear UART receive interrupt flag
+            IFS5bits.U4TXIF = 0;            // Clear UART transmit interrupt flag
+            
+            // UART4 input/output pin mapping - not assigned on dsPeak
+            
+            // UART4 peripheral pin mapping - not assigned on dsPeak
+            
+            if (baud > 115200)
+            {
+                U4BRG = ((FCY / (4 * baud))-1); // Set baudrate using high speed mode formula
+                U4MODE = 0x8008;                // Reset UART to 8-n-1, alt pins, and enable                      
+            }
+            else
+            {
+                U4BRG = ((FCY / (16 * baud))-1);// Set baudrate using normal speed mode formula
+                U4MODE = 0x8000;                // Reset UART to 8-n-1, alt pins, and enable                
+            }      
+            
+            U4STA  = 0x0440;                // Reset status register and enable TX & RX
+            IPC21bits.U4EIP = 3;            // Error interrupt priority
+            IPC22bits.U4RXIP = 4;           // RX interrupt priority
+            IEC5bits.U4EIE = 1;             // Enable error interrupt
+            IEC5bits.U4RXIE = 1;            // Enable receive interrupt
+            
+//            DMA_init(DMA_CH5);
+//            DMA5CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
+//            DMA5REQ = DMAREQ_U3TX;
+//            DMA5PAD = (volatile uint16_t)&U3TXREG;
+//            DMA5STAH = __builtin_dmapage(uart3_dma_tx_buf);
+//            DMA5STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
+//            str->DMA_tx_channel = DMA_CH5;
             break; 
             
         default:
@@ -276,6 +314,10 @@ uint8_t UART_get_trmt_state (STRUCT_UART *str)
             return U3STAbits.TRMT;
             break;
             
+        case UART_4:
+            return U4STAbits.TRMT;
+            break;            
+            
         default: 
             return 0;
             break;
@@ -328,6 +370,13 @@ void UART_putc (STRUCT_UART *str, uint8_t data)
             IEC5bits.U3TXIE = 1;   
 #endif            
             break;
+            
+        case UART_4:
+            while(!U4STAbits.TRMT);
+            str->tx_length = 1;    // Set TX length
+            str->tx_buf[0] = data;// Fill buffer    
+            IEC5bits.U4TXIE = 1;               
+            break;            
     }  
 }  
 
@@ -427,7 +476,7 @@ uint8_t UART_putstr_dma (STRUCT_UART *str, const char *string)
     uint8_t length = strlen(string);
 
     // Wait for previous transaction to be completed
-    if (DMA_get_txfer_state(str->DMA_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
+    if (DMA_get_txfer_state(str->DMA_tx_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
     {
         if (UART_get_trmt_state(str) == 1)            // TRMT empty and ready to accept new data         
         {    
@@ -452,14 +501,18 @@ uint8_t UART_putstr_dma (STRUCT_UART *str, const char *string)
                 {
                     uart3_dma_tx_buf[i] = *string++;
                 }
+                else if (str->UART_channel == UART_4)
+                {
+                    uart4_dma_tx_buf[i] = *string++;
+                }                
                 else
                     return 0;
             }  
             
-            DMA_set_txfer_length(str->DMA_channel, length - 1);     // 0 = 1 txfer, so substract 1 
-            DMA_enable(str->DMA_channel);
+            DMA_set_txfer_length(str->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+            DMA_enable(str->DMA_tx_channel);
             UART_send_tx_buffer(str);
-            DMA_force_txfer(str->DMA_channel);   
+            DMA_force_txfer(str->DMA_tx_channel);   
             return 1;
         }
         else
@@ -536,7 +589,7 @@ void UART_putbuf (STRUCT_UART *str, uint8_t *buf, uint8_t length)
 uint8_t UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)
 {
     uint8_t i = 0;               
-    if (DMA_get_txfer_state(str->DMA_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
+    if (DMA_get_txfer_state(str->DMA_tx_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
     {
         if (UART_get_trmt_state(str) == 1)            // TRMT empty and ready to accept new data         
         {
@@ -559,13 +612,18 @@ uint8_t UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)
 #endif
                 }
 
+                else if (str->UART_channel == UART_4)
+                {
+                    uart4_dma_tx_buf[i] = *buf++;
+                }                
+                
                 else
                     return 0;
             }                      
-            DMA_set_txfer_length(str->DMA_channel, length - 1);     // 0 = 1 txfer, so substract 1 
-            DMA_enable(str->DMA_channel);
+            DMA_set_txfer_length(str->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+            DMA_enable(str->DMA_tx_channel);
             UART_send_tx_buffer(str);
-            DMA_force_txfer(str->DMA_channel);
+            DMA_force_txfer(str->DMA_tx_channel);
             return 1;
         }
         else
@@ -655,6 +713,10 @@ void UART_send_tx_buffer (STRUCT_UART *str)
             IEC5bits.U3TXIE = 1;
 #endif
             break;
+            
+        case UART_4:
+            IEC5bits.U4TXIE = 1;
+            break;            
     }
 }
 
@@ -679,7 +741,6 @@ uint8_t * UART_get_rx_buffer (STRUCT_UART *str)
 {
     return &str->rx_buf[0];
 }
-
 
 //******void UART_clear_rx_buffer (STRUCT_UART *str, uint8_t clr_byte)********//
 //Description : Function clears the str rx_buf to clr_byte value            
@@ -757,44 +818,13 @@ uint8_t UART_rx_done (STRUCT_UART *str)
 //****************************************************************************//
 uint8_t UART_tx_done (STRUCT_UART *str)
 {
-    switch (str->UART_channel)
+    if (str->tx_done == UART_TX_COMPLETE)
     {
-        case UART_1:
-            if (str->tx_done == UART_TX_COMPLETE)
-            {
-                str->tx_done = UART_TX_IDLE;
-                return UART_TX_COMPLETE;  
-            }
-            else
-                return UART_TX_IDLE;
-            break;
-            
-        case UART_2:
-            if (str->tx_done == UART_TX_COMPLETE)
-            {
-                str->tx_done = UART_TX_IDLE;                
-                return UART_TX_COMPLETE;
-            }
-            else
-                return UART_TX_IDLE;            
-            break;
-
-        case UART_3:
-#ifdef UART_DEBUG_ENABLE
-            if (str->tx_done == UART_TX_COMPLETE)
-            {
-                str->tx_done = UART_TX_IDLE;                
-                return UART_TX_COMPLETE;
-            }
-            else
-                return UART_TX_IDLE;                  
-#endif
-            break; 
-            
-        default :
-            return UART_TX_COMPLETE;  
-            break;
-    }       
+        str->tx_done = UART_TX_IDLE;
+        return UART_TX_COMPLETE;  
+    }
+    else
+        return UART_TX_IDLE;        
 }
 
 //**********************UART1 receive interrupt function**********************//
@@ -811,7 +841,7 @@ uint8_t UART_tx_done (STRUCT_UART *str)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
+void __attribute__((__interrupt__, auto_psv)) _U1RXInterrupt(void)
 {
     IFS0bits.U1RXIF = 0;      // clear RX interrupt flag
     uint8_t temp;
@@ -849,7 +879,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1RXInterrupt(void)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
+void __attribute__((__interrupt__, auto_psv)) _U1TXInterrupt(void)
 {
     IFS0bits.U1TXIF = 0;                                // clear TX interrupt flag
     if (UART_struct[UART_1].tx_length == 1)        // Single transmission
@@ -889,7 +919,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1TXInterrupt(void)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
+void __attribute__((__interrupt__, auto_psv)) _U2RXInterrupt(void)
 {
     IFS1bits.U2RXIF = 0;      // clear RX interrupt flag
     uint8_t temp=0;
@@ -927,7 +957,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2RXInterrupt(void)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
+void __attribute__((__interrupt__, auto_psv)) _U2TXInterrupt(void)
 {
     IFS1bits.U2TXIF = 0;      
     if (UART_struct[UART_2].tx_length == 1)
@@ -975,7 +1005,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2TXInterrupt(void)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, no_auto_psv)) _U3RXInterrupt(void)
+void __attribute__((__interrupt__, auto_psv)) _U3RXInterrupt(void)
 {
     IFS5bits.U3RXIF = 0;      // clear RX interrupt flag
     uint8_t temp=0;
@@ -999,10 +1029,10 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3RXInterrupt(void)
     }  
 }
 
-//**********************UART3 transmit interrupt function*********************//
-//Description : UART3 transmit interrupt.
+//**********************UART4 transmit interrupt function*********************//
+//Description : UART4 transmit interrupt.
 //
-//Function prototype : _U3TXInterrupt(void) 
+//Function prototype : _U4TXInterrupt(void) 
 //
 //Enter params       : None
 //
@@ -1013,7 +1043,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3RXInterrupt(void)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, no_auto_psv)) _U3TXInterrupt(void)
+void __attribute__((__interrupt__, auto_psv)) _U3TXInterrupt(void)
 {
     IFS5bits.U3TXIF = 0;      // clear TX interrupt flag
     if (UART_struct[UART_3].tx_length == 1)
@@ -1039,7 +1069,85 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3TXInterrupt(void)
 }
 #endif
 
-void __attribute__((__interrupt__, no_auto_psv)) _U1ErrInterrupt(void)
+//**********************UART4 receive interrupt function**********************//
+//Description : UART4 receive interrupt.
+//
+//Function prototype : _U4RXInterrupt(void) 
+//
+//Enter params       : None
+//
+//Exit params        : None
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022 
+// Jean-Francois Bilodeau, Ing.
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
+void __attribute__((__interrupt__, auto_psv)) _U4RXInterrupt(void)
+{
+    IFS5bits.U4RXIF = 0;      // clear RX interrupt flag
+    uint8_t temp;
+    if (UART_struct[UART_4].rx_counter < UART_struct[UART_4].rx_buf_length)           // Waiting for more data?
+    {
+        UART_struct[UART_4].rx_buf[UART_struct[UART_4].rx_counter++] = U4RXREG;  // Yes, copy it from the UxRXREG
+    }
+
+    if (UART_struct[UART_4].rx_counter >= UART_struct[UART_4].rx_buf_length)          // All data received?
+    {
+        // Empty rxreg from any parasitic data
+        if (U4STAbits.URXDA)
+        {
+            while (U4STAbits.URXDA)
+            {
+                temp = U4RXREG;
+            }
+        }
+        UART_struct[UART_4].rx_done = UART_RX_COMPLETE;                                // Yes, set the RX done flag
+        UART_struct[UART_4].rx_counter = 0;                                            // Clear the RX counter
+    }
+}
+
+//**********************UART4 transmit interrupt function*********************//
+//Description : UART4 transmit interrupt.
+//
+//Function prototype : _U4TXInterrupt(void) 
+//
+//Enter params       : None
+//
+//Exit params        : None
+//
+// Intellitrol           MPLab X v5.45            XC16 v1.61          01/02/2022 
+// Jean-Francois Bilodeau, Ing.
+// jeanfrancois.bilodeau@hotmail.fr
+// www.github.com/lecejeff/dspeak
+//****************************************************************************//
+void __attribute__((__interrupt__, auto_psv)) _U4TXInterrupt(void)
+{
+    IFS5bits.U4TXIF = 0;                                // clear TX interrupt flag
+    if (UART_struct[UART_4].tx_length == 1)        // Single transmission
+    {
+        U4TXREG = UART_struct[UART_4].tx_buf[0]; // Transfer data to UART transmit buffer
+        UART_struct[UART_4].tx_done = UART_TX_COMPLETE;          // Set the TX done flag
+        IEC5bits.U4TXIE = 0;                           // Disable TX interrupt (no more data to send)
+    }  
+
+    if (UART_struct[UART_4].tx_length > 1)        // Multiple transmission
+    {
+        if (UART_struct[UART_4].tx_counter < UART_struct[UART_4].tx_length)         // At least 1 more byte to transfer 
+        {
+            U4TXREG = UART_struct[UART_4].tx_buf[UART_struct[UART_4].tx_counter++]; // Copy TX data to UART TX buffer            
+            if (UART_struct[UART_4].tx_counter == UART_struct[UART_4].tx_length)    // More data to send?
+            {
+                while(!U4STAbits.TRMT);
+                UART_struct[UART_4].tx_done = UART_TX_COMPLETE;                     // Set the TX done flag
+                UART_struct[UART_4].tx_counter = 0;                                 // Clear TX counter
+                IEC5bits.U4TXIE = 0;                                                // Disable TX interrupt (no more data to send)
+            }               
+        }           
+    }   
+}
+
+void __attribute__((__interrupt__, auto_psv)) _U1ErrInterrupt(void)
 {
     uint8_t temp = 0;   
     // Must clear the overrun error to keep UART receiving
@@ -1049,7 +1157,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U1ErrInterrupt(void)
     IFS4bits.U1EIF = 0;
 }
 
-void __attribute__((__interrupt__, no_auto_psv)) _U2ErrInterrupt(void)
+void __attribute__((__interrupt__, auto_psv)) _U2ErrInterrupt(void)
 {
     uint8_t temp = 0;   
     /* Must clear the overrun error to keep UART receiving */
@@ -1060,7 +1168,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _U2ErrInterrupt(void)
 }
 
 #ifdef UART_DEBUG_ENABLE
-void __attribute__((__interrupt__, no_auto_psv)) _U3ErrInterrupt(void)
+void __attribute__((__interrupt__, auto_psv)) _U3ErrInterrupt(void)
 {
     uint8_t temp = 0;   
     /* Must clear the overrun error to keep UART receiving */
@@ -1070,3 +1178,13 @@ void __attribute__((__interrupt__, no_auto_psv)) _U3ErrInterrupt(void)
     IFS5bits.U3EIF = 0;
 }
 #endif
+
+void __attribute__((__interrupt__, auto_psv)) _U4ErrInterrupt(void)
+{
+    uint8_t temp = 0;   
+    /* Must clear the overrun error to keep UART receiving */
+    U4STAbits.OERR = 0; 
+    temp = U4RXREG;
+    UART_struct[UART_4].rx_counter = 0;
+    IFS5bits.U4EIF = 0;
+}

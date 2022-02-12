@@ -22,13 +22,16 @@ extern uint8_t first_read;
 extern uint16_t tx_ch_right;
 uint8_t data_tx_ready = 0;
 
+STRUCT_SPI *CODEC_spi;
+
 void CODEC_init (uint8_t sys_fs)
 {
     uint32_t pll_out_freq = 0;
     uint16_t pll_int_divisor = 0;
     uint16_t pll_frac_divisor = 0;
     DCI_init();
-    SPI_init(SPI_3, SPI_MODE0, 2, 0);   // PPRE = 3, primary prescale 1:4
+    SPI_init(CODEC_spi, SPI_3, SPI_MODE0, 2, 0, SPI_BUF_LENGTH, SPI_BUF_LENGTH);   
+                                        // PPRE = 2, primary prescale 1:4
                                         // SPRE = 0, Secondary prescale 1:8
                                         // Fspi = FCY / 32 = 2.175MHz
     
@@ -203,7 +206,8 @@ void CODEC_init (uint8_t sys_fs)
 uint16_t CODEC_spi_write (uint16_t adr, uint16_t data) 
 {
     uint8_t buf[4] = {((adr & 0xFF00)>>8), adr, ((data & 0xFF00)>>8), data};
-    SPI_master_write(SPI_3, buf, 4, AUDIO_CODEC_CS);
+    SPI_load_tx_buffer(CODEC_spi, buf, 4);
+    SPI_master_write(CODEC_spi, AUDIO_CODEC_CS);
     return data;
 }
 
@@ -212,7 +216,8 @@ uint16_t CODEC_spi_modify_write (uint16_t adr, uint16_t reg, uint16_t mask, uint
     reg &= mask;
     reg |= data;
     uint8_t buf[4] = {((adr & 0xFF00)>>8), adr, ((reg & 0xFF00)>>8), reg};
-    SPI_master_write(SPI_3, buf, 4, AUDIO_CODEC_CS); 
+    SPI_load_tx_buffer(CODEC_spi, buf, 4);
+    SPI_master_write(CODEC_spi, AUDIO_CODEC_CS); 
     return reg;
 }
 

@@ -25,8 +25,9 @@
 #define UART_1 0
 #define UART_2 1
 #define UART_3 2
+#define UART_4 3
 
-#define UART_QTY 3
+#define UART_QTY 4
 
 #define UART_TX_COMPLETE    1
 #define UART_TX_IDLE        0
@@ -37,7 +38,8 @@
 typedef struct
 {
     uint8_t UART_operation;
-    uint8_t DMA_channel;
+    uint8_t DMA_tx_channel;
+    uint8_t DMA_rx_channel;
     uint8_t UART_channel;
     uint8_t tx_length;
     uint8_t tx_buf_length;

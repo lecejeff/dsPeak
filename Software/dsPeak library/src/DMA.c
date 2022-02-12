@@ -6,8 +6,9 @@ STRUCT_DMA DMA_struct[DMA_QTY];
 // DMA_CH1 -> UART2_TX
 // DMA_CH2 -> CAN1_RX
 // DMA_CH3 -> CAN1_TX
-// DMA_CH4 -> SPI_RX
+// DMA_CH4 -> SPI1_RX FTDI EVE
 // DMA_CH5 -> UART3 TX debug port
+// DMA_CH6 -> SPI1_TX FTDI EVE
 
 void DMA_struct_init (uint8_t channel)
 {   

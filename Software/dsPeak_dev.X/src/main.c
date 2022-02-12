@@ -57,10 +57,14 @@
 void DSPIC_init (void);
 
 #include "dspeak_generic.h"
+
+#ifdef EVE_SCREEN_ENABLE
+#include "ft8xx.h"
+#endif
+
 #include "adc.h"
 #include "rtcc.h"
 #include "timer.h"
-#include "ft8xx.h"
 #include "uart.h"
 #include "codec.h"
 #include "pwm.h"
@@ -75,11 +79,14 @@ void DSPIC_init (void);
 #include "rot_encoder.h"
 #include "ividac_driver.h"
 
-//#define SCREEN_ENABLE
-
 CAN_struct CAN_native;
 STRUCT_IVIDAC IVIDAC_struct[2];
-STRUCT_UART UART_struct[UART_QTY];
+
+extern STRUCT_UART UART_struct[UART_QTY];
+STRUCT_UART *UART_485_struct = &UART_struct[UART_1];
+STRUCT_UART *UART_MKB_struct = &UART_struct[UART_2];
+STRUCT_UART *UART_DEBUG_struct = &UART_struct[UART_3];
+
 
 uint8_t i = 0;
 uint8_t state = 0;
@@ -196,9 +203,6 @@ uint8_t ividac_write_once = 0;
 uint8_t btn1_debounce = 1;
 uint8_t btn4_debounce = 1;
 
-uint8_t buf_485_native[32] = {'M','e','s','s','a','g','e',' ','s','e','n','t',' ','f','r','o','m',' ','n','a','t','i','v','e',' ','p','o','r','t','!','\r','\n'};
-
-uint8_t buf_485_mikrob[32] = {'M','e','s','s','a','g','e',' ','s','e','n','t',' ','f','r','o','m',' ','M','i','k','r','o','B',' ','p','o','r','t','!','\r','\n'};
 int main() 
 {
     DSPIC_init();
@@ -215,8 +219,8 @@ int main()
     DSPEAK_LED4_STATE = 0;     
 
 #ifdef UART_DEBUG_ENABLE
-    UART_init(&UART_struct[UART_3], UART_3, 115200, UART_MAX_TX, UART_MAX_RX);
-    UART_putstr_dma(&UART_struct[UART_3], "dsPeak UART debug port with DMA is enabled\r\n");
+    UART_init(UART_DEBUG_struct, UART_3, 115200, UART_MAX_TX, UART_MAX_RX);
+    UART_putstr_dma(UART_DEBUG_struct, "dsPeak UART debug port with DMA is enabled\r\n");
 #endif
 
     //MOTOR_init(MOTOR_1, 30);
@@ -248,6 +252,7 @@ int main()
     
     //PWM_init(PWM_5H, PWM_TYPE_SERVO);
     //PWM_init(PWM_6L, PWM_TYPE_SERVO);
+    
     //SPI_init(SPI_2, SPI_MODE0, PPRE_1_1, SPRE_7_1);   // Set SPI2 to 10MHz (70MIPS / 7)
     //SPI_flash_init();
     //SPI_flash_write_enable();
@@ -256,11 +261,11 @@ int main()
     //CODEC_init(SYS_FS_48kHz);
     
     // Enable dsPeak native RS-485 port @ 460800bps
-    UART_init(&UART_struct[UART_1], UART_1, 460800, 32, 32);
+    UART_init(UART_485_struct, UART_1, 460800, 32, 32);
     
 #ifdef RS485_CLICK_UART2
     // Enable RS-485 Click6 RS-485 interface on MikroBus port @ 460800bps
-    UART_init(&UART_struct[UART_2], UART_2, 460800, 32, 32);
+    UART_init(UART_MKB_struct, UART_2, 460800, 32, 32);
 #endif
     
 //#ifdef BRINGUP_DSPEAK_1    
@@ -305,7 +310,7 @@ int main()
     ADC_start(&ADC_struct_AN0);    // Start ADC2
     ADC_start(&ADC_struct_AN12);   // Start ADC1
     
-#ifdef SCREEN_ENABLE
+#ifdef EVE_SCREEN_ENABLE
     FT8XX_init();
 
     FT8XX_CMD_gradient(0, 0, 0, 0xFF0000, 480, 272, 0x5500FF);
@@ -452,9 +457,9 @@ int main()
     
     
     // Timers init / start should be the last function calls made before while(1) 
-    TIMER_init(TIMER_1, TIMER_PRESCALER_256, 1000);
+    TIMER_init(TIMER_1, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER_2, TIMER_PRESCALER_256, 30);
-    TIMER_init(TIMER_3, TIMER_PRESCALER_256, 1000);
+    TIMER_init(TIMER_3, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER_4, TIMER_PRESCALER_256, 5);
     TIMER_init(TIMER_5, TIMER_PRESCALER_256, 5);
     TIMER_init(TIMER_6, TIMER_PRESCALER_256, 5);
@@ -492,7 +497,7 @@ int main()
                 if (do_once == 0)
                 {
                     do_once = 1;
-                    UART_putstr_dma(&UART_struct[UART_1], "Message sent from native port!\r\n");
+                    UART_putstr_dma(UART_485_struct, "Message sent from native port!\r\n");
                 }
             }
         }
@@ -507,18 +512,18 @@ int main()
 
         if (UART_rx_done(&UART_struct[UART_1]) == UART_RX_COMPLETE)
         {            
-            u485_rx_buf1 = UART_get_rx_buffer(&UART_struct[UART_1]);
-            UART_putbuf_dma(&UART_struct[UART_3], u485_rx_buf1, 32);
-            UART_clear_rx_buffer(&UART_struct[UART_1], '0');
+            u485_rx_buf1 = UART_get_rx_buffer(UART_485_struct);
+            UART_putbuf_dma(UART_DEBUG_struct, u485_rx_buf1, 32);
+            UART_clear_rx_buffer(UART_485_struct, '0');
             u485_1_data_flag = 1;
             DSPEAK_LED1_STATE = 1;
         } 
 
         if (UART_rx_done(&UART_struct[UART_2]) == UART_RX_COMPLETE)
         {           
-            u485_rx_buf2 = UART_get_rx_buffer(&UART_struct[UART_2]);
-            UART_putbuf_dma(&UART_struct[UART_3], u485_rx_buf2, 32);
-            UART_clear_rx_buffer(&UART_struct[UART_2], '0');
+            u485_rx_buf2 = UART_get_rx_buffer(UART_MKB_struct);
+            UART_putbuf_dma(UART_DEBUG_struct, u485_rx_buf2, 32);
+            UART_clear_rx_buffer(UART_MKB_struct, '0');
             u485_2_data_flag = 1; 
             DSPEAK_LED2_STATE = 1;
         }         
@@ -528,7 +533,7 @@ int main()
             if (u485_1_data_flag == 1)
             {                
                 u485_1_data_flag = 0;
-                UART_putstr_dma(&UART_struct[UART_1], "Message sent from native port!\r\n");
+                UART_putstr_dma(UART_485_struct, "Message sent from native port!\r\n");
                 DSPEAK_LED1_STATE = 0;
             }            
         }       
@@ -539,7 +544,7 @@ int main()
             if (u485_2_data_flag == 1)
             {                
                 u485_2_data_flag = 0;
-                UART_putstr_dma(&UART_struct[UART_2], "Message sent from MikroB port!\r\n");
+                UART_putstr_dma(UART_MKB_struct, "Message sent from MikroB port!\r\n");
                 DSPEAK_LED2_STATE = 0;
             }              
 #endif               
@@ -547,7 +552,7 @@ int main()
         
         if (TIMER_get_state(TIMER_2, TIMER_INT_STATE) == 1)
         {           
-#ifdef SCREEN_ENABLE 
+#ifdef EVE_SCREEN_ENABLE 
             if (encoder_dir == 0)
             {
                 FT8XX_modify_element_string(13, FT_PRIM_TEXT, "Forward ");
@@ -776,9 +781,9 @@ int main()
 //                hour = RTCC_get_time_parameter(RTC_HOUR);
 //                minute = RTCC_get_time_parameter(RTC_MINUTE);
 //                second = RTCC_get_time_parameter(RTC_SECOND);
-//                #ifdef SCREEN_ENABLE
+//#ifdef EVE_SCREEN_ENABLE
 //                //FT8XX_modify_clock_hms(&st_Clock[0], hour, minute, second);
-//                #endif
+//#endif
 //                counter_sec = 0; 
 //            }
 //        }        
