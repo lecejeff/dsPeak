@@ -26,6 +26,10 @@
 #include "dspeak_generic.h"
 #include "spi.h"
 
+#define CODEC_QTY           1
+#define DCI_0               0
+
+// SGTL5000 CODEC registers definition
 #define CODEC_CHIP_ID                   0x0000
 #define CODEC_CHIP_DIG_POWER            0x0002
 #define CODEC_CHIP_CLK_CTRL             0x0004
@@ -78,7 +82,7 @@
 #define CODEC_DAP_COEF_WR_A2_MSB        0x0138
 #define CODEC_DAP_COEF_WR_A2_LSB        0x013A
 
-// Microphone specific defines
+// SGTL5000 Microphone specific defines
 #define MIC_BIAS_RES_OFF    0   // Microphone bias output impedance, match with     
 #define MIC_BIAS_RES_2k     1   // microphone output impedance
 #define MIC_BIAS_RES_4k     2   //
@@ -99,10 +103,15 @@
 #define MIC_GAIN_40dB       3   //
 //----------------------------
 
-#define CODEC_INPUT_LINEIN  0
-#define CODEC_INPUT_I2S     1
-#define CODEC_INPUT_MIC
-#define CODEC_INPUT_
+// SGTL5000 input routes
+#define CODEC_INPUT_LINEIN      0
+#define CODEC_INPUT_MICIN       1
+#define CODEC_INPUT_I2S         2
+
+// SGTL5000 output routes
+#define CODEC_OUTPUT_HPOUT      0
+#define CODEC_OUTPUT_LINEOUT    1
+#define CODEC_OUTPUT_I2S        2
 
 // CODEC volume defines
 #define ADC_VOL_RANGE_DEFAULT   0
@@ -124,14 +133,27 @@
 #define LINEOUT_MUTE        2
 #define DAC_MUTE            3
 
-#define SYS_MCLK    12000000    // SYS_MCLK is 12MHz
+#define CODEC_SYS_MCLK      12000000    // SYS_MCLK is 12MHz
 
-// I2C BLOCK TRANSFER define
+#define DCI_DMA_TX              0
+#define DCI_DMA_RX              1
+#define DCI_TRANSMIT_ENABLE     1
+#define DCI_TRANSMIT_DISABLE    0
+#define DCI_RECEIVE_ENABLE      1
+#define DCI_RECEIVE_DISABLE     0
+
+#define DCI_RECEIVE_COMPLETE    1
+#define DCI_TRANSMIT_COMPLETE   1
+
+// I2S BLOCK TRANSFER define
 // A single transfer is 2x words (4x bytes), one per channel (left and right)
 #define CODEC_BLOCK_TRANSFER 256    
 
+#define DCI0_DMA_ENABLE
+
 typedef struct
 {
+    // SGTL5000 registers
     uint16_t CHIP_DIG_POWER;
     uint16_t CHIP_CLK_CTRL;
     uint16_t CHIP_I2S_CTRL;
@@ -181,32 +203,58 @@ typedef struct
     uint16_t DAP_COEF_WR_A1_MSB;
     uint16_t DAP_COEF_WR_A1_LSB;
     uint16_t DAP_COEF_WR_A2_MSB;
-    uint16_t DAP_COEF_WR_A2_LSB; 
+    uint16_t DAP_COEF_WR_A2_LSB;
+    
+    // Application variables
     uint8_t dac_vol_left;
     uint8_t dac_vol_right;
     uint8_t hp_vol_left;
     uint8_t hp_vol_right;
     
+    // DCI variables
+    uint8_t DCI_enable_state;
     uint16_t DCI_receive_buffer[CODEC_BLOCK_TRANSFER];
     uint16_t DCI_transmit_buffer[CODEC_BLOCK_TRANSFER];
     uint16_t DCI_transmit_counter;
     uint16_t DCI_receive_counter;
     uint8_t DCI_transmit_enable;
+    uint8_t DCI_receive_enable;
+    uint8_t interrupt_flag;
+    
+    // Reference to an SPI structure used to communicate with CODEC
+    STRUCT_SPI *spi_ref;
+    
+    // Hardware variables
+    uint8_t SPI_channel;
+    uint8_t DMA_tx_channel;
+    uint8_t DMA_rx_channel;
+    uint8_t DMA_tx_buf;
+    uint8_t DMA_rx_buf;
 }STRUCT_CODEC;
 
-void DCI_init (void);
-void CODEC_init (uint8_t sys_fs);
-uint16_t CODEC_spi_write (uint16_t adr, uint16_t data);
-uint16_t CODEC_spi_modify_write (uint16_t adr, uint16_t reg, uint16_t mask, uint16_t data);
-void CODEC_mute (uint8_t channel);
-void CODEC_unmute (uint8_t channel);
-void CODEC_mic_config (uint8_t bias_res, uint8_t bias_volt, uint8_t gain);
-void CODEC_set_input_route (uint8_t in_channel, uint8_t out_channel, uint8_t gain);
-void CODEC_set_output_route (uint8_t in_channel, uint8_t out_channel, uint8_t gain);
-void CODEC_set_mic_gain (uint8_t gain);
-void CODEC_set_analog_gain (uint8_t range, uint8_t gain_right, uint8_t gain_left);
-void CODEC_set_dac_volume (uint8_t dac_vol_right, uint8_t dac_vol_left);
-void CODEC_set_hp_volume (uint8_t hp_vol_right, uint8_t hp_vol_left);
-uint8_t DCI_get_interrupt_state (void);
+// SGTL5000 codec functions
+void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint8_t sys_fs, uint16_t tx_buf_length, uint16_t rx_buf_length);
+uint16_t CODEC_spi_write (STRUCT_CODEC *codec, uint16_t adr, uint16_t data);
+uint16_t CODEC_spi_modify_write (STRUCT_CODEC *codec, uint16_t adr, uint16_t reg, uint16_t mask, uint16_t data);
+void CODEC_mute (STRUCT_CODEC *codec, uint8_t channel);
+void CODEC_unmute (STRUCT_CODEC *codec, uint8_t channel);
+void CODEC_mic_config (STRUCT_CODEC *codec, uint8_t bias_res, uint8_t bias_volt, uint8_t gain);
+void CODEC_set_input_route (STRUCT_CODEC *codec, uint8_t in_channel, uint8_t out_channel, uint8_t gain);
+void CODEC_set_output_route (STRUCT_CODEC *codec, uint8_t in_channel, uint8_t out_channel, uint8_t gain);
+
+// CODEC volume control
+void CODEC_set_mic_gain (STRUCT_CODEC *codec, uint8_t gain);
+void CODEC_set_analog_gain (STRUCT_CODEC *codec, uint8_t range, uint8_t gain_right, uint8_t gain_left);
+void CODEC_set_dac_volume (STRUCT_CODEC *codec, uint8_t dac_vol_right, uint8_t dac_vol_left);
+void CODEC_set_hp_volume (STRUCT_CODEC *codec, uint8_t hp_vol_right, uint8_t hp_vol_left);
+
+// dsPIC33E DCI module functions
+void DCI_init (STRUCT_CODEC *codec);
+void DCI_enable (STRUCT_CODEC *codec);
+void DCI_disable (STRUCT_CODEC *codec);
+uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx);
+uint8_t DCI_fill_tx_buf_dma (STRUCT_CODEC *codec, uint16_t *buf, uint16_t length);
+void DCI_set_transmit_state (STRUCT_CODEC *codec, uint8_t state);
+void DCI_set_receive_state (STRUCT_CODEC *codec, uint8_t state);
 #endif	
 

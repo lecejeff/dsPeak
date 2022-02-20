@@ -7,8 +7,10 @@ STRUCT_DMA DMA_struct[DMA_QTY];
 // DMA_CH2 -> CAN1_RX
 // DMA_CH3 -> CAN1_TX
 // DMA_CH4 -> SPI1_RX FTDI EVE
-// DMA_CH5 -> UART3 TX debug port
-// DMA_CH6 -> SPI1_TX FTDI EVE
+// DMA_CH5 -> SPI1_TX FTDI EVE
+// DMA_CH6 -> UART3 TX debug port
+// DMA_CH7 -> DCI TX
+// DMA_CH8 -> DCI RX
 
 void DMA_struct_init (uint8_t channel)
 {   
@@ -443,6 +445,76 @@ void DMA_force_txfer (uint8_t channel)
     }    
 }
 
+uint8_t DMA_get_force_state (uint8_t channel)
+{
+    switch (channel)
+    {
+        case DMA_CH0:
+            return DMA0REQbits.FORCE;                     
+            break;
+            
+        case DMA_CH1:
+            return DMA1REQbits.FORCE;               
+            break;
+
+        case DMA_CH2:
+            return DMA2REQbits.FORCE;            
+            break;
+
+        case DMA_CH3:
+            return DMA3REQbits.FORCE;           
+            break;
+
+        case DMA_CH4:
+            return DMA4REQbits.FORCE;            
+            break;
+
+        case DMA_CH5:
+            return DMA5REQbits.FORCE;
+            break;
+
+        case DMA_CH6:
+            return DMA6REQbits.FORCE;
+            break;
+
+        case DMA_CH7:
+            return DMA7REQbits.FORCE;
+            break;
+
+        case DMA_CH8:
+            return DMA8REQbits.FORCE;
+            break;
+
+        case DMA_CH9:
+            return DMA9REQbits.FORCE;
+            break;
+
+        case DMA_CH10:
+            return DMA10REQbits.FORCE;
+            break;
+
+        case DMA_CH11:
+            return DMA11REQbits.FORCE;
+            break;
+
+        case DMA_CH12:
+            return DMA12REQbits.FORCE;
+            break;
+
+        case DMA_CH13:
+            return DMA13REQbits.FORCE;
+            break;
+
+        case DMA_CH14:
+            return DMA14REQbits.FORCE;            
+            break;     
+            
+        default:
+            return 0;
+            break;
+    }      
+}
+
 void DMA_set_txfer_length(uint8_t channel, uint16_t length)
 {
     // Saturate DMA tx length
@@ -522,6 +594,7 @@ uint8_t DMA_get_txfer_state (uint8_t channel)
 {
     if (DMA_struct[channel].txfer_state == DMA_TXFER_DONE)
     {
+        DMA_struct[channel].txfer_state = DMA_TXFER_IDLE;
         return DMA_TXFER_DONE;
     }
     else

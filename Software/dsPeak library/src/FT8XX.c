@@ -102,8 +102,8 @@ uint16_t cmdBufferRd;            // Used to navigate command ring buffer
 uint16_t cmdBufferWr = 0x0000;   // Used to navigate command ring buffer
 uint16_t cmdOffset = 0x0000;    // Used to navigate command rung buffer
 
-extern STRUCT_SPI spi_struct[SPI_QTY];
-STRUCT_SPI *EVE_spi = &spi_struct[SPI_1];   // Assign EVE_spi to SPI_1
+extern STRUCT_SPI SPI_struct[SPI_QTY];
+STRUCT_SPI *EVE_spi = &SPI_struct[SPI_1];   // Assign EVE_spi to SPI_1
 
 //***************************uint8_t FT_init (void))*******************************//
 //Description : Function initializes FT8XXX display to given parameters

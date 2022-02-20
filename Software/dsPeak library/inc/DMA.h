@@ -25,6 +25,7 @@
 
 #define DMA_MAX_TX_LENGTH   0x4000  // dsPIC33EP512MU814 datasheet, p.167 ((2^14)+1)
 
+#define DMA_TXFER_IDLE          2
 #define DMA_TXFER_DONE          1
 #define DMA_TXFER_IN_PROGRESS   0
 
@@ -140,6 +141,7 @@ void DMA_struct_init (uint8_t channel);
 void DMA_init (uint8_t channel);
 uint8_t DMA_get_txfer_state (uint8_t channel);
 void DMA_force_txfer (uint8_t channel);
+uint8_t DMA_get_force_state (uint8_t channel);
 void DMA_set_txfer_length(uint8_t channel, uint16_t length);
 void DMA_enable (uint8_t channel);
 void DMA_disable (uint8_t channel);

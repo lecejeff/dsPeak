@@ -55,17 +55,18 @@
 
 typedef struct
 {
+    uint8_t TIMER_channel;
     uint8_t int_state;
-    uint8_t run_state;
     uint32_t freq;
     uint8_t prescaler;
-}TIMER_STRUCT;
+    uint8_t running;
+}STRUCT_TIMER;
 
-void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq);
-void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq);
-uint32_t TIMER_get_freq (uint8_t timer);
-void TIMER_start (uint8_t timer);
-void TIMER_stop (uint8_t timer);
-uint8_t TIMER_get_state (uint8_t timer, uint8_t type);
+uint8_t TIMER_init (STRUCT_TIMER *timer, uint8_t channel, uint8_t prescaler, uint32_t freq);
+uint8_t TIMER_update_freq (STRUCT_TIMER *timer, uint8_t prescaler, uint32_t new_freq);
+uint32_t TIMER_get_freq (STRUCT_TIMER *timer);
+uint8_t TIMER_start (STRUCT_TIMER *timer);
+uint8_t TIMER_stop (STRUCT_TIMER *timer);
+uint8_t TIMER_get_state (STRUCT_TIMER *timer, uint8_t type);
 #endif	/* TIMER_H */
 

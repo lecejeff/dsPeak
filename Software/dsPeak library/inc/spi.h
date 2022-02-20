@@ -83,8 +83,12 @@
 #define SPI_IS_READY        1
 #define SPI_TX_LOADED       2
 #define SPI_TX_IN_PROGRESS  3
-#define SPI_TX_IS_DONE      4   
+#define SPI_TX_IS_DONE      4  
 
+//#define SPI1_DMA_ENABLE
+#define SPI2_DMA_ENABLE
+//#define SPI3_DMA_ENABLE
+//#define SPI4_DMA_ENABLE
 
 #define SPI_MODULE_FREE     0
 #define SPI_MODULE_BUSY     1
@@ -122,7 +126,7 @@ typedef struct
 
 void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t ppre, uint8_t spre, uint16_t tx_buf_length, uint16_t rx_buf_length); 
 uint8_t SPI_master_write (STRUCT_SPI *spi, uint8_t chip);
-void SPI_master_write_nonblock (STRUCT_SPI *spi, uint8_t chip);
+uint8_t SPI_master_write_dma (STRUCT_SPI *spi, uint8_t chip);
 uint8_t SPI_master_release_port (STRUCT_SPI *spi);
 uint8_t SPI_set_interrupt_enable (STRUCT_SPI *spi);
 uint8_t SPI_txfer_done (STRUCT_SPI *spi);

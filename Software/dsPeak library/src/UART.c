@@ -23,12 +23,23 @@
 STRUCT_UART UART_struct[UART_QTY];
 
 // Define UART_x channel DMA buffers (either transmit, receive or both)
+#ifdef UART1_DMA_ENABLE
 __eds__ uint8_t uart1_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
+#endif
+
+#ifdef UART2_DMA_ENABLE
 __eds__ uint8_t uart2_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
+#endif
+
+#ifdef UART3_DMA_ENABLE
 #ifdef UART_DEBUG_ENABLE
 __eds__ uint8_t uart3_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 #endif
+#endif
+
+#ifdef UART4_DMA_ENABLE
 __eds__ uint8_t uart4_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
+#endif
 
 //***void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud, 
 //                uint16_t tx_buf_length, uint16_t rx_buf_length)
@@ -52,8 +63,7 @@ __eds__ uint8_t uart4_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud, 
-                uint8_t tx_buf_length, uint8_t rx_buf_length)
+void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint8_t tx_buf_length, uint8_t rx_buf_length)
 {
     switch (channel)
     {
@@ -94,16 +104,19 @@ void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud,
             U1STA = 0x0440;                 // Reset status register and enable TX & RX
             IPC16bits.U1EIP = 3;            // Error interrupt priority
             IPC2bits.U1RXIP = 7;            // RX interrupt priority
+            IPC3bits.U1TXIP = 7;            // TX interrupt priority
             IEC4bits.U1EIE = 1;             // Enable error interrupt 
             IEC0bits.U1RXIE = 1;            // Enable receive interrupt  
-            
+
+#ifdef UART1_DMA_ENABLE            
             DMA_init(DMA_CH0);
             DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
             DMA0REQ = DMAREQ_U1TX;
             DMA0PAD = (volatile uint16_t)&U1TXREG;
             DMA0STAH = __builtin_dmapage(uart1_dma_tx_buf);
             DMA0STAL = __builtin_dmaoffset(uart1_dma_tx_buf);
-            str->DMA_tx_channel = DMA_CH0; 
+            uart->DMA_tx_channel = DMA_CH0; 
+#endif
             break;
            
         case UART_2:
@@ -147,16 +160,19 @@ void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud,
             U2STA  = 0x0440;                // Reset status register and enable TX & RX           
             IPC16bits.U2EIP = 3;            // Error interrupt priority
             IPC7bits.U2RXIP = 7;            // RX interrupt priority
+            IPC7bits.U2TXIP = 7;
             IEC4bits.U2EIE = 1;             // Enable error interrupt
             IEC1bits.U2RXIE = 1;            // Enable receive interrupt
-            
+
+#ifdef UART2_DMA_ENABLE                
             DMA_init(DMA_CH1);
             DMA1CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
             DMA1REQ = DMAREQ_U2TX;
             DMA1PAD = (volatile uint16_t)&U2TXREG;
             DMA1STAH = __builtin_dmapage(uart2_dma_tx_buf);
             DMA1STAL = __builtin_dmaoffset(uart2_dma_tx_buf);  
-            str->DMA_tx_channel = DMA_CH1;
+            uart->DMA_tx_channel = DMA_CH1;
+#endif
             break;
             
         case UART_3: 
@@ -192,16 +208,19 @@ void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud,
             U3STA  = 0x0440;                // Reset status register and enable TX & RX
             IPC20bits.U3EIP = 3;            // Error interrupt priority
             IPC20bits.U3RXIP = 4;           // RX interrupt priority
+            IPC20bits.U3TXIP = 7;           // TX interrupt priority
             IEC5bits.U3EIE = 1;             // Enable error interrupt
             IEC5bits.U3RXIE = 1;            // Enable receive interrupt
             
-            DMA_init(DMA_CH5);
-            DMA5CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-            DMA5REQ = DMAREQ_U3TX;
-            DMA5PAD = (volatile uint16_t)&U3TXREG;
-            DMA5STAH = __builtin_dmapage(uart3_dma_tx_buf);
-            DMA5STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
-            str->DMA_tx_channel = DMA_CH5;
+#ifdef UART3_DMA_ENABLE            
+            DMA_init(DMA_CH6);
+            DMA6CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
+            DMA6REQ = DMAREQ_U3TX;
+            DMA6PAD = (volatile uint16_t)&U3TXREG;
+            DMA6STAH = __builtin_dmapage(uart3_dma_tx_buf);
+            DMA6STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
+            uart->DMA_tx_channel = DMA_CH6;
+#endif
 #endif
             break; 
 
@@ -232,16 +251,19 @@ void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud,
             U4STA  = 0x0440;                // Reset status register and enable TX & RX
             IPC21bits.U4EIP = 3;            // Error interrupt priority
             IPC22bits.U4RXIP = 4;           // RX interrupt priority
+            IPC22bits.U4TXIP = 4;           // TX interrupt priority
             IEC5bits.U4EIE = 1;             // Enable error interrupt
             IEC5bits.U4RXIE = 1;            // Enable receive interrupt
-            
+  
+#ifdef UART4_DMA_ENABLE
 //            DMA_init(DMA_CH5);
 //            DMA5CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
 //            DMA5REQ = DMAREQ_U3TX;
 //            DMA5PAD = (volatile uint16_t)&U3TXREG;
 //            DMA5STAH = __builtin_dmapage(uart3_dma_tx_buf);
 //            DMA5STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
-//            str->DMA_tx_channel = DMA_CH5;
+//            uart->DMA_tx_channel = DMA_CH5;
+#endif
             break; 
             
         default:
@@ -250,39 +272,39 @@ void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud,
       
     if (rx_buf_length > 255)
     {
-        str->rx_buf_length = 255;
+        uart->rx_buf_length = 255;
     }
     else
     {
-        str->rx_buf_length = rx_buf_length;
+        uart->rx_buf_length = rx_buf_length;
     }
     
     if (tx_buf_length > 255)
     {
-        str->tx_buf_length = 255;
+        uart->tx_buf_length = 255;
     }
     else
     {
-        str->tx_buf_length = tx_buf_length;
+        uart->tx_buf_length = tx_buf_length;
     }
     
-    str->tx_done = UART_TX_COMPLETE;// TX not done
-    str->tx_length = 0;             // TX not done
-    str->rx_done = 0;               // RX not done
-    str->rx_counter = 0;            // Reset rx data counter
-    str->tx_counter = 0;            // Reset tx data counter
-    str->UART_channel = channel;    
+    uart->tx_done = UART_TX_COMPLETE;// TX not done
+    uart->tx_length = 0;             // TX not done
+    uart->rx_done = 0;               // RX not done
+    uart->rx_counter = 0;            // Reset rx data counter
+    uart->tx_counter = 0;            // Reset tx data counter
+    uart->UART_channel = channel;    
     // According to UART reference manual, users should add a software delay
     // between the UART enable and first transmission based on the baudrate
     __delay_ms(100);
 }   
 
-//************uint8_t UART_get_rx_buffer_length (STRUCT_UART *str)************//
+//************uint8_t UART_get_rx_buffer_length (STRUCT_UART *uart)************//
 //Description : Function returns the receive buffer length of the structure
 //
-//Function prototype : uint8_t UART_get_rx_buffer_length (STRUCT_UART *str)
+//Function prototype : uint8_t UART_get_rx_buffer_length (STRUCT_UART *uart)
 //
-//Enter params       : STRUCT_UART *str : structure pointer type
+//Enter params       : STRUCT_UART *uart : structure pointer type
 //
 //Exit params        : None
 //
@@ -293,14 +315,14 @@ void UART_init (STRUCT_UART *str, uint8_t channel, uint32_t baud,
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t UART_get_rx_buffer_length (STRUCT_UART *str)
+uint8_t UART_get_rx_buffer_length (STRUCT_UART *uart)
 {
-    return str->rx_buf_length;
+    return uart->rx_buf_length;
 }
 
-uint8_t UART_get_trmt_state (STRUCT_UART *str)
+uint8_t UART_get_trmt_state (STRUCT_UART *uart)
 {
-    switch (str->UART_channel)
+    switch (uart->UART_channel)
     {
         case UART_1:
             return U1STAbits.TRMT;
@@ -324,15 +346,15 @@ uint8_t UART_get_trmt_state (STRUCT_UART *str)
     }
 }
 
-//*************void UART_putc (STRUCT_UART *str, uint8_t data)****************//
+//*************void UART_putc (STRUCT_UART *uart, uint8_t data)****************//
 //Description : Function transmits a single character on selected channel via
 //              interrupt.
 //              This function halts execution until TRMT bit of the selected 
 //              UART channel is equal to "1" -> empty
 //
-//Function prototype : void UART_putc (STRUCT_UART *str, uint8_t data)
+//Function prototype : void UART_putc (STRUCT_UART *uart, uint8_t data)
 //
-//Enter params       : STRUCT_UART *str     : structure pointer type
+//Enter params       : STRUCT_UART *uart     : structure pointer type
 //                   : uint8_t data         : byte of data
 //
 //Exit params        : None
@@ -344,51 +366,51 @@ uint8_t UART_get_trmt_state (STRUCT_UART *str)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_putc (STRUCT_UART *str, uint8_t data)
+void UART_putc (STRUCT_UART *uart, uint8_t data)
 {
-    switch(str->UART_channel)
+    switch(uart->UART_channel)
     {
         case UART_1:
             while(!U1STAbits.TRMT);     // Wait for TX shift reg to be empty    
-            str->tx_length = 1;    // Set TX length
-            str->tx_buf[0] = data;// Fill buffer                
+            uart->tx_length = 1;    // Set TX length
+            uart->tx_buf[0] = data;// Fill buffer                
             IEC0bits.U1TXIE = 1;        // Enable interrupt, which sets the TX interrupt flag            
             break;
             
         case UART_2:
             while(!U2STAbits.TRMT);
-            str->tx_length = 1;    // Set TX length
-            str->tx_buf[0] = data;// Fill buffer    
+            uart->tx_length = 1;    // Set TX length
+            uart->tx_buf[0] = data;// Fill buffer    
             IEC1bits.U2TXIE = 1;               
             break;
             
         case UART_3:
 #ifdef UART_DEBUG_ENABLE
             while(!U3STAbits.TRMT);
-            str->tx_length = 1;    // Set TX length
-            str->tx_buf[0] = data;// Fill buffer    
+            uart->tx_length = 1;    // Set TX length
+            uart->tx_buf[0] = data;// Fill buffer    
             IEC5bits.U3TXIE = 1;   
 #endif            
             break;
             
         case UART_4:
             while(!U4STAbits.TRMT);
-            str->tx_length = 1;    // Set TX length
-            str->tx_buf[0] = data;// Fill buffer    
+            uart->tx_length = 1;    // Set TX length
+            uart->tx_buf[0] = data;// Fill buffer    
             IEC5bits.U4TXIE = 1;               
             break;            
     }  
 }  
 
-//***********void UART_putc_ascii (STRUCT_UART *str, uint8_t data)************//
+//***********void UART_putc_ascii (STRUCT_UART *uart, uint8_t data)************//
 //Description : Function converts byte to 2 corresponding ascii characters and 
 //              send them through UART
 //              This function halts execution until TRMT bit of the selected 
 //              UART channel is equal to "1" -> empty
 //
-//Function prototype : void UART_putc_ascii (STRUCT_UART *str, uint8_t data)
+//Function prototype : void UART_putc_ascii (STRUCT_UART *uart, uint8_t data)
 //
-//Enter params       : STRUCT_UART *str     : structure pointer type
+//Enter params       : STRUCT_UART *uart     : structure pointer type
 //                   : uint8_t data         : byte of data
 //
 //Exit params        : None
@@ -400,21 +422,21 @@ void UART_putc (STRUCT_UART *str, uint8_t data)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_putc_ascii (STRUCT_UART *str, uint8_t data)
+void UART_putc_ascii (STRUCT_UART *uart, uint8_t data)
 {
     uint8_t buf[2];
     hex_to_ascii(data, &buf[0], &buf[1]);   // Convert byte to ascii values
-    UART_putbuf(str, buf, 2);               // Send both values through UART
+    UART_putbuf(uart, buf, 2);               // Send both values through UART
 }
 
-//********void UART_putstr (STRUCT_UART *str, const char *string)*************//
+//********void UART_putstr (STRUCT_UART *uart, const char *string)*************//
 //Description : Function sends a string of character through UART_x channel
 //              This function halts execution until TRMT bit of the selected 
 //              UART channel is equal to "1" -> empty              
 //
-//Function prototype : void UART_putstr (STRUCT_UART *str, const char *string)
+//Function prototype : void UART_putstr (STRUCT_UART *uart, const char *string)
 //
-//Enter params       : STRUCT_UART *str     : structure pointer type
+//Enter params       : STRUCT_UART *uart     : structure pointer type
 //                   : const char *string   : string of character
 //
 //Exit params        : None
@@ -426,39 +448,38 @@ void UART_putc_ascii (STRUCT_UART *str, uint8_t data)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-// Need to add a MAX_TX_OVERFLOW error mechanism to this function
-void UART_putstr (STRUCT_UART *str, const char *string)
+void UART_putstr(STRUCT_UART *uart, const char *string)
 {
     uint8_t i = 0;
     uint8_t length = strlen(string);
 
     // Wait for previous transaction to be completed
-    while (UART_tx_done(str) != UART_TX_COMPLETE);
+    while (UART_tx_done(uart) != UART_TX_COMPLETE);
     
     // Saturate strlen to UART_MAX_TX define
-    if (length > str->tx_buf_length)
+    if (length > uart->tx_buf_length)
     {
-        length = str->tx_buf_length;
+        length = uart->tx_buf_length;
     }
 
     // Fill TX buffer
     for (; i < length; i++)
     {
-        str->tx_buf[i] = *string++;   // Copy data into transmit buffer  
+        uart->tx_buf[i] = *string++;   // Copy data into transmit buffer  
     }               
-    str->tx_length = length;           // Set the transmit length
-    str->tx_done = UART_TX_IDLE;       // Clear the TX done flag
-    UART_send_tx_buffer(str);
+    uart->tx_length = length;           // Set the transmit length
+    uart->tx_done = UART_TX_IDLE;       // Clear the TX done flag
+    UART_send_tx_buffer(uart);
 }
 
-//********void UART_putstr (STRUCT_UART *str, const char *string)*************//
+//********void UART_putstr (STRUCT_UART *uart, const char *string)*************//
 //Description : Function sends a string of character through UART_x channel
 //              This function halts execution until TRMT bit of the selected 
 //              UART channel is equal to "1" -> empty              
 //
-//Function prototype : void UART_putstr (STRUCT_UART *str, const char *string)
+//Function prototype : void UART_putstr (STRUCT_UART *uart, const char *string)
 //
-//Enter params       : STRUCT_UART *str     : structure pointer type
+//Enter params       : STRUCT_UART *uart     : structure pointer type
 //                   : const char *string   : string of character
 //
 //Exit params        : None
@@ -470,49 +491,69 @@ void UART_putstr (STRUCT_UART *str, const char *string)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t UART_putstr_dma (STRUCT_UART *str, const char *string)
+uint8_t UART_putstr_dma (STRUCT_UART *uart, const char *string)
 {
     uint8_t i = 0;
     uint8_t length = strlen(string);
 
     // Wait for previous transaction to be completed
-    if (DMA_get_txfer_state(str->DMA_tx_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
+    if (DMA_get_txfer_state(uart->DMA_tx_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
     {
-        if (UART_get_trmt_state(str) == 1)            // TRMT empty and ready to accept new data         
+        if (UART_get_trmt_state(uart) == 1)            // TRMT empty and ready to accept new data         
         {    
             // Saturate strlen to UART_MAX_TX define
-            if (length > str->tx_buf_length)
+            if (length > uart->tx_buf_length)
             {
-                length = str->tx_buf_length;
+                length = uart->tx_buf_length;
             }
 
             // Fill TX buffer
             for (; i < length; i++)
             {
-                if (str->UART_channel == UART_1)
+                if (uart->UART_channel == UART_1)
                 {
+#ifdef UART1_DMA_ENABLE
                     uart1_dma_tx_buf[i] = *string++;
+                    DMA_set_txfer_length(uart->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+                    DMA_enable(uart->DMA_tx_channel);
+                    UART_send_tx_buffer(uart);
+                    DMA_force_txfer(uart->DMA_tx_channel);   
+#endif
                 }
-                else if (str->UART_channel == UART_2)
+                else if (uart->UART_channel == UART_2)
                 {
+#ifdef UART2_DMA_ENABLE
                     uart2_dma_tx_buf[i] = *string++;
+                    DMA_set_txfer_length(uart->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+                    DMA_enable(uart->DMA_tx_channel);
+                    UART_send_tx_buffer(uart);
+                    DMA_force_txfer(uart->DMA_tx_channel);   
+#endif
                 }
-                else if (str->UART_channel == UART_3)
+                else if (uart->UART_channel == UART_3)
                 {
+#ifdef UART3_DMA_ENABLE
                     uart3_dma_tx_buf[i] = *string++;
+                    DMA_set_txfer_length(uart->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+                    DMA_enable(uart->DMA_tx_channel);
+                    UART_send_tx_buffer(uart);
+                    DMA_force_txfer(uart->DMA_tx_channel);   
+#endif
                 }
-                else if (str->UART_channel == UART_4)
+                else if (uart->UART_channel == UART_4)
                 {
+#ifdef UART4_DMA_ENABLE
                     uart4_dma_tx_buf[i] = *string++;
+                    DMA_set_txfer_length(uart->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+                    DMA_enable(uart->DMA_tx_channel);
+                    UART_send_tx_buffer(uart);
+                    DMA_force_txfer(uart->DMA_tx_channel);   
+#endif
                 }                
                 else
                     return 0;
             }  
-            
-            DMA_set_txfer_length(str->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
-            DMA_enable(str->DMA_tx_channel);
-            UART_send_tx_buffer(str);
-            DMA_force_txfer(str->DMA_tx_channel);   
+   
             return 1;
         }
         else
@@ -543,37 +584,37 @@ uint8_t UART_putstr_dma (STRUCT_UART *str, const char *string)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_putbuf (STRUCT_UART *str, uint8_t *buf, uint8_t length)
+void UART_putbuf (STRUCT_UART *uart, uint8_t *buf, uint8_t length)
 {
     uint8_t i = 0;
     
     // Wait for previous transaction to have completed
-    while (UART_tx_done(str) != UART_TX_COMPLETE);
+    while (UART_tx_done(uart) != UART_TX_COMPLETE);
     
     // Saturate write length
-    if (length > str->tx_buf_length)
+    if (length > uart->tx_buf_length)
     {
-        length = str->tx_buf_length;
+        length = uart->tx_buf_length;
     }
     
     // Fill transmit buffer, set transmit length and TX done flag to idle
     for (; i < length; i++)
     {
-        str->tx_buf[i] = *buf++;    // Copy data into transmit buffer   
+        uart->tx_buf[i] = *buf++;    // Copy data into transmit buffer   
     }               
-    str->tx_length = length;        // Set the transmit length  
-    str->tx_done = UART_TX_IDLE;    // Clear the TX done flag  
-    UART_send_tx_buffer(str);
+    uart->tx_length = length;        // Set the transmit length  
+    uart->tx_done = UART_TX_IDLE;    // Clear the TX done flag  
+    UART_send_tx_buffer(uart);
 }
 
 
-//***uint8_t UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)*****//
+//***uint8_t UART_putbuf_dma (STRUCT_UART *uart, uint8_t *buf, uint8_t length)*****//
 //Description : Function sends a buffer of data of specified length to UART_x
 //              channel using DMA
 //
-//Function prototype : void UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)
+//Function prototype : void UART_putbuf_dma (STRUCT_UART *uart, uint8_t *buf, uint8_t length)
 //
-//Enter params       : STRUCT_UART *str : structure pointer type
+//Enter params       : STRUCT_UART *uart : structure pointer type
 //                   : uint8_t *buf     : write buffer
 //                   : uint8_t length   : write length in bytes
 //
@@ -586,44 +627,64 @@ void UART_putbuf (STRUCT_UART *str, uint8_t *buf, uint8_t length)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)
+uint8_t UART_putbuf_dma (STRUCT_UART *uart, uint8_t *buf, uint8_t length)
 {
     uint8_t i = 0;               
-    if (DMA_get_txfer_state(str->DMA_tx_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
+    if (DMA_get_txfer_state(uart->DMA_tx_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
     {
-        if (UART_get_trmt_state(str) == 1)            // TRMT empty and ready to accept new data         
+        if (UART_get_trmt_state(uart) == 1)            // TRMT empty and ready to accept new data         
         {
             for (; i < length; i++)
             {
-                if (str->UART_channel == UART_1)
+                if (uart->UART_channel == UART_1)
                 {
+#ifdef UART1_DMA_ENABLE   
                     uart1_dma_tx_buf[i] = *buf++;
-                }
-
-                else if (str->UART_channel == UART_2)
-                {
-                    uart2_dma_tx_buf[i] = *buf++;
-                }
-
-                else if (str->UART_channel == UART_3)
-                {
-#ifdef UART_DEBUG_ENABLE                            
-                    uart3_dma_tx_buf[i] = *buf++;
+                    DMA_set_txfer_length(uart->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+                    DMA_enable(uart->DMA_tx_channel);
+                    UART_send_tx_buffer(uart);
+                    DMA_force_txfer(uart->DMA_tx_channel);
 #endif
                 }
 
-                else if (str->UART_channel == UART_4)
+                else if (uart->UART_channel == UART_2)
                 {
+#ifdef UART2_DMA_ENABLE
+                    uart2_dma_tx_buf[i] = *buf++;
+                    DMA_set_txfer_length(uart->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+                    DMA_enable(uart->DMA_tx_channel);
+                    UART_send_tx_buffer(uart);
+                    DMA_force_txfer(uart->DMA_tx_channel);                    
+#endif
+                }
+
+                else if (uart->UART_channel == UART_3)
+                {
+#ifdef UART_DEBUG_ENABLE       
+#ifdef UART3_DMA_ENABLE
+                    uart3_dma_tx_buf[i] = *buf++;
+                    DMA_set_txfer_length(uart->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+                    DMA_enable(uart->DMA_tx_channel);
+                    UART_send_tx_buffer(uart);
+                    DMA_force_txfer(uart->DMA_tx_channel);
+#endif
+#endif
+                }
+
+                else if (uart->UART_channel == UART_4)
+                {
+#ifdef UART4_DMA_ENABLE
                     uart4_dma_tx_buf[i] = *buf++;
+                    DMA_set_txfer_length(uart->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
+                    DMA_enable(uart->DMA_tx_channel);
+                    UART_send_tx_buffer(uart);
+                    DMA_force_txfer(uart->DMA_tx_channel);
+#endif
                 }                
                 
                 else
                     return 0;
             }                      
-            DMA_set_txfer_length(str->DMA_tx_channel, length - 1);     // 0 = 1 txfer, so substract 1 
-            DMA_enable(str->DMA_tx_channel);
-            UART_send_tx_buffer(str);
-            DMA_force_txfer(str->DMA_tx_channel);
             return 1;
         }
         else
@@ -633,12 +694,12 @@ uint8_t UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)
         return 0;       
 }
 
-//**void UART_fill_tx_buffer (STRUCT_UART *str, uint8_t *data, uint8_t length)**//
+//**void UART_fill_tx_buffer (STRUCT_UART *uart, uint8_t *data, uint8_t length)**//
 //Description : Function fills the TX buffer and set it's length in the struct
 //
-//Function prototype : void UART_fill_tx_buffer (STRUCT_UART *str, uint8_t *data, uint8_t length)
+//Function prototype : void UART_fill_tx_buffer (STRUCT_UART *uart, uint8_t *data, uint8_t length)
 //
-//Enter params       : STRUCT_UART *str : structure pointer type
+//Enter params       : STRUCT_UART *uart : structure pointer type
 //                   : uint8_t *data    : write buffer
 //                   : uint8_t length   : write length
 //
@@ -651,35 +712,35 @@ uint8_t UART_putbuf_dma (STRUCT_UART *str, uint8_t *buf, uint8_t length)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_fill_tx_buffer (STRUCT_UART *str, uint8_t *data, uint8_t length)
+void UART_fill_tx_buffer (STRUCT_UART *uart, uint8_t *data, uint8_t length)
 {
     uint8_t i = 0;
     
     // Wait for previous transaction to be complete
-    while (UART_tx_done(str) != UART_TX_COMPLETE);
+    while (UART_tx_done(uart) != UART_TX_COMPLETE);
     
     // Saturate write length
-    if (length > str->tx_buf_length)
+    if (length > uart->tx_buf_length)
     {
-        length = str->tx_buf_length;
+        length = uart->tx_buf_length;
     }
     
     for (; i < length; i++)
     {
-        str->tx_buf[i] = *data++; // Fill the transmit buffer
+        uart->tx_buf[i] = *data++; // Fill the transmit buffer
     }           
-    str->tx_length = length;       // Write TX buffer length
-    str->tx_done = UART_TX_IDLE;   // Set transfer state to IDLE
+    uart->tx_length = length;       // Write TX buffer length
+    uart->tx_done = UART_TX_IDLE;   // Set transfer state to IDLE
 }
 
-//*****************void UART_send_tx_buffer (STRUCT_UART *str)****************//
+//*****************void UART_send_tx_buffer (STRUCT_UART *uart)****************//
 //Description : Used complementary to UART_fill_tx_buffer
 //              Functions sets the str UART channel interrupt flag to start the
 //              transmission of the frame written in UART_fill_tx_buffer
 //
-//Function prototype : void UART_send_tx_buffer (STRUCT_UART *str)
+//Function prototype : void UART_send_tx_buffer (STRUCT_UART *uart)
 //
-//Enter params       : STRUCT_UART *str : structure pointer type
+//Enter params       : STRUCT_UART *uart : structure pointer type
 //
 //Exit params        : None
 //
@@ -690,9 +751,9 @@ void UART_fill_tx_buffer (STRUCT_UART *str, uint8_t *data, uint8_t length)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_send_tx_buffer (STRUCT_UART *str)
+void UART_send_tx_buffer (STRUCT_UART *uart)
 {
-    switch(str->UART_channel)
+    switch(uart->UART_channel)
     {
         case UART_1:
             IEC0bits.U1TXIE = 1;    // Enable TX interrupt, which set the TX interrupt flag
@@ -737,17 +798,17 @@ void UART_send_tx_buffer (STRUCT_UART *str)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t * UART_get_rx_buffer (STRUCT_UART *str)
+uint8_t * UART_get_rx_buffer (STRUCT_UART *uart)
 {
-    return &str->rx_buf[0];
+    return &uart->rx_buf[0];
 }
 
-//******void UART_clear_rx_buffer (STRUCT_UART *str, uint8_t clr_byte)********//
+//******void UART_clear_rx_buffer (STRUCT_UART *uart, uint8_t clr_byte)********//
 //Description : Function clears the str rx_buf to clr_byte value            
 //
-//Function prototype : void UART_clear_rx_buffer (STRUCT_UART *str, uint8_t clr_byte)
+//Function prototype : void UART_clear_rx_buffer (STRUCT_UART *uart, uint8_t clr_byte)
 //
-//Enter params       : STRUCT_UART *str     : structure pointer type
+//Enter params       : STRUCT_UART *uart     : structure pointer type
 //                   : const char *string   : string of character
 //
 //Exit params        : None
@@ -759,24 +820,24 @@ uint8_t * UART_get_rx_buffer (STRUCT_UART *str)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_clear_rx_buffer (STRUCT_UART *str, uint8_t clr_byte)
+void UART_clear_rx_buffer (STRUCT_UART *uart, uint8_t clr_byte)
 {
     uint8_t i = 0;
-    for (; i <= str->rx_buf_length; i++)
+    for (; i <= uart->rx_buf_length; i++)
     {
-        str->rx_buf[i] = clr_byte;
+        uart->rx_buf[i] = clr_byte;
     }
-    str->rx_counter = 0;
+    uart->rx_counter = 0;
 }
 
-//****************uint8_t UART_rx_done (STRUCT_UART *str)*********************//
+//****************uint8_t UART_rx_done (STRUCT_UART *uart)*********************//
 //Description : Function checks the str rx_done flag
 //              If rx_done = 1, the reception of the frame is over, returns 1
 //              If rx_done = 0, the reception of the frame is still in progress, returns 0
 //
-//Function prototype : uint8_t UART_rx_done (STRUCT_UART *str)
+//Function prototype : uint8_t UART_rx_done (STRUCT_UART *uart)
 //
-//Enter params       : STRUCT_UART *str : structure pointer type
+//Enter params       : STRUCT_UART *uart : structure pointer type
 //
 //Exit params        : uint8_t
 //
@@ -787,25 +848,25 @@ void UART_clear_rx_buffer (STRUCT_UART *str, uint8_t clr_byte)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t UART_rx_done (STRUCT_UART *str)
+uint8_t UART_rx_done (STRUCT_UART *uart)
 {
-    if (str->rx_done == UART_RX_COMPLETE)
+    if (uart->rx_done == UART_RX_COMPLETE)
     {
-        str->rx_done = UART_RX_IDLE;
+        uart->rx_done = UART_RX_IDLE;
         return UART_RX_COMPLETE;
     }
     else
         return UART_RX_IDLE;
 }
 
-//*****************uint8_t UART_tx_done (STRUCT_UART *str)********************//
+//*****************uint8_t UART_tx_done (STRUCT_UART *uart)********************//
 //Description : Function checks the str UART channel transmit shift register empty bit TRMT
 //              If TRMT = 1 (last transmission completed), returns 1
 //              If TMRT = 0 (transmission in progress or queued), return 0
 //
-//Function prototype : uint8_t UART_tx_done (STRUCT_UART *str)
+//Function prototype : uint8_t UART_tx_done (STRUCT_UART *uart)
 //
-//Enter params       : STRUCT_UART *str : structure pointer type
+//Enter params       : STRUCT_UART *uart : structure pointer type
 //
 //Exit params        : uint8_t
 //
@@ -816,11 +877,11 @@ uint8_t UART_rx_done (STRUCT_UART *str)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t UART_tx_done (STRUCT_UART *str)
+uint8_t UART_tx_done (STRUCT_UART *uart)
 {
-    if (str->tx_done == UART_TX_COMPLETE)
+    if (uart->tx_done == UART_TX_COMPLETE)
     {
-        str->tx_done = UART_TX_IDLE;
+        uart->tx_done = UART_TX_IDLE;
         return UART_TX_COMPLETE;  
     }
     else

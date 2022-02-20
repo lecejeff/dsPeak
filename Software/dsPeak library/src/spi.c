@@ -27,19 +27,27 @@
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 #include "spi.h"
-STRUCT_SPI spi_struct[SPI_QTY];
+STRUCT_SPI SPI_struct[SPI_QTY];
 
-__eds__ uint8_t spi1_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
-__eds__ uint8_t spi1_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+#ifdef SPI1_DMA_ENABLE
+    __eds__ uint8_t spi1_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+    __eds__ uint8_t spi1_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+#endif
 
-__eds__ uint8_t spi2_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
-__eds__ uint8_t spi2_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+#ifdef SPI2_DMA_ENABLE
+    __eds__ uint8_t spi2_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+    __eds__ uint8_t spi2_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+#endif
+    
+#ifdef SPI3_DMA_ENABLE
+    __eds__ uint8_t spi3_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+    __eds__ uint8_t spi3_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+#endif
 
-__eds__ uint8_t spi3_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
-__eds__ uint8_t spi3_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
-
-__eds__ uint8_t spi4_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
-__eds__ uint8_t spi4_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+#ifdef SPI4_DMA_ENABLE
+    __eds__ uint8_t spi4_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+    __eds__ uint8_t spi4_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+#endif
 
 //void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre)//
 //Description : Function initializes SPI module on selected MODE with Prim and
@@ -114,16 +122,17 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
                     break;
             }
             
-//            // DMA_CH3 is SPI1-TX DMA channel
-//            DMA_init(DMA_CH6);
-//            DMA3CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-//            DMA3REQ = DMAREQ_SPI2;
-//            DMA3PAD = (volatile uint16_t)&SPI2BUF;
-//            DMA3STAH = __builtin_dmapage(spi2_dma_tx_buf);
-//            DMA3STAL = __builtin_dmaoffset(spi2_dma_tx_buf);   
-//            spi->DMA_tx_channel = DMA_CH6;
+#ifdef SPI1_DMA_ENABLE
+//            // DMA_CH5 is SPI1 TX DMA channel
+//            DMA_init(DMA_CH5);
+//            DMA5CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
+//            DMA5REQ = DMAREQ_SPI2;
+//            DMA5PAD = (volatile uint16_t)&SPI2BUF;
+//            DMA5STAH = __builtin_dmapage(spi2_dma_tx_buf);
+//            DMA5STAL = __builtin_dmaoffset(spi2_dma_tx_buf);   
+//            spi->DMA_tx_channel = DMA_CH5;
 //            
-//            // DMA_CH4 is SPI1-RX DMA channel
+//            // DMA_CH4 is SPI1 RX DMA channel
 //            DMA_init(DMA_CH4);
 //            DMA4CON = DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD;
 //            DMA4REQ = DMAREQ_SPI2;
@@ -131,6 +140,7 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
 //            DMA4STAH = __builtin_dmapage(spi2_dma_rx_buf);
 //            DMA4STAL = __builtin_dmaoffset(spi2_dma_rx_buf); 
 //            spi->DMA_rx_channel = DMA_CH4;
+#endif
 
             // SPI1 input/output pin mapping  
             TRISFbits.TRISF13 = 0;          // RF13 configured as an output (SPI1_MOSI) 
@@ -145,7 +155,7 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             RPINR20bits.SCK1R = 108;        // RF12 (RP108) assigned to SPI1_SCLK input
             RPOR11bits.RP108R = 0x06;       // RF12 (RP108) assigned to SPI1_SCLK output         
             
-            IPC2bits.SPI1IP = 4;            // SPI int priority is 4 (normal) 
+            IPC2bits.SPI1IP = 7;            // SPI int priority is 7 (highest) 
             IEC0bits.SPI1EIE = 1;           // Enable SPI error interrupt detection
             IFS0bits.SPI1IF = 0;            // Clear SPI int flag   
             SPI1STATbits.SPIEN = 1;         // Enable SPI module               
@@ -211,7 +221,7 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             IFS2bits.SPI2IF = 0;            // Clear SPI int flag               
             SPI2STATbits.SPIEN = 1;         // Enable SPI module   
             
-            spi_struct[SPI_2].nonblock_state = SPI_IS_INITIALIZED;
+            SPI_struct[SPI_2].nonblock_state = SPI_IS_INITIALIZED;
             break;  
             
         // SPI3 is the AUDIO CODEC configuration interface    
@@ -526,7 +536,7 @@ uint8_t SPI_master_write (STRUCT_SPI *spi, uint8_t chip)
         return 0;
 }
 
-void SPI_master_write_nonblock (STRUCT_SPI *spi, uint8_t chip)
+uint8_t SPI_master_write_dma (STRUCT_SPI *spi, uint8_t chip)
 {
     uint16_t i = 0;  
     // *** Data should be loaded in SPI_load_tx_buffer function ***    
@@ -538,31 +548,44 @@ void SPI_master_write_nonblock (STRUCT_SPI *spi, uint8_t chip)
     spi->txfer_done = SPI_TX_IDLE; // Set SPI module state to transmit idle                  
     
     // DMA mode
-    for (i=0; i<spi->tx_length; i++)
+    if (DMA_get_txfer_state(spi->DMA_tx_channel) == DMA_TXFER_DONE)    // If DMA channel is free, fill buffer and transmit
     {
-        if (spi->SPI_channel == SPI_1)
+        for (i=0; i<spi->tx_length; i++)
         {
-            spi1_dma_tx_buf[i] = spi->tx_data[i];
-        }
-        else if (spi->SPI_channel == SPI_2)
-        {
-            spi2_dma_tx_buf[i] = spi->tx_data[i];
-        }
-        else if (spi->SPI_channel == SPI_3)
-        {
-            spi3_dma_tx_buf[i] = spi->tx_data[i];
-        }
-        else if (spi->SPI_channel == SPI_4)
-        {
-            spi4_dma_tx_buf[i] = spi->tx_data[i];
-        }
+            if (spi->SPI_channel == SPI_1)
+            {
+#ifdef SPI1_DMA_ENABLE
+                spi1_dma_tx_buf[i] = spi->tx_data[i];
+#endif
+            }
+            else if (spi->SPI_channel == SPI_2)
+            {
+#ifdef SPI2_DMA_ENABLE
+                spi2_dma_tx_buf[i] = spi->tx_data[i];
+#endif
+            }
+            else if (spi->SPI_channel == SPI_3)
+            {
+#ifdef SPI3_DMA_ENABLE
+                spi3_dma_tx_buf[i] = spi->tx_data[i];
+#endif
+            }
+            else if (spi->SPI_channel == SPI_4)
+            {
+#ifdef SPI4_DMA_ENABLE
+                spi4_dma_tx_buf[i] = spi->tx_data[i];
+#endif
+            }
+        }    
+        DMA_set_txfer_length(spi->DMA_tx_channel, spi->tx_length - 1);
+        DMA_enable(spi->DMA_tx_channel);                 
+        SPI_master_assert_cs(spi);
+        SPI_set_interrupt_enable(spi);
+        DMA_force_txfer(spi->DMA_tx_channel);
+        return 1;
     }
-    
-    DMA_set_txfer_length(spi->DMA_tx_channel, spi->tx_length - 1);
-    DMA_enable(spi->DMA_tx_channel);                 
-    SPI_master_assert_cs(spi);
-    SPI_set_interrupt_enable(spi);
-    DMA_force_txfer(spi->DMA_tx_channel);
+    else
+        return 0;
 }
 
 uint8_t SPI_set_interrupt_enable (STRUCT_SPI *spi)
@@ -628,22 +651,30 @@ uint8_t SPI_master_unload_dma_buffer (STRUCT_SPI *spi)
     {
         if (spi->SPI_channel == SPI_1)
         {
+#ifdef SPI1_DMA_ENABLE
             spi->rx_data[i] = spi1_dma_rx_buf[i];
+#endif
         }
 
         else if (spi->SPI_channel == SPI_2)
         {
+#ifdef SPI2_DMA_ENABLE
             spi->rx_data[i] = spi2_dma_rx_buf[i];
+#endif
         }
 
         else if (spi->SPI_channel == SPI_3)
         {
+#ifdef SPI3_DMA_ENABLE
             spi->rx_data[i] = spi3_dma_rx_buf[i];
+#endif
         }
 
         else if (spi->SPI_channel == SPI_4)
         {
+#ifdef SPI4_DMA_ENABLE
             spi->rx_data[i] = spi4_dma_rx_buf[i];
+#endif
         }
         else
             return 0;
@@ -956,39 +987,39 @@ void __attribute__((__interrupt__, auto_psv)) _SPI1Interrupt(void)
     IFS0bits.SPI1IF = 0;                   
     uint16_t i=0;  
     // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
-    for (i=0; i<spi_struct[SPI_1].last_tx_length; i++)
+    for (i=0; i<SPI_struct[SPI_1].last_tx_length; i++)
     {
-        spi_struct[SPI_1].rx_data[spi_struct[SPI_1].rx_cnt++] = SPI1BUF;
+        SPI_struct[SPI_1].rx_data[SPI_struct[SPI_1].rx_cnt++] = SPI1BUF;
         SPI1STATbits.SPIROV = 0;
     }
     // Is there more data to transmit?
-    if (spi_struct[SPI_1].tx_cnt < spi_struct[SPI_1].tx_length)
+    if (SPI_struct[SPI_1].tx_cnt < SPI_struct[SPI_1].tx_length)
     {     
-        spi_struct[SPI_1].tx_remaining = spi_struct[SPI_1].tx_length - spi_struct[SPI_1].tx_cnt;
+        SPI_struct[SPI_1].tx_remaining = SPI_struct[SPI_1].tx_length - SPI_struct[SPI_1].tx_cnt;
         // Is there at least 8+ bytes left to transmit?
-        if (spi_struct[SPI_1].tx_remaining  >= 8)
+        if (SPI_struct[SPI_1].tx_remaining  >= 8)
         {
             for (i=0; i<8; i++)
             {
-                SPI1BUF = spi_struct[SPI_1].tx_data[spi_struct[SPI_1].tx_cnt++];
+                SPI1BUF = SPI_struct[SPI_1].tx_data[SPI_struct[SPI_1].tx_cnt++];
             }
-            spi_struct[SPI_1].last_tx_length = 8;
+            SPI_struct[SPI_1].last_tx_length = 8;
         }
         else
         {
-            for (i=0; i<spi_struct[SPI_1].tx_remaining ; i++)
+            for (i=0; i<SPI_struct[SPI_1].tx_remaining ; i++)
             {
-                SPI1BUF = spi_struct[SPI_1].tx_data[spi_struct[SPI_1].tx_cnt++];
+                SPI1BUF = SPI_struct[SPI_1].tx_data[SPI_struct[SPI_1].tx_cnt++];
             } 
-            spi_struct[SPI_1].last_tx_length = spi_struct[SPI_1].tx_remaining;
+            SPI_struct[SPI_1].last_tx_length = SPI_struct[SPI_1].tx_remaining;
         }
     }
     else
     {
         if (SPI1STATbits.SRXMPT == 1)
         {  
-            SPI_master_deassert_cs(&spi_struct[SPI_1]);
-            spi_struct[SPI_1].txfer_done = SPI_TX_COMPLETE;       
+            SPI_master_deassert_cs(&SPI_struct[SPI_1]);
+            SPI_struct[SPI_1].txfer_done = SPI_TX_COMPLETE;       
             IEC0bits.SPI1IE = 0;             
         }
     } 
@@ -1014,39 +1045,39 @@ void __attribute__((__interrupt__, auto_psv)) _SPI2Interrupt(void)
     //unsigned char test = 0;
 //    uint16_t i=0;  
 //    // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
-//    for (i=0; i<spi_struct[SPI_2].last_tx_length; i++)
+//    for (i=0; i<SPI_struct[SPI_2].last_tx_length; i++)
 //    {
-//        spi_struct[SPI_2].rx_data[spi_struct[SPI_2].rx_cnt++] = SPI2BUF;
+//        SPI_struct[SPI_2].rx_data[SPI_struct[SPI_2].rx_cnt++] = SPI2BUF;
 //        SPI2STATbits.SPIROV = 0;
 //    }
 //    // Is there more data to transmit?
-//    if (spi_struct[SPI_2].tx_cnt < spi_struct[SPI_2].tx_length)
+//    if (SPI_struct[SPI_2].tx_cnt < SPI_struct[SPI_2].tx_length)
 //    {     
-//        spi_struct[SPI_2].tx_remaining = spi_struct[SPI_2].tx_length - spi_struct[SPI_2].tx_cnt;
+//        SPI_struct[SPI_2].tx_remaining = SPI_struct[SPI_2].tx_length - SPI_struct[SPI_2].tx_cnt;
 //        // Is there at least 8+ bytes left to transmit?
-//        if (spi_struct[SPI_2].tx_remaining  >= 8)
+//        if (SPI_struct[SPI_2].tx_remaining  >= 8)
 //        {
 //            for (i=0; i<8; i++)
 //            {
-//                SPI2BUF = spi_struct[SPI_2].tx_data[spi_struct[SPI_2].tx_cnt++];
+//                SPI2BUF = SPI_struct[SPI_2].tx_data[SPI_struct[SPI_2].tx_cnt++];
 //            }
-//            spi_struct[SPI_2].last_tx_length = 8;
+//            SPI_struct[SPI_2].last_tx_length = 8;
 //        }
 //        else
 //        {
-//            for (i=0; i<spi_struct[SPI_2].tx_remaining ; i++)
+//            for (i=0; i<SPI_struct[SPI_2].tx_remaining ; i++)
 //            {
-//                SPI2BUF = spi_struct[SPI_2].tx_data[spi_struct[SPI_2].tx_cnt++];
+//                SPI2BUF = SPI_struct[SPI_2].tx_data[SPI_struct[SPI_2].tx_cnt++];
 //            } 
-//            spi_struct[SPI_2].last_tx_length = spi_struct[SPI_2].tx_remaining;
+//            SPI_struct[SPI_2].last_tx_length = SPI_struct[SPI_2].tx_remaining;
 //        }
 //    }
 //    else
 //    {
 //        if (SPI2STATbits.SRXMPT == 1)
 //        {  
-            //SPI_master_deassert_cs(&spi_struct[SPI_2]);
-            //spi_struct[SPI_2].txfer_done = SPI_TX_COMPLETE;       
+            //SPI_master_deassert_cs(&SPI_struct[SPI_2]);
+            //SPI_struct[SPI_2].txfer_done = SPI_TX_COMPLETE;       
             //IEC2bits.SPI2IE = 0;             
 //        }
 //    } 
@@ -1071,39 +1102,39 @@ void __attribute__((__interrupt__, auto_psv)) _SPI3Interrupt(void)
 {
     uint16_t i=0;  
     // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
-    for (i=0; i<spi_struct[SPI_3].last_tx_length; i++)
+    for (i=0; i<SPI_struct[SPI_3].last_tx_length; i++)
     {
-        spi_struct[SPI_3].rx_data[spi_struct[SPI_3].rx_cnt++] = SPI3BUF;
+        SPI_struct[SPI_3].rx_data[SPI_struct[SPI_3].rx_cnt++] = SPI3BUF;
         SPI3STATbits.SPIROV = 0;
     }
     // Is there more data to transmit?
-    if (spi_struct[SPI_3].tx_cnt < spi_struct[SPI_3].tx_length)
+    if (SPI_struct[SPI_3].tx_cnt < SPI_struct[SPI_3].tx_length)
     {     
-        spi_struct[SPI_3].tx_remaining = spi_struct[SPI_3].tx_length - spi_struct[SPI_3].tx_cnt;
+        SPI_struct[SPI_3].tx_remaining = SPI_struct[SPI_3].tx_length - SPI_struct[SPI_3].tx_cnt;
         // Is there at least 8+ bytes left to transmit?
-        if (spi_struct[SPI_3].tx_remaining  >= 8)
+        if (SPI_struct[SPI_3].tx_remaining  >= 8)
         {
             for (i=0; i<8; i++)
             {
-                SPI3BUF = spi_struct[SPI_3].tx_data[spi_struct[SPI_3].tx_cnt++];
+                SPI3BUF = SPI_struct[SPI_3].tx_data[SPI_struct[SPI_3].tx_cnt++];
             }
-            spi_struct[SPI_3].last_tx_length = 8;
+            SPI_struct[SPI_3].last_tx_length = 8;
         }
         else
         {
-            for (i=0; i<spi_struct[SPI_3].tx_remaining ; i++)
+            for (i=0; i<SPI_struct[SPI_3].tx_remaining ; i++)
             {
-                SPI3BUF = spi_struct[SPI_3].tx_data[spi_struct[SPI_3].tx_cnt++];
+                SPI3BUF = SPI_struct[SPI_3].tx_data[SPI_struct[SPI_3].tx_cnt++];
             } 
-            spi_struct[SPI_3].last_tx_length = spi_struct[SPI_3].tx_remaining;
+            SPI_struct[SPI_3].last_tx_length = SPI_struct[SPI_3].tx_remaining;
         }
     }
     else
     {
         if (SPI3STATbits.SRXMPT == 1)
         {  
-            SPI_master_deassert_cs(&spi_struct[SPI_3]);
-            spi_struct[SPI_3].txfer_done = SPI_TX_COMPLETE;       
+            SPI_master_deassert_cs(&SPI_struct[SPI_3]);
+            SPI_struct[SPI_3].txfer_done = SPI_TX_COMPLETE;       
             IEC5bits.SPI3IE = 0;             
         }
     } 
@@ -1129,39 +1160,39 @@ void __attribute__((__interrupt__, auto_psv)) _SPI4Interrupt(void)
     IFS7bits.SPI4IF = 0; 
     uint16_t i=0;
     // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
-    for (i=0; i<spi_struct[SPI_4].last_tx_length; i++)
+    for (i=0; i<SPI_struct[SPI_4].last_tx_length; i++)
     {
-        spi_struct[SPI_4].rx_data[spi_struct[SPI_4].rx_cnt++] = SPI4BUF;
+        SPI_struct[SPI_4].rx_data[SPI_struct[SPI_4].rx_cnt++] = SPI4BUF;
         SPI4STATbits.SPIROV = 0;
     }
     // Is there more data to transmit?
-    if (spi_struct[SPI_4].tx_cnt < spi_struct[SPI_4].tx_length)
+    if (SPI_struct[SPI_4].tx_cnt < SPI_struct[SPI_4].tx_length)
     {     
-        spi_struct[SPI_4].tx_remaining = spi_struct[SPI_4].tx_length - spi_struct[SPI_4].tx_cnt;
+        SPI_struct[SPI_4].tx_remaining = SPI_struct[SPI_4].tx_length - SPI_struct[SPI_4].tx_cnt;
         // Is there at least 8+ bytes left to transmit?
-        if (spi_struct[SPI_4].tx_remaining  >= 8)
+        if (SPI_struct[SPI_4].tx_remaining  >= 8)
         {
             for (i=0; i<8; i++)
             {
-                SPI4BUF = spi_struct[SPI_4].tx_data[spi_struct[SPI_4].tx_cnt++];
+                SPI4BUF = SPI_struct[SPI_4].tx_data[SPI_struct[SPI_4].tx_cnt++];
             }
-            spi_struct[SPI_4].last_tx_length = 8;
+            SPI_struct[SPI_4].last_tx_length = 8;
         }
         else
         {
-            for (i=0; i<spi_struct[SPI_4].tx_remaining ; i++)
+            for (i=0; i<SPI_struct[SPI_4].tx_remaining ; i++)
             {
-                SPI4BUF = spi_struct[SPI_4].tx_data[spi_struct[SPI_4].tx_cnt++];
+                SPI4BUF = SPI_struct[SPI_4].tx_data[SPI_struct[SPI_4].tx_cnt++];
             } 
-            spi_struct[SPI_4].last_tx_length = spi_struct[SPI_4].tx_remaining;
+            SPI_struct[SPI_4].last_tx_length = SPI_struct[SPI_4].tx_remaining;
         }
     }
     else
     {
         if (SPI4STATbits.SRXMPT == 1)
         {  
-            SPI_master_deassert_cs(&spi_struct[SPI_4]);
-            spi_struct[SPI_4].txfer_done = SPI_TX_COMPLETE;       
+            SPI_master_deassert_cs(&SPI_struct[SPI_4]);
+            SPI_struct[SPI_4].txfer_done = SPI_TX_COMPLETE;       
             IEC7bits.SPI4IE = 0;             
         }                      
     }

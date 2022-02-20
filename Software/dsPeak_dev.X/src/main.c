@@ -82,11 +82,31 @@ void DSPIC_init (void);
 CAN_struct CAN_native;
 STRUCT_IVIDAC IVIDAC_struct[2];
 
+// Access to UART struct members
 extern STRUCT_UART UART_struct[UART_QTY];
 STRUCT_UART *UART_485_struct = &UART_struct[UART_1];
 STRUCT_UART *UART_MKB_struct = &UART_struct[UART_2];
 STRUCT_UART *UART_DEBUG_struct = &UART_struct[UART_3];
 
+// Access to TIMER struct members
+extern STRUCT_TIMER TIMER_struct[TIMER_QTY];
+STRUCT_TIMER *TIMER1_struct = &TIMER_struct[TIMER_1];
+STRUCT_TIMER *TIMER2_struct = &TIMER_struct[TIMER_2];
+STRUCT_TIMER *TIMER3_struct = &TIMER_struct[TIMER_3];
+STRUCT_TIMER *TIMER4_struct = &TIMER_struct[TIMER_4];
+STRUCT_TIMER *TIMER5_struct = &TIMER_struct[TIMER_5];
+STRUCT_TIMER *TIMER6_struct = &TIMER_struct[TIMER_6];
+STRUCT_TIMER *TIMER7_struct = &TIMER_struct[TIMER_7];
+STRUCT_TIMER *TIMER8_struct = &TIMER_struct[TIMER_8];
+STRUCT_TIMER *TIMER9_struct = &TIMER_struct[TIMER_9];
+
+// Access to SPI struct members
+extern STRUCT_SPI SPI_struct[SPI_QTY];
+STRUCT_SPI *SPI_codec = &SPI_struct[SPI_3];
+
+// Access to CODEC struct members
+extern STRUCT_CODEC CODEC_struct[CODEC_QTY];
+STRUCT_CODEC *CODEC_sgtl5000 = &CODEC_struct[DCI_0];
 
 uint8_t i = 0;
 uint8_t state = 0;
@@ -98,8 +118,6 @@ uint16_t counter_ms = 0;
 uint16_t counter_100us = 0;
 uint16_t hour_bcd = 0, minute_bcd = 0, second_bcd = 0;
 uint8_t buf[128] = {0};
-uint8_t test_spi[8] = {'J', 'e', 't', 'a', 'i', 'm', 'e', '!'};
-const char *str = "-- Testing a full 64 bytes transfer from DPSRAM->DMA->USART3!\r\n";
 uint8_t can_buf_1[8] = {'d', 's', 'P', 'e', 'a', 'k', '1', '!'};
 uint8_t can_buf_2[8] = {'d', 's', 'P', 'e', 'a', 'k', '2', '!'};
 uint16_t test = 1;
@@ -173,9 +191,6 @@ uint8_t CAN_tx_state = 0;
 
 uint8_t spi4_buf[260] = {0};
 
-extern __eds__ uint8_t spi2_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
-extern __eds__ uint8_t spi2_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
-
 extern uint16_t rx_ch_left;
 extern uint16_t rx_ch_right;
 
@@ -202,6 +217,8 @@ uint32_t counter_zero = 0;
 uint8_t ividac_write_once = 0;
 uint8_t btn1_debounce = 1;
 uint8_t btn4_debounce = 1;
+
+uint16_t inact_counter = 0;
 
 int main() 
 {
@@ -258,7 +275,7 @@ int main()
     //SPI_flash_write_enable();
     //SPI_flash_erase(CMD_CHIP_ERASE, 0);    
     
-    //CODEC_init(SYS_FS_48kHz);
+    CODEC_init(CODEC_sgtl5000, SPI_codec, SPI_3, SYS_FS_48kHz, CODEC_BLOCK_TRANSFER, CODEC_BLOCK_TRANSFER);
     
     // Enable dsPeak native RS-485 port @ 460800bps
     UART_init(UART_485_struct, UART_1, 460800, 32, 32);
@@ -452,36 +469,33 @@ int main()
 //    ST7735_init();
 //    color = RGB888_to_RGB565(0x00FF00);
 //    ST7735_Clear(color);
-          
-    
-    
-    
+            
     // Timers init / start should be the last function calls made before while(1) 
-    TIMER_init(TIMER_1, TIMER_PRESCALER_256, 10);
-    TIMER_init(TIMER_2, TIMER_PRESCALER_256, 30);
-    TIMER_init(TIMER_3, TIMER_PRESCALER_256, 10);
-    TIMER_init(TIMER_4, TIMER_PRESCALER_256, 5);
-    TIMER_init(TIMER_5, TIMER_PRESCALER_256, 5);
-    TIMER_init(TIMER_6, TIMER_PRESCALER_256, 5);
-    TIMER_init(TIMER_7, TIMER_PRESCALER_256, 50000);
-    TIMER_init(TIMER_8, TIMER_PRESCALER_256, 5);
+    TIMER_init(TIMER1_struct, TIMER_1, TIMER_PRESCALER_256, 5);
+    TIMER_init(TIMER2_struct, TIMER_2, TIMER_PRESCALER_256, 30);
+    TIMER_init(TIMER3_struct, TIMER_3, TIMER_PRESCALER_256, 5);
+    //TIMER_init(TIMER4_struct, TIMER_4, TIMER_PRESCALER_256, 5);
+    //TIMER_init(TIMER5_struct, TIMER_5, TIMER_PRESCALER_256, 5);
+    //TIMER_init(TIMER6_struct, TIMER_6, TIMER_PRESCALER_256, 5);
+    //TIMER_init(TIMER7_struct, TIMER_7, TIMER_PRESCALER_256, 10);
+    //TIMER_init(TIMER8_struct, TIMER_8, TIMER_PRESCALER_256, 5);
     
     // Encoder initialization with associated velocity timer   
-    ENCODER_init(30); 
-    TIMER_init(TIMER_9, TIMER_PRESCALER_256, ENCODER_get_fs());
+    ENCODER_init(10); 
+    TIMER_init(TIMER9_struct, TIMER_9, TIMER_PRESCALER_256, ENCODER_get_fs());
                                   // 
-
-    TIMER_start(TIMER_1);
-    TIMER_start(TIMER_2);
-    TIMER_start(TIMER_3);
-    TIMER_start(TIMER_4);
-    TIMER_start(TIMER_5);
-    TIMER_start(TIMER_7);
-    TIMER_start(TIMER_8);
-    TIMER_start(TIMER_9);
+    TIMER_start(TIMER1_struct);
+    TIMER_start(TIMER2_struct);
+    TIMER_start(TIMER3_struct);
+    //TIMER_start(TIMER4_struct);
+    //TIMER_start(TIMER5_struct);
+    //TIMER_start(TIMER6_struct);
+    //TIMER_start(TIMER7_struct);
+    //TIMER_start(TIMER8_struct);
+    TIMER_start(TIMER9_struct);
     
 #ifdef UART_DEBUG_ENABLE
-    UART_putstr_dma(&UART_struct[UART_3], "Program while(1) starts here\r\n");
+    UART_putstr_dma(UART_DEBUG_struct, "Program while(1) starts here\r\n");
 #endif
   
     while (1)
@@ -510,35 +524,42 @@ int main()
             }
         }
 
-        if (UART_rx_done(&UART_struct[UART_1]) == UART_RX_COMPLETE)
+        if (UART_rx_done(UART_485_struct) == UART_RX_COMPLETE)
         {            
-            u485_rx_buf1 = UART_get_rx_buffer(UART_485_struct);
-            UART_putbuf_dma(UART_DEBUG_struct, u485_rx_buf1, 32);
-            UART_clear_rx_buffer(UART_485_struct, '0');
             u485_1_data_flag = 1;
             DSPEAK_LED1_STATE = 1;
         } 
 
-        if (UART_rx_done(&UART_struct[UART_2]) == UART_RX_COMPLETE)
+        if (UART_rx_done(UART_MKB_struct) == UART_RX_COMPLETE)
         {           
-            u485_rx_buf2 = UART_get_rx_buffer(UART_MKB_struct);
-            UART_putbuf_dma(UART_DEBUG_struct, u485_rx_buf2, 32);
-            UART_clear_rx_buffer(UART_MKB_struct, '0');
             u485_2_data_flag = 1; 
             DSPEAK_LED2_STATE = 1;
-        }         
+        }
         
-        if (TIMER_get_state(TIMER_1, TIMER_INT_STATE) == 1)
+        // Handle DCI transfer DMA interrupt
+#ifdef DCI0_DMA_ENABLE
+        if (DCI_get_interrupt_state(CODEC_sgtl5000, DCI_DMA_TX) == DCI_TRANSMIT_COMPLETE)
+        {
+
+        }
+
+        if (DCI_get_interrupt_state(CODEC_sgtl5000, DCI_DMA_RX) == DCI_RECEIVE_COMPLETE)
+        {
+            
+        }
+#endif
+        
+        if (TIMER_get_state(TIMER1_struct, TIMER_INT_STATE) == 1)
         {
             if (u485_1_data_flag == 1)
             {                
                 u485_1_data_flag = 0;
                 UART_putstr_dma(UART_485_struct, "Message sent from native port!\r\n");
                 DSPEAK_LED1_STATE = 0;
-            }            
+            }
         }       
 
-        if (TIMER_get_state(TIMER_3, TIMER_INT_STATE) == 1)
+        if (TIMER_get_state(TIMER3_struct, TIMER_INT_STATE) == 1)
         {
 #ifdef RS485_CLICK_UART2               
             if (u485_2_data_flag == 1)
@@ -550,7 +571,7 @@ int main()
 #endif               
         }   
         
-        if (TIMER_get_state(TIMER_2, TIMER_INT_STATE) == 1)
+        if (TIMER_get_state(TIMER2_struct, TIMER_INT_STATE) == 1)
         {           
 #ifdef EVE_SCREEN_ENABLE 
             if (encoder_dir == 0)
@@ -697,35 +718,35 @@ int main()
 #endif
         } 
         
-        if (TIMER_get_state(TIMER_4, TIMER_INT_STATE) == 1)
+        if (TIMER_get_state(TIMER4_struct, TIMER_INT_STATE) == 1)
         {
         }  
         
-        if (TIMER_get_state(TIMER_5, TIMER_INT_STATE) == 1)
+        if (TIMER_get_state(TIMER5_struct, TIMER_INT_STATE) == 1)
         {
-            if (++color_counter > TIMER_get_freq(TIMER_5))
+            if (++color_counter > TIMER_get_freq(TIMER5_struct))
             {
                 color_counter = 0;
                 //UART_putstr_dma(&UART_struct[UART_3], "Timer 5 tick\r\n");              
             }
         } 
         
-        if (TIMER_get_state(TIMER_6, TIMER_INT_STATE) == 1)
+        if (TIMER_get_state(TIMER6_struct, TIMER_INT_STATE) == 1)
         {
             
         } 
         
-        if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
+        if (TIMER_get_state(TIMER7_struct, TIMER_INT_STATE) == 1)
         {
             
         }
         
-        if (TIMER_get_state(TIMER_8, TIMER_INT_STATE) == 1)
+        if (TIMER_get_state(TIMER8_struct, TIMER_INT_STATE) == 1)
         {
             
         } 
                
-        if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
+        if (TIMER_get_state(TIMER9_struct, TIMER_INT_STATE) == 1)
         {
             encoder_rpm = ENCODER_get_velocity();
         }

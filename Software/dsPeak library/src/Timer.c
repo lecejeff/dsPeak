@@ -19,16 +19,16 @@
 //              TIMER_6 : 
 //              TIMER_7 : 
 //              TIMER_8 : 
-//              TIMER_9 : Reserved to SPI_2 for non-blocking function calls
+//              TIMER_9 : 
 //              
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
-// Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
+// Jean-Francois Bilodeau, Ing
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 #include "Timer.h"
 
-TIMER_STRUCT TIMER_struct[TIMER_QTY];
+STRUCT_TIMER TIMER_struct[TIMER_QTY];
 
 //*****void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)******//
 //Description : Function initializes timer module with interrupt at specified
@@ -49,7 +49,7 @@ TIMER_STRUCT TIMER_struct[TIMER_QTY];
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)
+uint8_t TIMER_init (STRUCT_TIMER *timer, uint8_t channel, uint8_t prescaler, uint32_t freq)
 {
     // 16-bit timers
     // With 1x prescaler, clock freq is 70MHz
@@ -60,10 +60,7 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)
     // Minimum timer frequency : 1.09375MHz / freq, 0<=freq<=65535 = >>17Hz<<    
     // with 256x prescaler, clock freq is 70MHz / 256 = 273437.5Hz 
     // Minimum timer frequency : 273437 / freq, 0<=freq<=65535 = >>5Hz<<
-    TIMER_struct[timer].freq = freq;
-    TIMER_struct[timer].int_state = 0;
-    TIMER_struct[timer].run_state = 0;
-    switch(timer)
+    switch(channel)
     {
         case TIMER_1:  
             T1CONbits.TON = 0;          // Stop Timer
@@ -296,15 +293,27 @@ void TIMER_init (uint8_t timer, uint8_t prescaler, uint32_t freq)
                     
                 case TIMER_PRESCALER_256:
                     PR9 = ((FCY / 256) / freq);
-                    break;                    
+                    break; 
             }
-            break;          
+            break;         
+            
+                                
+        default: 
+            return 0;
+            break;
     }
+    timer->TIMER_channel = channel;
+    timer->running = 0;
+    timer->freq = freq;
+    timer->prescaler = prescaler;
+    timer->int_state = 0;
+    timer->running = 0;   
+    return 1;
 }
 
-uint32_t TIMER_get_freq (uint8_t timer)
+uint32_t TIMER_get_freq (STRUCT_TIMER *timer)
 {
-    return TIMER_struct[timer].freq;
+    return timer->freq;
 }
 
 //void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)//
@@ -325,14 +334,16 @@ uint32_t TIMER_get_freq (uint8_t timer)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
+uint8_t TIMER_update_freq (STRUCT_TIMER *timer, uint8_t prescaler, uint32_t new_freq)
 {
-    switch (timer)
+    switch (timer->TIMER_channel)
     {
         case TIMER_1:
-            TIMER_stop(TIMER_1);
+            TIMER_stop(timer);
             TMR1 = 0;
             T1CONbits.TCKPS = prescaler;
+            timer->prescaler = prescaler;
+            timer->freq = new_freq;
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
@@ -351,13 +362,15 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
                     PR1 = ((FCY / 256) / new_freq);
                     break;                    
             }            
-            TIMER_start(TIMER_1);
+            TIMER_start(timer);
             break;
             
         case TIMER_2:
-            TIMER_stop(TIMER_2);
+            TIMER_stop(timer);
             TMR2 = 0;
             T2CONbits.TCKPS = prescaler;
+            timer->prescaler = prescaler;
+            timer->freq = new_freq;
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
@@ -376,13 +389,15 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
                     PR2 = ((FCY / 256) / new_freq);
                     break;                    
             } 
-            TIMER_start(TIMER_2);
+            TIMER_start(timer);
             break;
             
         case TIMER_3:
-            TIMER_stop(TIMER_3);
+            TIMER_stop(timer);
             TMR3 = 0;
             T3CONbits.TCKPS = prescaler;
+            timer->prescaler = prescaler;
+            timer->freq = new_freq;
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
@@ -401,13 +416,15 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
                     PR3 = ((FCY / 256) / new_freq);
                     break;                    
             } 
-            TIMER_start(TIMER_3);
+            TIMER_start(timer);
             break;
             
         case TIMER_4:
-            TIMER_stop(TIMER_4);
+            TIMER_stop(timer);
             TMR4 = 0;
             T4CONbits.TCKPS = prescaler;
+            timer->prescaler = prescaler;
+            timer->freq = new_freq;
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
@@ -426,13 +443,15 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
                     PR4 = ((FCY / 256) / new_freq);
                     break;                    
             } 
-            TIMER_start(TIMER_4);
+            TIMER_start(timer);
             break;
             
         case TIMER_5:
-            TIMER_stop(TIMER_5);
+            TIMER_stop(timer);
             TMR5 = 0;
             T5CONbits.TCKPS = prescaler;
+            timer->prescaler = prescaler;
+            timer->freq = new_freq;
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
@@ -451,13 +470,15 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
                     PR5 = ((FCY / 256) / new_freq);
                     break;                    
             } 
-            TIMER_start(TIMER_5);
+            TIMER_start(timer);
             break;
             
         case TIMER_6:
-            TIMER_stop(TIMER_6);
+            TIMER_stop(timer);
             TMR6 = 0;
             T6CONbits.TCKPS = prescaler;
+            timer->prescaler = prescaler;
+            timer->freq = new_freq;
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
@@ -476,13 +497,15 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
                     PR6 = ((FCY / 256) / new_freq);
                     break;                    
             } 
-            TIMER_start(TIMER_6);
+            TIMER_start(timer);
             break;
             
         case TIMER_7:
-            TIMER_stop(TIMER_7);
+            TIMER_stop(timer);
             TMR7 = 0;
             T7CONbits.TCKPS = prescaler;
+            timer->prescaler = prescaler;
+            timer->freq = new_freq;
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
@@ -501,13 +524,15 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
                     PR7 = ((FCY / 256) / new_freq);
                     break;                    
             } 
-            TIMER_start(TIMER_7);
+            TIMER_start(timer);
             break;
             
         case TIMER_8:
-            TIMER_stop(TIMER_8);
+            TIMER_stop(timer);
             TMR8 = 0;
             T8CONbits.TCKPS = prescaler;
+            timer->prescaler = prescaler;
+            timer->freq = new_freq;
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
@@ -526,13 +551,15 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
                     PR8 = ((FCY / 256) / new_freq);
                     break;                    
             } 
-            TIMER_start(TIMER_8);
+            TIMER_start(timer);
             break;
             
         case TIMER_9:
-            TIMER_stop(TIMER_9);
+            TIMER_stop(timer);
             TMR9 = 0;
             T9CONbits.TCKPS = prescaler;
+            timer->prescaler = prescaler;
+            timer->freq = new_freq;
             switch (prescaler)
             {
                 case TIMER_PRESCALER_1:
@@ -551,9 +578,14 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
                     PR9 = ((FCY / 256) / new_freq);
                     break;                    
             } 
-            TIMER_start(TIMER_9);
-            break;            
+            TIMER_start(timer);
+            break; 
+            
+        default:
+            return 0;
+            break;
     }
+    return 1;
 }
 
 //**********************void TIMER_start (uint8_t timer)**********************//
@@ -572,9 +604,9 @@ void TIMER_update_freq (uint8_t timer, uint8_t prescaler, uint32_t new_freq)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void TIMER_start (uint8_t timer)
+uint8_t TIMER_start (STRUCT_TIMER *timer)
 {
-    switch (timer)
+    switch (timer->TIMER_channel)
     {
         case TIMER_1:
             TMR1 = 0;
@@ -634,13 +666,17 @@ void TIMER_start (uint8_t timer)
             
         case TIMER_9:
             TMR9 = 0;
-            IPC13bits.T9IP = 7;     // SW PWM timer, high interrupt priority
             IEC3bits.T9IE = 1;      // Enable timer interrupt
             IFS3bits.T9IF = 0;      // Clear timer flag    
             T9CONbits.TON = 1;      // Start timer
-            break;            
+            break;
+
+        default:
+            return 0;
+            break;
     }    
-    TIMER_struct[timer].run_state = 1; // Timer is started
+    timer->running = 1;
+    return 1;
 }
 
 //***********************void TIMER_stop (uint8_t timer)**********************//
@@ -659,9 +695,9 @@ void TIMER_start (uint8_t timer)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void TIMER_stop (uint8_t timer)
+uint8_t TIMER_stop (STRUCT_TIMER *timer)
 {
-    switch (timer)
+    switch (timer->TIMER_channel)
     {
         case TIMER_1:
             T1CONbits.TON = 0;      // Stop timer               
@@ -716,8 +752,13 @@ void TIMER_stop (uint8_t timer)
             IEC3bits.T9IE = 0;      // Disable timer interrupt
             IFS3bits.T9IF = 0;      // Clear timer flag    
             break;            
+            
+        default:
+            return 0;
+            break;
     }
-    TIMER_struct[timer].run_state = 0; // Timer is stopped
+    timer->running = 0; // Timer is stopped
+    return 1;
 }
 
 //***********uint8_t TIMER_get_state (uint8_t timer, uint8_t type)************//
@@ -736,25 +777,25 @@ void TIMER_stop (uint8_t timer)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t TIMER_get_state (uint8_t timer, uint8_t type)
+uint8_t TIMER_get_state (STRUCT_TIMER *timer, uint8_t type)
 {
     switch (type)
     {
         case TIMER_RUN_STATE:
-            return TIMER_struct[timer].run_state;
+            return timer->running;
             break;
             
         case TIMER_INT_STATE:
-            if (TIMER_struct[timer].int_state)
+            if (timer->int_state)
             {
-                TIMER_struct[timer].int_state = 0;
+                timer->int_state = 0;
                 return 1;
             }
             else return 0;
             break;
             
         default:
-            return 1;
+            return 0;
             break;
     }
 }
