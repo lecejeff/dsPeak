@@ -598,7 +598,7 @@ uint8_t DMA_get_txfer_state (uint8_t channel)
         return DMA_TXFER_DONE;
     }
     else
-        return DMA_TXFER_IN_PROGRESS;
+        return DMA_TXFER_IDLE;
 }
 
 void __attribute__((__interrupt__, no_auto_psv))_DMA0Interrupt(void)

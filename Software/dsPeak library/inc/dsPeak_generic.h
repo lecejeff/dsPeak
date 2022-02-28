@@ -84,7 +84,7 @@
 #define RS485_CLICK_UART2
     
 // To use the FTDI EVE port, uncomment the following line
-#define EVE_SCREEN_ENABLE  
+//#define EVE_SCREEN_ENABLE  
     
 #define OUTPUT  0
 #define INPUT   1

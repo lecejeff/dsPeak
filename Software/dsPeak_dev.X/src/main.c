@@ -238,6 +238,7 @@ int main()
 #ifdef UART_DEBUG_ENABLE
     UART_init(UART_DEBUG_struct, UART_3, 115200, UART_MAX_TX, UART_MAX_RX);
     UART_putstr_dma(UART_DEBUG_struct, "dsPeak UART debug port with DMA is enabled\r\n");
+    
 #endif
 
     //MOTOR_init(MOTOR_1, 30);
@@ -493,11 +494,11 @@ int main()
     //TIMER_start(TIMER7_struct);
     //TIMER_start(TIMER8_struct);
     TIMER_start(TIMER9_struct);
-    
-#ifdef UART_DEBUG_ENABLE
-    UART_putstr_dma(UART_DEBUG_struct, "Program while(1) starts here\r\n");
-#endif
   
+    // DEBUG I2S
+    TRISCbits.TRISC2 = 0;
+    TRISCbits.TRISC3 = 0;
+    
     while (1)
     {            
         encoder_dir = ENCODER_get_direction();
@@ -540,12 +541,12 @@ int main()
 #ifdef DCI0_DMA_ENABLE
         if (DCI_get_interrupt_state(CODEC_sgtl5000, DCI_DMA_TX) == DCI_TRANSMIT_COMPLETE)
         {
-
+            LATCbits.LATC2 = !LATCbits.LATC2;
         }
 
         if (DCI_get_interrupt_state(CODEC_sgtl5000, DCI_DMA_RX) == DCI_RECEIVE_COMPLETE)
         {
-            
+            LATCbits.LATC3 = !LATCbits.LATC3;
         }
 #endif
         
