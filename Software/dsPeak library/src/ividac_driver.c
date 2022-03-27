@@ -70,12 +70,12 @@ void IVIDAC_set_output_raw (STRUCT_IVIDAC *ividac, uint8_t port, uint8_t output_
     if (port == IVIDAC_ON_MIKROBUS1)
     {
         SPI_load_tx_buffer(IVIDAC_spi, dac_write_array, 2);
-        SPI_master_write(IVIDAC_spi, MIKROBUS1_CS); 
+        SPI_write(IVIDAC_spi, MIKROBUS1_CS); 
     }
     if (port == IVIDAC_ON_MIKROBUS2)
     {
         SPI_load_tx_buffer(IVIDAC_spi, dac_write_array, 2);
-        SPI_master_write(IVIDAC_spi, MIKROBUS2_CS); 
+        SPI_write(IVIDAC_spi, MIKROBUS2_CS); 
     }
 }
 

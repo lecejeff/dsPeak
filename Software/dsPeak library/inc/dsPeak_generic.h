@@ -16,8 +16,9 @@
 #define POSC_20MHz_70MIPS
 #ifdef POSC_20MHz_70MIPS
     #define FOSC 140000000UL
-    #define FCY (FOSC/2)    // FCY of 70MIPS
+    #define FCY 70000000UL    // FCY of 70MIPS
     void dsPeak_posc_20MHz_init (void);
+    void dsPeak_auxosc_48MHz_init (void);
 #endif
 
 // If using Fast RC oscillator (7.37MHz) with PLL, uncomment #define POSC_FRC
@@ -31,7 +32,33 @@
 //#define SOSC_32KHZ
 #ifdef SOSC_32KHZ
     void dsPeak_sosc_32kHz_init (void);
-#endif
+#endif  
+
+// Microchip libraries
+#include <xc.h>
+#include <stdint.h>
+#include <libpic30.h>
+#include <dsp.h>
+#include <string.h>
+// End of Microchip libraries
+
+typedef struct
+{
+    uint8_t state;
+    uint8_t prev_state;
+    uint16_t debounce_cnt;
+    uint16_t debounce_thres;
+    uint8_t debounce_state;
+    uint8_t do_once;
+    uint8_t channel;
+}STRUCT_BUTTON;
+
+typedef struct
+{
+    uint8_t state;
+    uint8_t prev_state;
+    uint8_t channel;
+}STRUCT_LED;
 
 // dsPeak generic I/Os definition
 // Basically LEDs, Pushbutton, Encoder switch, buzzer, RGB LED
@@ -44,6 +71,13 @@
 #define DSPEAK_BTN3_DIR         TRISFbits.TRISF8
 #define DSPEAK_BTN4_STATE       PORTAbits.RA4
 #define DSPEAK_BTN4_DIR         TRISAbits.TRISA4
+#define BTN_1                   0
+#define BTN_2                   1
+#define BTN_3                   2
+#define BTN_4                   3
+#define OUTPUT                  0
+#define INPUT                   1
+#define BTN_QTY                 4
 
 // ---------------------- dsPeak on-board LEDs -------------------------------//
 #define DSPEAK_LED1_STATE       LATHbits.LATH8
@@ -54,6 +88,13 @@
 #define DSPEAK_LED3_DIR         TRISHbits.TRISH10
 #define DSPEAK_LED4_STATE       LATHbits.LATH11
 #define DSPEAK_LED4_DIR         TRISHbits.TRISH11
+#define LED_1                   0
+#define LED_2                   1
+#define LED_3                   2
+#define LED_4                   3
+#define HIGH                    1
+#define LOW                     0  
+#define LED_QTY                 4
 
 // --------------------- dsPeak encoder pushbutton ---------------------------//
 #define DSPEAK_ENC_SW_STATE     PORTAbits.RA5
@@ -86,22 +127,21 @@
 // To use the FTDI EVE port, uncomment the following line
 //#define EVE_SCREEN_ENABLE  
     
-#define OUTPUT  0
-#define INPUT   1
-#define HIGH    1
-#define LOW     0    
-    
-#include <stdint.h>
-#include <xc.h>
-#include <libpic30.h>
-#include <dsp.h>
-#include <string.h>
-
-void hex_to_ascii (uint8_t in, uint8_t *out_h, uint8_t *out_l);
+   
+void dsPeak_init(void);
+void hex_to_ascii(uint8_t in, uint8_t *out_h, uint8_t *out_l);
 int16_t bcd_to_decimal(uint8_t bcd);
 uint16_t dec_to_bcd(uint16_t dec);
 void RGB_LED_set_color (uint32_t color);
 uint8_t hex_to_dec (uint8_t hex);
+uint8_t dsPeak_button_init (STRUCT_BUTTON *btn, uint8_t channel, uint16_t debounce_thres);
+uint8_t dsPeak_button_debounce (STRUCT_BUTTON *btn);
+uint8_t dsPeak_button_get_state (STRUCT_BUTTON *btn);
+uint8_t dsPeak_led_init (STRUCT_LED *led, uint8_t channel, uint8_t value);
+uint8_t dsPeak_led_write (STRUCT_LED *led, uint8_t value);
+
+void uint16_to_byte8 (uint16_t *ptr_16, uint8_t *ptr_8);
+void byte8_to_uint16 (uint8_t *ptr_8, uint16_t *ptr_16);
 
 #endif	/* __dspeak_generic_H_ */
 

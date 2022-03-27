@@ -6,8 +6,8 @@ STRUCT_DMA DMA_struct[DMA_QTY];
 // DMA_CH1 -> UART2_TX
 // DMA_CH2 -> CAN1_RX
 // DMA_CH3 -> CAN1_TX
-// DMA_CH4 -> SPI1_RX FTDI EVE
-// DMA_CH5 -> SPI1_TX FTDI EVE
+// DMA_CH4 -> SPI2_RX FLASH_SD
+// DMA_CH5 -> SPI2_TX FLASH_SD
 // DMA_CH6 -> UART3 TX debug port
 // DMA_CH7 -> DCI TX
 // DMA_CH8 -> DCI RX
@@ -26,7 +26,7 @@ void DMA_struct_init (uint8_t channel)
         for (; i < DMA_QTY; i++)
         {
             DMA_struct[i].state = DMA_STATE_UNASSIGNED;
-            DMA_struct[i].txfer_state = DMA_TXFER_DONE;             
+            DMA_struct[i].txfer_state = DMA_TXFER_DONE;  
         }
     }
 }
@@ -515,6 +515,76 @@ uint8_t DMA_get_force_state (uint8_t channel)
     }      
 }
 
+uint16_t DMA_get_buffer_address (uint8_t channel)
+{
+    switch (channel)
+    {
+        case DMA_CH0:
+            return DMA0STAL;                  
+            break;
+            
+        case DMA_CH1:
+            return DMA1STAL;                
+            break;
+
+        case DMA_CH2:
+            return DMA2STAL;               
+            break;
+
+        case DMA_CH3:
+            return DMA3STAL;             
+            break;
+
+        case DMA_CH4:
+            return DMA4STAL;              
+            break;
+
+        case DMA_CH5:
+            return DMA5STAL;    
+            break;
+
+        case DMA_CH6:
+            return DMA6STAL;    
+            break;
+
+        case DMA_CH7:
+            return DMA7STAL;     
+            break;
+
+        case DMA_CH8:
+            return DMA8STAL;    
+            break;
+
+        case DMA_CH9:
+            return DMA9STAL;    
+            break;
+
+        case DMA_CH10:
+            return DMA10STAL;    
+            break;
+
+        case DMA_CH11:
+            return DMA11STAL;   
+            break;
+
+        case DMA_CH12:
+            return DMA12STAL;    
+            break;
+
+        case DMA_CH13:
+            return DMA13STAL;    
+            break;
+
+        case DMA_CH14:
+            return DMA14STAL;               
+            break;     
+            
+        default:
+            return 0;
+            break;
+    }    
+}
+
 void DMA_set_txfer_length(uint8_t channel, uint16_t length)
 {
     // Saturate DMA tx length
@@ -597,8 +667,22 @@ uint8_t DMA_get_txfer_state (uint8_t channel)
         DMA_struct[channel].txfer_state = DMA_TXFER_IDLE;
         return DMA_TXFER_DONE;
     }
+    else if (DMA_struct[channel].txfer_state == DMA_TXFER_IN_PROGRESS)
+    {
+        return DMA_TXFER_IN_PROGRESS;
+    }
     else
         return DMA_TXFER_IDLE;
+}
+
+uint8_t DMA_get_pingpong_state (uint8_t channel)
+{
+    if ((channel >= 0 ) && (channel < DMA_QTY)) 
+    {
+        return ((DMAPPS >> channel) & 0x01);
+    }
+    else
+        return 0;
 }
 
 void __attribute__((__interrupt__, no_auto_psv))_DMA0Interrupt(void)

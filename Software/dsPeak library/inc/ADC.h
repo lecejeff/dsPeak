@@ -92,8 +92,8 @@ void ADC_init_struct (STRUCT_ADC *adc, uint8_t port, uint8_t channel,
                     uint8_t resolution, uint8_t format, uint8_t sample_clk_src,
                     uint8_t sample_clk_srcg, uint16_t sample_conv_clk);
 void ADC_init (STRUCT_ADC *adc);
-void ADC_start (STRUCT_ADC *adc);
-void ADC_stop (STRUCT_ADC *adc);
+void ADC_start (uint8_t port);
+void ADC_stop (uint8_t port);
 uint8_t ADC_sample_status (STRUCT_ADC *adc);
 uint16_t ADC_get_raw_channel (STRUCT_ADC *adc);
 uint16_t ADC_get_eng_channel (STRUCT_ADC *adc);

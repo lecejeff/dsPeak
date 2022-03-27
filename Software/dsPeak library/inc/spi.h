@@ -2,12 +2,12 @@
 // File      : spi.h
 //
 // Functions :  void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre); 
-//              void SPI_master_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip);
+//              void SPI_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip);
 //              uint8_t SPI_txfer_done (uint8_t channel);
 //              uint8_t * SPI_get_rx_buffer (uint8_t channel);
 //              uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index);
-//              void SPI_master_deassert_cs (uint8_t chip);
-//              void SPI_master_assert_cs (uint8_t chip);
+//              void SPI_deassert_cs (uint8_t chip);
+//              void SPI_assert_cs (uint8_t chip);
 //              void SPI_flush_txbuffer (uint8_t channel);
 //              void SPI_flush_rxbuffer (uint8_t channel);
 //              uint8_t SPI_module_busy (uint8_t channel);
@@ -69,7 +69,7 @@
 #define SPI_MODE2 2
 #define SPI_MODE3 3
 
-#define SPI_BUF_LENGTH 256
+#define SPI_BUF_LENGTH 260
 
 #ifdef EVE_SCREEN_ENABLE
     #define EVE_SPI_BUF_LENGTH  4096
@@ -125,19 +125,21 @@ typedef struct
 }STRUCT_SPI;
 
 void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t ppre, uint8_t spre, uint16_t tx_buf_length, uint16_t rx_buf_length); 
-uint8_t SPI_master_write (STRUCT_SPI *spi, uint8_t chip);
-uint8_t SPI_master_write_dma (STRUCT_SPI *spi, uint8_t chip);
-uint8_t SPI_master_release_port (STRUCT_SPI *spi);
+uint8_t SPI_write (STRUCT_SPI *spi, uint8_t chip);
+uint8_t SPI_write_dma (STRUCT_SPI *spi, uint8_t chip);
+uint8_t SPI_release_port (STRUCT_SPI *spi);
 uint8_t SPI_set_interrupt_enable (STRUCT_SPI *spi);
 uint8_t SPI_txfer_done (STRUCT_SPI *spi);
 uint8_t * SPI_get_rx_buffer (STRUCT_SPI *spi);
+uint8_t SPI_get_dma_rx_buffer_at_index (STRUCT_SPI *spi, uint16_t index);
 uint8_t SPI_get_rx_buffer_index (STRUCT_SPI *spi, uint16_t index);
 uint8_t SPI_get_nonblock_state (STRUCT_SPI *spi);
 void SPI_set_nonblock_state (STRUCT_SPI *spi, uint8_t state);
 uint8_t SPI_load_tx_buffer (STRUCT_SPI *spi, uint8_t *data, uint16_t length);
-uint8_t SPI_master_unload_dma_buffer (STRUCT_SPI *spi);
-uint8_t SPI_master_deassert_cs (STRUCT_SPI *spi);
-uint8_t SPI_master_assert_cs (STRUCT_SPI *spi);
+uint8_t SPI_load_dma_tx_buffer (STRUCT_SPI *spi, uint8_t *data, uint16_t length);
+uint8_t * SPI_unload_dma_rx_buffer (STRUCT_SPI *spi);
+uint8_t SPI_deassert_cs (STRUCT_SPI *spi);
+uint8_t SPI_assert_cs (STRUCT_SPI *spi);
 void SPI_flush_txbuffer (STRUCT_SPI *spi);
 void SPI_flush_rxbuffer (STRUCT_SPI *spi);
 uint8_t SPI_module_busy (STRUCT_SPI *spi);

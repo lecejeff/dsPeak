@@ -135,6 +135,7 @@ typedef struct
     uint16_t buf_length;
     uint8_t state;
     uint8_t txfer_state;
+    uint8_t ping_pong;
 }STRUCT_DMA;
 
 void DMA_struct_init (uint8_t channel);
@@ -145,4 +146,6 @@ uint8_t DMA_get_force_state (uint8_t channel);
 void DMA_set_txfer_length(uint8_t channel, uint16_t length);
 void DMA_enable (uint8_t channel);
 void DMA_disable (uint8_t channel);
+uint16_t DMA_get_buffer_address (uint8_t channel);
+uint8_t DMA_get_pingpong_state (uint8_t channel);
 #endif

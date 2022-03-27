@@ -48,7 +48,7 @@ void ADC_init (STRUCT_ADC *adc)
     // Code executed on 1st initialization of ADC1 state machine
     if (adc->port == ADC_PORT_1)
     {
-        ADC_stop(adc);                              // Stop ADC1 module if it was in use
+        ADC_stop(ADC_PORT_1);                              // Stop ADC1 module if it was in use
         AD1CON2bits.VCFG = 0;                       // Converter voltage reference set to AVDD / AVSS
         AD1CON2bits.CSCNA = 1;                      // Scans input for CH0+
         AD1CON1bits.AD12B = adc->resolution;        // Setup ADC1 module resolution to 12b
@@ -90,7 +90,7 @@ void ADC_init (STRUCT_ADC *adc)
     // Code executed on 1st initialization of ADC2 state machine
     if (adc->port == ADC_PORT_2)
     {
-        ADC_stop(adc);                              // Stop ADC2 module if it was in use
+        ADC_stop(ADC_PORT_2);                              // Stop ADC2 module if it was in use
         AD2CON2bits.VCFG = 0;                       // Converter voltage reference set to AVDD / AVSS
         AD2CON2bits.CSCNA = 1;                      // Scans input for CH0+
         //AD2CON1bits.AD12B = adc->resolution;        // Setup ADC2 module resolution to 12b
@@ -191,9 +191,9 @@ void ADC_init (STRUCT_ADC *adc)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020 
 //****************************************************************************//
-void ADC_start (STRUCT_ADC *adc)
+void ADC_start (uint8_t port)
 {
-    switch (adc->port)
+    switch (port)
     {
         case ADC_PORT_1:
             IFS0bits.AD1IF = 0;     // Clear flag value
@@ -222,9 +222,9 @@ void ADC_start (STRUCT_ADC *adc)
 //
 //Jean-Francois Bilodeau    MPLab X v5.10    11/02/2020 
 //****************************************************************************//
-void ADC_stop (STRUCT_ADC *adc)
+void ADC_stop (uint8_t port)
 {
-    switch (adc->port)
+    switch (port)
     {
         case ADC_PORT_1:
             AD1CON1bits.ADON = 0;   // Stop the ADC core   

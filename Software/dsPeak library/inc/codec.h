@@ -12,7 +12,7 @@
 //
 // Includes  : dspeak_generic.h
 //           
-// Purpose   : Driver for the dsPeak SGTL5000 audio codec using DCI as audio
+// Purpose   : Driver for dsPeak's SGTL5000 audio codec using DCI as audio
 //             interface and SPI as configuration interface 
 //
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
@@ -134,6 +134,8 @@
 #define SYS_FS_22_05kHz     8
 #define SYS_FS_24kHz        9
 
+#define CODEC_SYS_MCLK      12000000    // SYS_MCLK is 12MHz
+
 #define ADC_MUTE            0
 #define HEADPHONE_MUTE      1
 #define LINEOUT_MUTE        2
@@ -141,8 +143,6 @@
 
 #define CODEC_DAP_ENABLE          1
 #define CODEC_DAP_DISABLE         0
-
-#define CODEC_SYS_MCLK      12000000    // SYS_MCLK is 12MHz
 
 #define DCI_DMA_TX              0
 #define DCI_DMA_RX              1
@@ -156,7 +156,8 @@
 
 // I2S BLOCK TRANSFER define
 // A single transfer is 2x words (4x bytes), one per channel (left and right)
-#define CODEC_BLOCK_TRANSFER 256    
+// 128 word transfer = 256 byte transfer
+#define CODEC_BLOCK_TRANSFER 128    
 
 typedef struct
 {
@@ -219,6 +220,8 @@ typedef struct
     uint8_t hp_vol_right;
     uint8_t lo_vol_left;
     uint8_t lo_vol_right;
+    uint8_t adc_vol_left;
+    uint8_t adc_vol_right;
     
     // DAP variables
     uint8_t dap_enable;
@@ -229,6 +232,8 @@ typedef struct
     uint16_t DCI_transmit_buffer[CODEC_BLOCK_TRANSFER];
     uint16_t DCI_transmit_counter;
     uint16_t DCI_receive_counter;
+    uint16_t DCI_transmit_length;
+    uint16_t DCI_receive_length;
     uint8_t DCI_transmit_enable;
     uint8_t DCI_receive_enable;
     uint8_t interrupt_flag;
@@ -236,12 +241,12 @@ typedef struct
     // Reference to an SPI structure used to communicate with CODEC
     STRUCT_SPI *spi_ref;
     
-    // Hardware variables
-    uint8_t SPI_channel;
-    uint8_t DMA_tx_channel;
-    uint8_t DMA_rx_channel;
-    uint8_t DMA_tx_buf;
-    uint8_t DMA_rx_buf;
+    // Hardware-related variables
+    uint8_t SPI_channel;    // Specifies SPI module used (SPI_[x], x = 1..2..3..4)
+    uint8_t DMA_tx_channel; // Specifies DMA tx channel used (0..14)
+    uint8_t DMA_rx_channel; // Specifies DMA rx channel used (0..14)
+    uint8_t DMA_tx_buf_pp;  // ping-pong variable (indicates if buffer A or B is in use)
+    uint8_t DMA_rx_buf_pp;  // ping-pong variable (indicates if buffer A or B is in use)
 }STRUCT_CODEC;
 
 // CODEC basic functions
@@ -257,17 +262,18 @@ void CODEC_set_audio_path (STRUCT_CODEC *codec, uint8_t in_channel, uint8_t out_
 void CODEC_mute (STRUCT_CODEC *codec, uint8_t channel);
 void CODEC_unmute (STRUCT_CODEC *codec, uint8_t channel);
 void CODEC_set_mic_gain (STRUCT_CODEC *codec, uint8_t gain);
-void CODEC_set_analog_gain (STRUCT_CODEC *codec, uint8_t range, uint8_t gain_right, uint8_t gain_left);
+void CODEC_set_adc_volume (STRUCT_CODEC *codec, uint8_t range, uint8_t adc_vol_right, uint8_t adc_vol_left);
 void CODEC_set_dac_volume (STRUCT_CODEC *codec, uint8_t dac_vol_right, uint8_t dac_vol_left);
 void CODEC_set_hp_volume (STRUCT_CODEC *codec, uint8_t hp_vol_right, uint8_t hp_vol_left);
 void CODEC_set_lo_volume (STRUCT_CODEC *codec, uint8_t lo_vol_right, uint8_t lo_vol_left);
 
 // dsPIC33E DCI module functions
-void DCI_init (STRUCT_CODEC *codec);
+void DCI_init (STRUCT_CODEC *codec, uint16_t tx_buf_length, uint16_t rx_buf_length);
 void DCI_enable (STRUCT_CODEC *codec);
 void DCI_disable (STRUCT_CODEC *codec);
 uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx);
-uint8_t DCI_fill_tx_buf_dma (STRUCT_CODEC *codec, uint16_t *buf, uint16_t length);
+uint8_t DCI_fill_dma_tx_buf (STRUCT_CODEC *codec, uint16_t *buf, uint16_t length);
+uint16_t * DCI_unload_dma_rx_buf (STRUCT_CODEC *codec);
 void DCI_set_transmit_state (STRUCT_CODEC *codec, uint8_t state);
 void DCI_set_receive_state (STRUCT_CODEC *codec, uint8_t state);
 #endif	

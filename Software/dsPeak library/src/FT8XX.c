@@ -383,9 +383,8 @@ void FT8XX_set_touch_tag (uint8_t prim_type, uint8_t prim_num, uint8_t tag_num)
 void FT8XX_host_command (uint8_t command)
 {
     uint8_t wr_data[3] = {command, 0, 0};
-    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(EVE_spi, wr_data, 3);
-    SPI_master_write(EVE_spi, FT8XX_EVE_CS);
+    SPI_write(EVE_spi, FT8XX_EVE_CS);
 }
 
 //**********************void FT_write_8bit (uint32_t adr, uint8_t data)******************//
@@ -405,9 +404,8 @@ void FT8XX_host_command (uint8_t command)
 void FT8XX_wr8 (uint32_t adr, uint8_t data)
 {
     uint8_t wr_data[4] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data};
-    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(EVE_spi, wr_data, 4);
-    SPI_master_write(EVE_spi, FT8XX_EVE_CS);
+    SPI_write(EVE_spi, FT8XX_EVE_CS);
     // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);   // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                    // 
     // byte 2 = adr                                         //
@@ -431,9 +429,8 @@ void FT8XX_wr8 (uint32_t adr, uint8_t data)
 void FT8XX_wr16 (uint32_t adr, uint16_t data)
 {
     uint8_t wr_data[5] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data, data >> 8};
-    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(EVE_spi, wr_data, 5);
-    SPI_master_write(EVE_spi, FT8XX_EVE_CS);    
+    SPI_write(EVE_spi, FT8XX_EVE_CS);    
     // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);     // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                      // 
     // byte 2 = adr;                                          //
@@ -458,9 +455,8 @@ void FT8XX_wr16 (uint32_t adr, uint16_t data)
 void FT8XX_wr32 (uint32_t adr, uint32_t data)
 {
     uint8_t wr_data[7] = {((adr >> 16) | MEM_WRITE), (adr>>8), adr, data, data >> 8, data >> 16, data >> 24};
-    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(EVE_spi, wr_data, 7);
-    SPI_master_write(EVE_spi, FT8XX_EVE_CS);      
+    SPI_write(EVE_spi, FT8XX_EVE_CS);      
     // byte 0 = (uint8_t)((adr >> 16) | MEM_WRITE);     // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                      //
     // byte 2 = adr;                                          //
@@ -486,9 +482,8 @@ void FT8XX_wr32 (uint32_t adr, uint32_t data)
 uint8_t FT8XX_rd8 (uint32_t adr)
 {
     uint8_t data[5] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0};
-    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(EVE_spi, data, 5);
-    SPI_master_write(EVE_spi, FT8XX_EVE_CS);    
+    SPI_write(EVE_spi, FT8XX_EVE_CS);    
     while(SPI_txfer_done(EVE_spi)!= 1);
     return SPI_get_rx_buffer_index(EVE_spi, 4);
     // byte 0 = (uint8_t)((adr >> 16) | MEM_READ);   // Write 24 bit ADR
@@ -516,9 +511,8 @@ uint16_t FT8XX_rd16 (uint32_t adr)
     uint8_t data_read1, data_read2;
     uint16_t rd16 = 0;    
     uint8_t data[6] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0};
-    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(EVE_spi, data, 6);
-    SPI_master_write(EVE_spi, FT8XX_EVE_CS);    
+    SPI_write(EVE_spi, FT8XX_EVE_CS);    
     while(SPI_txfer_done(EVE_spi)!= 1);
     data_read1 = SPI_get_rx_buffer_index(EVE_spi, 4);    
     data_read2 = SPI_get_rx_buffer_index(EVE_spi, 5); 
@@ -550,9 +544,8 @@ uint32_t FT8XX_rd32 (uint32_t adr)
     uint32_t data_read1, data_read2, data_read3, data_read4;
     uint32_t rd32 = 0x00000000;  
     uint8_t data[8] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0, 0, 0};
-    while(SPI_module_busy(EVE_spi) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(EVE_spi, data, 8);
-    SPI_master_write(EVE_spi, FT8XX_EVE_CS);    
+    SPI_write(EVE_spi, FT8XX_EVE_CS);    
     while(SPI_txfer_done(EVE_spi)!= 1);
     data_read1 = SPI_get_rx_buffer_index(EVE_spi, 4);    
     data_read2 = SPI_get_rx_buffer_index(EVE_spi, 5); 

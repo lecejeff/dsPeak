@@ -9,10 +9,17 @@ typedef struct
     uint8_t state;
     uint8_t prev_state;
     uint8_t busy;
-    uint8_t write_length;
-    uint32_t read_length;
+    uint16_t tx_buf_length;
+    uint16_t rx_buf_length;
     uint32_t erase_length;
+    uint8_t wp_state;
+    uint8_t hold_state;
+    
+    // Reference to an SPI structure used to communicate with FLASH
+    STRUCT_SPI *spi_ref;    
 }STRUCT_FLASH;
+
+#define FLASH_QTY               1
 
 #define SPI_FLASH_STATE_INIT    0
 #define SPI_FLASH_WRITE_ENABLE  1
@@ -26,6 +33,7 @@ typedef struct
 #define SPI_FLASH_BUSY          9
 
 #define ADESTO_MEM_32Mb
+//#define ISSI_MEM_32Mb
 
 #ifdef ADESTO_MEM_32Mb
 // System commands
@@ -67,12 +75,15 @@ typedef struct
 
 #define PAGE_PROGRAM            0xFF
 
-void SPI_flash_init (void);
-uint8_t SPI_flash_write (uint32_t adr, uint8_t *ptr, uint16_t length);
-uint8_t * SPI_flash_read (uint32_t adr, uint16_t length);
-uint8_t SPI_flash_erase (uint8_t type, uint32_t adr);
-void SPI_flash_write_enable (void);
-void SPI_flash_write_disable (void);
-uint8_t SPI_flash_busy (void);
-uint8_t SPI_flash_get_state (void);
+void SPI_flash_init (STRUCT_FLASH *flash, STRUCT_SPI *spi, uint16_t tx_buf_length, uint16_t rx_buf_length);
+uint8_t SPI_flash_page_write (STRUCT_FLASH *flash, uint32_t adr, uint8_t *ptr);
+uint8_t SPI_flash_read_page (STRUCT_FLASH *flash, uint32_t adr);
+uint8_t SPI_flash_erase (STRUCT_FLASH *flash, uint8_t type, uint32_t adr);
+uint8_t SPI_flash_write_enable(STRUCT_FLASH *flash);
+uint8_t SPI_flash_write_disable(STRUCT_FLASH *flash);
+uint8_t SPI_flash_busy (STRUCT_FLASH *flash);
+uint8_t SPI_flash_busy_polling (STRUCT_FLASH *flash);
+uint8_t SPI_flash_get_state (STRUCT_FLASH *flash);
+uint8_t * SPI_flash_get_rx_buffer (STRUCT_FLASH *flash);
+
 #endif

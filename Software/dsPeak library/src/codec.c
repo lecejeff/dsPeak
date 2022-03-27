@@ -21,7 +21,7 @@ __eds__ uint16_t codec_dma_rx_buf_B[CODEC_BLOCK_TRANSFER] __attribute__((eds,spa
 #endif
 
 // DCI operates in slave mode on dsPeak
-void DCI_init (STRUCT_CODEC *codec)
+void DCI_init (STRUCT_CODEC *codec, uint16_t tx_buf_length, uint16_t rx_buf_length)
 {
     uint16_t i = 0;
     
@@ -47,8 +47,6 @@ void DCI_init (STRUCT_CODEC *codec)
         codec->DCI_receive_buffer[i] = 0;  // Initialize buffer
         codec->DCI_transmit_buffer[i] = 0; // Initialize buffer       
     }
-    codec->DCI_receive_counter = 0;   // Initialize counter to 0
-    codec->DCI_transmit_counter = 0;  // Initialize counter to 0
 #endif
 
     TRISDbits.TRISD1 = 1;   // RD1 configured as an input (I2S_COFS)
@@ -64,18 +62,24 @@ void DCI_init (STRUCT_CODEC *codec)
     codec->DCI_transmit_enable = DCI_TRANSMIT_DISABLE;
     codec->DCI_receive_enable = DCI_RECEIVE_DISABLE;
     codec->interrupt_flag = 0;
+    codec->DCI_receive_counter = 0;   // Initialize counter to 0
+    codec->DCI_transmit_counter = 0;  // Initialize counter to 0
     
-    // DCI with interrupt, with DMA
+    
+    if (tx_buf_length > CODEC_BLOCK_TRANSFER){tx_buf_length = CODEC_BLOCK_TRANSFER;}    // Saturate tx buffer length
+    codec->DCI_transmit_length = tx_buf_length;
+    if (rx_buf_length > CODEC_BLOCK_TRANSFER){rx_buf_length = CODEC_BLOCK_TRANSFER;}    // Saturate rx buffer length
+    codec->DCI_receive_length = rx_buf_length;
+      
 #ifdef DCI0_DMA_ENABLE
-    for (; i < CODEC_BLOCK_TRANSFER; i++)
+    // DCI with DMA
+    for (i=0; i < codec->DCI_transmit_length; i++)
     {
         codec_dma_tx_buf_A[i] = 0;    // Initialize buffer
         codec_dma_tx_buf_B[i] = 0;    // Initialize buffer
         codec_dma_rx_buf_A[i] = 0;    // Initialize buffer       
         codec_dma_rx_buf_B[i] = 0;    // Initialize buffer 
     }
-    codec->DCI_receive_counter = 0;   // Initialize counter to 0
-    codec->DCI_transmit_counter = 0;  // Initialize counter to 0 
     
     // If DMA is enabled, the DCI transfers only 1x frame / tx-rx slot
     DCICON2bits.COFSG = 1;  // Data frame has 2x words (left / right sample)
@@ -90,9 +94,9 @@ void DCI_init (STRUCT_CODEC *codec)
     DMA7CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_CHMODE_CPPE;
     DMA7REQ = DMAREQ_DCI;
     DMA7PAD = (volatile uint16_t)&TXBUF0;
-    DMA7STAH = __builtin_dmaoffset(codec_dma_tx_buf_A);
+    DMA7STAH = 0;
     DMA7STAL = __builtin_dmaoffset(codec_dma_tx_buf_A);   
-    DMA7STBH = __builtin_dmaoffset(codec_dma_tx_buf_B);
+    DMA7STBH = 0;
     DMA7STBL = __builtin_dmaoffset(codec_dma_tx_buf_B);       
     codec->DMA_tx_channel = DMA_CH7;
 
@@ -101,17 +105,17 @@ void DCI_init (STRUCT_CODEC *codec)
     DMA8CON = DMA_SIZE_WORD | DMA_TXFER_RD_PER | DMA_CHMODE_CPPE;
     DMA8REQ = DMAREQ_DCI;
     DMA8PAD = (volatile uint16_t)&RXBUF0;
-    DMA8STAH = __builtin_dmaoffset(codec_dma_rx_buf_A);
+    DMA8STAH = 0;
     DMA8STAL = __builtin_dmaoffset(codec_dma_rx_buf_A); 
-    DMA8STBH = __builtin_dmaoffset(codec_dma_rx_buf_B);
+    DMA8STBH = 0;
     DMA8STBL = __builtin_dmaoffset(codec_dma_rx_buf_B);     
-    codec->DMA_rx_channel = DMA_CH8;   
+    codec->DMA_rx_channel = DMA_CH8;
     
-    codec->DMA_tx_buf = 0;  
-    codec->DMA_rx_buf = 0;
+    codec->DMA_tx_buf_pp = 0;   // Default tx buffer sent 1st by DCI module is tx_buf_a 
+    codec->DMA_rx_buf_pp = 0;   // Default rx buffer read 1st by DCI module is rx_buf_a
        
-    DMA_set_txfer_length(codec->DMA_tx_channel, CODEC_BLOCK_TRANSFER - 1); // 0 = 1x transfer
-    DMA_set_txfer_length(codec->DMA_rx_channel, CODEC_BLOCK_TRANSFER - 1); // 0 = 1x transfer
+    DMA_set_txfer_length(codec->DMA_tx_channel, codec->DCI_transmit_length - 1);    // 0 = 1x transfer
+    DMA_set_txfer_length(codec->DMA_rx_channel, codec->DCI_receive_length - 1);     // 0 = 1x transfer
     
     DMA_enable(codec->DMA_tx_channel);
     DMA_enable(codec->DMA_rx_channel);
@@ -124,15 +128,14 @@ void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint
     uint16_t pll_int_divisor = 0;
     uint16_t pll_frac_divisor = 0;
     
-    DCI_init(codec);
+    DCI_init(codec, tx_buf_length, rx_buf_length);
     
     codec->SPI_channel = spi_channel;
     codec->spi_ref = spi; 
     
-    SPI_init(codec->spi_ref, codec->SPI_channel, SPI_MODE0, 2, 0, tx_buf_length, rx_buf_length);   
-                                        // PPRE = 2, primary prescale 1:4
-                                        // SPRE = 0, Secondary prescale 1:8
-                                        // Fspi = FCY / 32 = 2.175MHz
+    // SPI3 port used for SGTL5000 max frequency is 9MHz
+    // 70Mips / (1 * 8) = 8.75MHz
+    SPI_init(codec->spi_ref, codec->SPI_channel, SPI_MODE0, PPRE_1_1, SPRE_8_1, 4, 4);   
     
     // Enable 1.8V output to CODEC
     TRISKbits.TRISK1 = 0;               // Set CODEC_1V8_EN to output
@@ -209,11 +212,11 @@ void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint
     
     // CODEC clock configuration, hardware implementation-dependent
     // PLL output frequency is based on the sample clock rate used
+    // The on-board oscillator for the SGTL5000 has a frequency of 12MHz
     if (sys_fs == SYS_FS_44_1kHz)
     {
         pll_out_freq = 180633600;
-    }
-    
+    }    
     else
     {
         pll_out_freq = 196608000;
@@ -221,21 +224,94 @@ void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint
     pll_int_divisor = (uint16_t)(pll_out_freq / CODEC_SYS_MCLK);
     pll_frac_divisor = (uint16_t)(((pll_out_freq / CODEC_SYS_MCLK)-pll_int_divisor)*2048);
     
+    // CODEC PLL configuration    
     // Write PLL dividers to CODEC
     codec->CHIP_PLL_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_PLL_CTRL, codec->CHIP_PLL_CTRL, 0x07FF, pll_int_divisor<<11);
     codec->CHIP_PLL_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_PLL_CTRL, codec->CHIP_PLL_CTRL, 0xF800, pll_frac_divisor);
-
-    // Codec PLL configuration
+    
     // Power-up the PLL
     codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xFBFF, 1<<10);
     codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xFEFF, 1<<8);
     __delay_us(100);    // PLL power up delay
     
-    // Codec System MCLK and Sample Clock
-    codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, sys_fs<<2);
-    // FOR 8kHz SAMPLING, REMOVE OTHERWISE
-    // codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFF3F, 3 << 4);
-    //
+    // CODEC System MCLK and Sample Clock -> PLL must be powered before executing these calls
+    switch (sys_fs)
+    {
+        case SYS_FS_8kHz:       // 32kHz / 4 = 8kHz
+            // Set internal sample rate to 32kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 0<<2);
+            // Divide the internal sample rate by 4
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 2<<4);
+            break;
+            
+        case SYS_FS_11_025kHz:  // 44.100kHz / 4 = 11.025kHz
+            // Set internal sample rate to 44.1kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 1<<2);  
+            // Divide the internal sample rate by 4
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 2<<4);
+            break;
+            
+        case SYS_FS_12kHz:      // 48kHz / 4 = 12kHz
+            // Set internal sample rate to 48kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 2<<2);  
+            // Divide the internal sample rate by 4
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 2<<4);
+            break;
+            
+        case SYS_FS_16kHz:      // 32kHz / 2 = 16kHz
+            // Set internal sample rate to 32kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 0<<2);  
+            // Divide the internal sample rate by 2
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 1<<4);            
+            break;
+            
+        case SYS_FS_22_05kHz:   // 44.1kHz / 2 = 22.05kHz
+            // Set internal sample rate to 44.1kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 1<<2);  
+            // Divide the internal sample rate by 2
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 1<<4);
+            break;
+            
+        case SYS_FS_24kHz:      // 48kHz / 2 = 24kHz
+            // Set internal sample rate to 48kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 2<<2);  
+            // Divide the internal sample rate by 2
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 1<<4);
+            break;
+            
+        case SYS_FS_32kHz:      // 32kHz = SYS_FS
+            // Set internal sample rate to 32kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 0<<2);  
+            // SYS_FS specifies the rate
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 0<<4);
+            break;
+            
+        case SYS_FS_44_1kHz:    // 44.1kHz = SYS_FS 
+            // Set internal sample rate to 44.1kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 1<<2);  
+            // SYS_FS specifies the rate
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 0<<4);
+            break;
+            
+        case SYS_FS_48kHz:      // 48kHz = SYS_FS  
+            // Set internal sample rate to 48kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 2<<2);  
+            // SYS_FS specifies the rate
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 0<<4);
+            break;
+            
+        case SYS_FS_96kHz:      // 96kHz = SYS_FS  
+            // Set internal sample rate to 96kHz
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFF3, 3<<2);  
+            // SYS_FS specifies the rate
+            codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFCF, 0<<4);
+            break;
+            
+        default:
+            // Will use the POR value for the SGTL5000 sample rate
+            break;
+    }
+    // Identify the incoming SYS_MCLK frequency to use PLL (always)
     codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFFC, 3 << 0);
     
     // CODEC data channel configuration, hardware implementation-dependent
@@ -243,41 +319,15 @@ void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint
     codec->CHIP_I2S_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_I2S_CTRL, codec->CHIP_I2S_CTRL, 0xFF7F, 1 << 7);
     codec->CHIP_I2S_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_I2S_CTRL, codec->CHIP_I2S_CTRL, 0xFFCF, 3 << 4);
 
-    // Set ADC and DAC to stereo
-    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xBFFF, 1<<14);
-    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xFFBF, 1<<6);    
+    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xBFFF, 0<<14);  // Set DAC to MONO
+    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xFFBF, 0<<6);   // Set ADC to MONO
 
     // CODEC default input / output route
     CODEC_set_audio_path(codec, CODEC_INPUT_MIC, CODEC_OUTPUT_I2S, CODEC_DAP_DISABLE);
     CODEC_set_audio_path(codec, CODEC_INPUT_I2S, CODEC_OUTPUT_HP_ADC, CODEC_DAP_DISABLE);
     
     CODEC_mic_config(codec, MIC_BIAS_RES_2k, MIC_BIAS_VOLT_3V00, MIC_GAIN_30dB);
-    CODEC_set_hp_volume(codec, 0x18, 0x18);
-    codec->CHIP_ANA_HP_CTRL = CODEC_spi_write(codec, CODEC_CHIP_ANA_HP_CTRL, 0x1818);
-   
-    // Route MicIn to ADC
-    //CODEC_mic_config(codec, MIC_BIAS_RES_2k, MIC_BIAS_VOLT_3V00, MIC_GAIN_30dB);
-    //codec->CHIP_SSS_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_SSS_CTRL, codec->CHIP_SSS_CTRL, 0xFFCF, 0 << 4);   // DAC data source is ADC
-    //codec->CHIP_ANA_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_CTRL, codec->CHIP_ANA_CTRL, 0xFFFB, 0 << 2);   // ADC input is microphone 
-    
-    // Route ADC to I2Sout
-    //codec->CHIP_SSS_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_SSS_CTRL, codec->CHIP_SSS_CTRL, 0xFFFC, 0 << 0);        // I2S out data source is ADC
-    
-    // I2S in -> HP Out
-    //codec->CHIP_SSS_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_SSS_CTRL, codec->CHIP_SSS_CTRL, 0xFFCF, 1 << 4);   // DAC data source is I2S in
-    //codec->CHIP_ANA_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_CTRL, codec->CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
-    //codec->CHIP_ANA_HP_CTRL = CODEC_spi_write(codec, CODEC_CHIP_ANA_HP_CTRL, 0x1818);  
-    
-    // Route Dac to HP Out
-//     codec->CHIP_ANA_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_CTRL, codec->CHIP_ANA_CTRL, 0xFFBF, 0 << 6);   // Headphone input is DAC
-//     codec->CHIP_ANA_HP_CTRL = CODEC_spi_write(codec, CODEC_CHIP_ANA_HP_CTRL, 0x1818);
-
-    // ROute DAC to Line Out
-//    codec->CHIP_LINE_OUT_CTRL = CODEC_spi_write(codec, CODEC_CHIP_LINE_OUT_CTRL, 0x0322);   // Out current = 360uA, LO_VAG = 1.65V
-//    codec->CHIP_LINE_OUT_VOL = CODEC_spi_write(codec, CODEC_CHIP_LINE_OUT_VOL, 0x0F0F);      // Recommended nominal for VDDIO = 3.3
-//    CODEC_unmute(codec, ADC_MUTE);
-//    CODEC_unmute(codec, DAC_MUTE);
-//    CODEC_unmute(codec, HEADPHONE_MUTE);    
+    CODEC_set_hp_volume(codec, 0x18, 0x18);  
     
     // Enable DCI tx and RX 
     DCI_set_transmit_state(codec, DCI_TRANSMIT_ENABLE);
@@ -305,7 +355,7 @@ uint16_t CODEC_spi_write (STRUCT_CODEC *codec, uint16_t adr, uint16_t data)
     // Blocking SPI call
     while (SPI_module_busy(codec->spi_ref) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(codec->spi_ref, buf, 4);
-    SPI_master_write(codec->spi_ref, AUDIO_CODEC_CS);
+    SPI_write(codec->spi_ref, AUDIO_CODEC_CS);
     // End of SPI transaction
     return data;
 }
@@ -318,7 +368,7 @@ uint16_t CODEC_spi_modify_write (STRUCT_CODEC *codec, uint16_t adr, uint16_t reg
     // Blocking SPI call
     while (SPI_module_busy(codec->spi_ref) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(codec->spi_ref, buf, 4);
-    SPI_master_write(codec->spi_ref, AUDIO_CODEC_CS); 
+    SPI_write(codec->spi_ref, AUDIO_CODEC_CS); 
     // End of SPI transaction
     return reg;
 }
@@ -549,11 +599,13 @@ void CODEC_set_audio_path (STRUCT_CODEC *codec, uint8_t in_channel, uint8_t out_
     }
 }
 
+// CODEC control on-chip DAC volume. DAC can only be attenuated, not amplified
+// Min is 0dB, max is -90dB, in 0.5dB step
+// 0 <= dac_vol_L/R <= 180, where 180 * 0.5 = -90dB 
+// Minimum value written to register is 0x3C/3C. Codes lower than 0x3C/3C are reserved
+// Maximum value written to register is 0xF0/F0. Codes higher than 0xF0/F0 = channel mute
 void CODEC_set_dac_volume (STRUCT_CODEC *codec, uint8_t dac_vol_right, uint8_t dac_vol_left)
 {
-    // Set DAC volume
-    // Min is 0dB, max is -90dB, in 0.5dB step
-    // 0 <= dac_vol_L/R <= 180, where 180 * 0.5 = -90dB 
     if (dac_vol_right > 180){dac_vol_right = 180;}  // Saturate right channel
     if (dac_vol_left > 180){dac_vol_left = 180;}    // Saturate left channel
     codec->dac_vol_right = dac_vol_right + 0x3C;    // 0x3C is 0dB base offset in SGTL5000       
@@ -561,37 +613,31 @@ void CODEC_set_dac_volume (STRUCT_CODEC *codec, uint8_t dac_vol_right, uint8_t d
     codec->CHIP_DAC_VOL = CODEC_spi_write(codec, CODEC_CHIP_DAC_VOL, ((codec->dac_vol_right << 8) | codec->dac_vol_left)); 
 }
 
+// CODEC control on-chip HP volume. HP can be attenuated and amplified
+// Min is -51.5dB, max is +12dB, in 0.5dB step
+// 0 <= hp_vol_L/R <= 127, where 0 = +12dB and 127 = -51.5dB 
+// Maximum value written to register is 0x7F/7F. Codes higher than 0x7F/7F = reserved
 void CODEC_set_hp_volume (STRUCT_CODEC *codec, uint8_t hp_vol_right, uint8_t hp_vol_left)
 {
-    // SGTL datasheet, adjustment to HP vol is made by steps of 0.5dB / LSB
-    // 0x00 = +12dB
-    // 0x18 = 0dB
-    // 0x7F - 51.5dB    
     if (hp_vol_right > 0x7F){hp_vol_right = 0x7F;}  // Saturate right channel
     if (hp_vol_left > 0x7F){hp_vol_left = 0x7F;}    // Saturate left channel
     
-    if (hp_vol_right < 0x18)
-    {
-        codec->hp_vol_right = 0x18 - hp_vol_right;  // 0x18 is 0dB base offset in SGTL5000 
-    }
-    
-    if (hp_vol_left < 0x18)
-    {
-        codec->hp_vol_right = 0x18 - hp_vol_left;   // 0x18 is 0dB base offset in SGTL5000 
-    }
-    
-    codec->hp_vol_right = hp_vol_right + 0x18;      // 0x18 is 0dB base offset in SGTL5000       
-    codec->hp_vol_left = hp_vol_left + 0x18;        // 0x18 is 0dB base offset in SGTL5000          
+    codec->hp_vol_right = hp_vol_right;            
+    codec->hp_vol_left = hp_vol_left;       
     codec->CHIP_ANA_HP_CTRL = CODEC_spi_write(codec, CODEC_CHIP_ANA_HP_CTRL, ((codec->hp_vol_right << 8) | codec->hp_vol_left));     
 }
 
+// CODEC control on-chip LineOut volume. LineOut can be attenuated and amplified
+// Min is -7.5dB, max is +7.5dB, in 0.5dB step
+// 0 <= lo_vol_right/R <= 31, where 0 = +7.5dB and 31 = -7.5dB
+// Maximum value written to register is 0x1F/1F. Codes higher than 0x1F/1F = reserved
+// Based on hardware implementation, VDDA = 3V3, VAG_VAL = 1.575, VDDIO = 3.3, LO_VAGCNTRL = 1.575
+// Nominal value is 40*log((VAG_VAL)/(LO_VAGCNTRL))+15 = 0xF (L + R channel)
+// Maximum value is 0x1F (32). Codes higher than nominal have more attenuation
+// Each additional step is either +-0.5dB attenuation or gain
+// For more information see SGTL5000 datasheet p.41
 void CODEC_set_lo_volume (STRUCT_CODEC *codec, uint8_t lo_vol_right, uint8_t lo_vol_left)
 {
-    // Based on hardware implementation, VDDA = 3V3, VAG_VAL = 1.575, VDDIO = 3.3, LO_VAGCNTRL = 1.575
-    // Nominal value is 40*log((VAG_VAL)/(LO_VAGCNTRL))+15 = 0xF (L + R channel)
-    // Maximum value is 0x1F (32). Codes higher than nominal have more attenuation
-    // Each additional step is either +-0.5dB attenuation or gain
-    // For more information see SGTL5000 datasheet p.41
     if (lo_vol_right > 0x1F){lo_vol_right = 0x1F;}  // Saturate right channel
     if (lo_vol_left > 0x1F){lo_vol_left = 0x1F;}    // Saturate left channel
     codec->lo_vol_right = lo_vol_right;
@@ -599,24 +645,31 @@ void CODEC_set_lo_volume (STRUCT_CODEC *codec, uint8_t lo_vol_right, uint8_t lo_
     codec->CHIP_LINE_OUT_VOL = CODEC_spi_write(codec, CODEC_CHIP_LINE_OUT_VOL, ((codec->lo_vol_right << 8) | codec->lo_vol_left));     
 }
 
+// CODEC control on-chip ADC volume. ADC can be attenuated and / or amplified
+// Output gain and / or attenuation is controlled by the range bit
+// With range = 0, no change in ADC range
+// Min is 0dB, max is +22.5dB, in 1.5dB step
+// 0 <= adc_vol_L/R <= 15, where 0 = +0dB and 15 = +22.5dB 
+//
+// With range = 1, ADC range reduced by 6dB
+// Min is -6dB, max is +16.5dB, in 1.5dB step
+// 0 <= adc_vol_L/R <= 15, where 0 = -6dB and 15 = +16.5dB 
+// Maximum value written to register is 0x. Codes higher than 0x7F/7F = reserved
+void CODEC_set_adc_volume (STRUCT_CODEC *codec, uint8_t range, uint8_t adc_vol_right, uint8_t adc_vol_left)
+{
+    // If range == 0, gain range from 0 to 22.5dB in step of 1.5dB, from 0x0 to 0xF
+    // If range == 1, gain range from -6 to 16.5dB in step of 1.5dB, from 0x0 to 0xF
+    if (adc_vol_right > 0x0F){adc_vol_right = 0x0F;}
+    if (adc_vol_left > 0x0F){adc_vol_left = 0x0F;}
+    codec->adc_vol_right = adc_vol_right;
+    codec->lo_vol_left = adc_vol_left;
+    codec->CHIP_ANA_ADC_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_ADC_CTRL, codec->CHIP_ANA_ADC_CTRL, (0x00FF | (range << 8)), ((codec->adc_vol_right << 4) | codec->lo_vol_left));
+}
+
 void CODEC_set_mic_gain (STRUCT_CODEC *codec, uint8_t gain)
 {
     // Set microphone gain
     codec->CHIP_MIC_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_MIC_CTRL, codec->CHIP_MIC_CTRL, 0xFFFC, gain << 0);     
-}
-
-void CODEC_set_analog_gain (STRUCT_CODEC *codec, uint8_t range, uint8_t gain_right, uint8_t gain_left)
-{
-    // If range == 0, gain range from 0 to 22.5dB in step of 1.5dB, from 0x0 to 0xF
-    // If range == 1, gain range from -6 to 16.5dB in step of 1.5dB, from 0x0 to 0xF
-    if ((gain_right >= 0) && (gain_right <= 0xF))
-    {
-        codec->CHIP_ANA_ADC_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_ADC_CTRL, codec->CHIP_ANA_ADC_CTRL, (0xFE0F | (range << 8)), gain_right << 4);
-    }
-    if ((gain_left >= 0) && (gain_right <= 0xF))
-    {
-        codec->CHIP_ANA_ADC_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_ADC_CTRL, codec->CHIP_ANA_ADC_CTRL, (0xFE0F | (range << 8)), gain_left << 0);
-    }
 }
 
 void CODEC_mute (STRUCT_CODEC *codec, uint8_t channel)
@@ -669,30 +722,53 @@ void CODEC_unmute (STRUCT_CODEC *codec, uint8_t channel)
     }   
 }
 
-uint8_t DCI_fill_tx_buf_dma (STRUCT_CODEC *codec, uint16_t *buf, uint16_t length)
+uint8_t DCI_fill_dma_tx_buf (STRUCT_CODEC *codec, uint16_t *buf, uint16_t length)
 {
 #ifdef DCI0_DMA_ENABLE
     uint16_t i=0;
-    if (DMA_get_txfer_state(codec->DMA_tx_channel) == DMA_TXFER_DONE)
+    if (length > CODEC_BLOCK_TRANSFER){length = CODEC_BLOCK_TRANSFER;}
+    for (i = 0; i<length; i++)
     {
-        if (length > CODEC_BLOCK_TRANSFER){length = CODEC_BLOCK_TRANSFER;}
-        for (; i<length; i++)
+        //if (DMA_get_pingpong_state(codec->DMA_tx_channel) == 0)
+        if (codec->DMA_tx_buf_pp == 1)
         {
-            if (codec->DMA_tx_buf == 0)
-            {
-                codec_dma_tx_buf_A[i] = *buf++;
-            }
-            else
-            {
-                codec_dma_tx_buf_B[i] = *buf++;
-            }
+            codec_dma_tx_buf_B[i] = *buf++;
         }
-        return 1;
+        else
+        {
+            codec_dma_tx_buf_A[i] = *buf++;
+        }
+    }
+    return 1;
+#endif
+#ifndef DCI0_DMA_ENABLE
+    return 0;
+#endif
+}
+
+uint16_t * DCI_unload_dma_rx_buf (STRUCT_CODEC *codec)
+{
+#ifdef DCI0_DMA_ENABLE
+    uint16_t i;
+    if (codec->DMA_rx_buf_pp == 0) 
+    {
+        for (i=0; i<codec->DCI_receive_length; i++)
+        {
+            codec->DCI_receive_buffer[i] = codec_dma_rx_buf_A[i];
+        }
     }
     else
-        return 0;
+    {
+        for (i=0; i<codec->DCI_receive_length; i++)
+        {
+            codec->DCI_receive_buffer[i] = codec_dma_rx_buf_B[i];
+        }        
+    }
+    return &codec->DCI_receive_buffer[0];
 #endif
+#ifndef DCI0_DMA_ENABLE
     return 0;
+#endif
 }
 
 void DCI_set_transmit_state (STRUCT_CODEC *codec, uint8_t state)
@@ -718,9 +794,11 @@ void DCI_enable (STRUCT_CODEC *codec)
 void DCI_disable (STRUCT_CODEC *codec)
 {
     codec->DCI_enable_state = 0;
+#ifndef DCI0_DMA_ENABLE
     IEC3bits.DCIIE = 0;     // Disable DCI interrupt  
     IFS3bits.DCIIF = 0;     // Clear DCI interrupt flag   
     DCICON1bits.DCIEN = 0;  // Disable DCI module   
+#endif
 }
 
 uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx)
@@ -735,28 +813,13 @@ uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx)
         return 0;
 #endif
 #ifdef DCI0_DMA_ENABLE
-    uint16_t i=0;
     if (tx_rx == DCI_DMA_RX)
     {
         if (codec->DCI_receive_enable == DCI_RECEIVE_ENABLE)
         {
             if (DMA_get_txfer_state(codec->DMA_rx_channel) == DMA_TXFER_DONE)
-            {
-                if (codec->DMA_tx_buf == 1) // Tx buffer A was just sent, so the flag value is now "B"
-                {
-                    for (i=0; i<CODEC_BLOCK_TRANSFER; i++)
-                    {
-                        codec_dma_tx_buf_B[i] = codec_dma_rx_buf_B[i];
-                    }
-                }
-                else                        // Tx buffer B was just sent
-                { 
-                    for (i=0; i<CODEC_BLOCK_TRANSFER; i++)
-                    {
-                        codec_dma_tx_buf_A[i] = codec_dma_rx_buf_A[i];   
-                    }                                      
-                }                
-                codec->DMA_rx_buf ^= 1;                
+            {              
+                codec->DMA_rx_buf_pp ^= 1;                
                 return 1;
             }
             else
@@ -772,7 +835,7 @@ uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx)
         {
             if (DMA_get_txfer_state(codec->DMA_tx_channel) == DMA_TXFER_DONE)
             {
-                codec->DMA_tx_buf ^= 1;
+                codec->DMA_tx_buf_pp ^= 1;
                 return 1;
             }
             else
