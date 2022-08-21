@@ -25,7 +25,7 @@
 #define I2C_2 1
 #define I2C_QTY 2
 
-#define I2C_FREQ_100k ((FCY / 100000)-2) 
+#define I2C_FREQ_100k 371
 #define I2C_FREQ_400k ((FCY / 400000)-2)  
 
 #define I2C_mode_master 0

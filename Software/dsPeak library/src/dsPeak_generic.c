@@ -353,16 +353,8 @@ uint8_t hex_to_dec (uint8_t hex)
 void uint16_to_byte8 (uint16_t *ptr_16, uint8_t *ptr_8)
 {
     uint16_t i = 0;
-    //uint16_t temp = 0;
-    for (i=0; i < 128; i++)
+    for (; i < 128; i++)
     {
-        //temp = *ptr_16;       
-        //*ptr_8 = ((*ptr_16 & 0xFF00) >> 8);
-        //ptr_8++;       
-        //*ptr_8 = (*ptr_16 & 0x00FF);
-        //ptr_8++;
-        //ptr_16++;
-        
         *ptr_8++ = ((*ptr_16 & 0xFF00) >> 8);
         *ptr_8++ = (*ptr_16++ & 0x00FF);
     }
@@ -370,18 +362,10 @@ void uint16_to_byte8 (uint16_t *ptr_16, uint8_t *ptr_8)
 
 void byte8_to_uint16 (uint8_t *ptr_8, uint16_t *ptr_16)
 {
-    uint16_t i;
+    uint16_t i = 0;
     //uint16_t temp = 0;
-    for (i=0; i<128; i++)
+    for (; i<128; i++)
     { 
-        //temp = 0;
-        //temp = *ptr_8;
-        //temp = temp << 8;
-        //ptr_8++;
-        //temp = temp | *ptr_8;
-        //*ptr_16 = temp;
-        //ptr_8++;
-        //ptr_16++;
         *ptr_16 = ((*ptr_8++ << 8) & 0xFF00);
         *ptr_16 = (*ptr_16 | *ptr_8++);
         ptr_16++;

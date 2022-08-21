@@ -21,7 +21,8 @@ __eds__ uint16_t codec_dma_rx_buf_B[CODEC_BLOCK_TRANSFER] __attribute__((eds,spa
 #endif
 
 // DCI operates in slave mode on dsPeak
-void DCI_init (STRUCT_CODEC *codec, uint16_t tx_buf_length, uint16_t rx_buf_length)
+void DCI_init (STRUCT_CODEC *codec, uint16_t tx_buf_length, uint16_t rx_buf_length,
+                uint8_t DMA_tx_channel, uint8_t DMA_rx_channel)
 {
     uint16_t i = 0;
     
@@ -75,44 +76,52 @@ void DCI_init (STRUCT_CODEC *codec, uint16_t tx_buf_length, uint16_t rx_buf_leng
     // DCI with DMA
     for (i=0; i < codec->DCI_transmit_length; i++)
     {
-        codec_dma_tx_buf_A[i] = 0;    // Initialize buffer
-        codec_dma_tx_buf_B[i] = 0;    // Initialize buffer
-        codec_dma_rx_buf_A[i] = 0;    // Initialize buffer       
-        codec_dma_rx_buf_B[i] = 0;    // Initialize buffer 
+        codec_dma_tx_buf_A[i] = 0;    // Initialize Tx buffer
+        codec_dma_tx_buf_B[i] = 0;    // Initialize Tx buffer
     }
     
+    for (i=0; i < codec->DCI_receive_length; i++)
+    {
+        codec_dma_rx_buf_A[i] = 0;    // Initialize Rx buffer       
+        codec_dma_rx_buf_B[i] = 0;    // Initialize Rx buffer 
+    }
+    codec->DMA_tx_buf_pp = 0;
+    codec->DMA_rx_buf_pp = 0;
     // If DMA is enabled, the DCI transfers only 1x frame / tx-rx slot
-    DCICON2bits.COFSG = 1;  // Data frame has 2x words (left / right sample)
-    DCICON2bits.BLEN = 0;   // Enable interrupt after 1 data word transfered  
+    DCICON2bits.COFSG = 1;  // Data frame has 2x words (left + right sample) -> 1x frame equals 32b
+    DCICON2bits.BLEN = 0;   // Enable interrupt after 1 data word transfered
     RSCONbits.RSE0 = 1;     // Enable receive time slot 0
     RSCONbits.RSE1 = 1;     // Enable receive time slot 1
     TSCONbits.TSE0 = 1;     // Enable transmit time slot 0
     TSCONbits.TSE1 = 1;     // Enable transmit time slot 1
     
     // DMA_CH7 is DCI TX channel
-    DMA_init(DMA_CH7);
+    codec->DMA_tx_channel = DMA_CH7;
+    DMA_init(codec->DMA_tx_channel);
     DMA7CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_CHMODE_CPPE;
     DMA7REQ = DMAREQ_DCI;
     DMA7PAD = (volatile uint16_t)&TXBUF0;
+    //DMA_set_control_register(codec->DMA_tx_channel, (DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_CHMODE_CPPE));
+    //DMA_set_request_source(codec->DMA_tx_channel, DMAREQ_DCI);
+    //DMA_set_peripheral_address(codec->DMA_tx_channel, DMAPAD_TXBUF0);
     DMA7STAH = 0;
     DMA7STAL = __builtin_dmaoffset(codec_dma_tx_buf_A);   
     DMA7STBH = 0;
     DMA7STBL = __builtin_dmaoffset(codec_dma_tx_buf_B);       
-    codec->DMA_tx_channel = DMA_CH7;
-
+    
     // DMA_CH8 is DCI RX channel
-    DMA_init(DMA_CH8);
+    codec->DMA_rx_channel = DMA_CH8;
+    DMA_init(codec->DMA_rx_channel);
     DMA8CON = DMA_SIZE_WORD | DMA_TXFER_RD_PER | DMA_CHMODE_CPPE;
     DMA8REQ = DMAREQ_DCI;
     DMA8PAD = (volatile uint16_t)&RXBUF0;
+    //DMA_set_control_register(codec->DMA_rx_channel, (DMA_SIZE_WORD | DMA_TXFER_RD_PER | DMA_CHMODE_CPPE));
+    //DMA_set_request_source(codec->DMA_rx_channel, DMAREQ_DCI);
+    //DMA_set_peripheral_address(codec->DMA_rx_channel, DMAPAD_RXBUF0);
     DMA8STAH = 0;
     DMA8STAL = __builtin_dmaoffset(codec_dma_rx_buf_A); 
     DMA8STBH = 0;
     DMA8STBL = __builtin_dmaoffset(codec_dma_rx_buf_B);     
-    codec->DMA_rx_channel = DMA_CH8;
-    
-    codec->DMA_tx_buf_pp = 0;   // Default tx buffer sent 1st by DCI module is tx_buf_a 
-    codec->DMA_rx_buf_pp = 0;   // Default rx buffer read 1st by DCI module is rx_buf_a
        
     DMA_set_txfer_length(codec->DMA_tx_channel, codec->DCI_transmit_length - 1);    // 0 = 1x transfer
     DMA_set_txfer_length(codec->DMA_rx_channel, codec->DCI_receive_length - 1);     // 0 = 1x transfer
@@ -122,20 +131,21 @@ void DCI_init (STRUCT_CODEC *codec, uint16_t tx_buf_length, uint16_t rx_buf_leng
 #endif    
 }
 
-void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint8_t sys_fs, uint16_t tx_buf_length, uint16_t rx_buf_length)
+void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint8_t sys_fs, 
+                uint16_t tx_buf_length, uint16_t rx_buf_length, uint8_t DMA_tx_channel, uint8_t DMA_rx_channel)
 {
     uint32_t pll_out_freq = 0;
     uint16_t pll_int_divisor = 0;
     uint16_t pll_frac_divisor = 0;
     
-    DCI_init(codec, tx_buf_length, rx_buf_length);
+    DCI_init(codec, tx_buf_length, rx_buf_length, DMA_tx_channel, DMA_rx_channel);
     
     codec->SPI_channel = spi_channel;
     codec->spi_ref = spi; 
     
     // SPI3 port used for SGTL5000 max frequency is 9MHz
     // 70Mips / (1 * 8) = 8.75MHz
-    SPI_init(codec->spi_ref, codec->SPI_channel, SPI_MODE0, PPRE_1_1, SPRE_8_1, 4, 4);   
+    SPI_init(codec->spi_ref, codec->SPI_channel, SPI_MODE0, PPRE_1_1, SPRE_8_1, 4, 4, 0xFF, 0xFF);  // DMA not used on CODEC   
     
     // Enable 1.8V output to CODEC
     TRISKbits.TRISK1 = 0;               // Set CODEC_1V8_EN to output
@@ -315,12 +325,13 @@ void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint
     codec->CHIP_CLK_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_CLK_CTRL, codec->CHIP_CLK_CTRL, 0xFFFC, 3 << 0);
     
     // CODEC data channel configuration, hardware implementation-dependent
-    // Set CODEC to I2S master, set data length to 16 bits
-    codec->CHIP_I2S_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_I2S_CTRL, codec->CHIP_I2S_CTRL, 0xFF7F, 1 << 7);
-    codec->CHIP_I2S_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_I2S_CTRL, codec->CHIP_I2S_CTRL, 0xFFCF, 3 << 4);
+    // Set CODEC to I2S master, set data length to 16 bits, 32Fs
+    codec->CHIP_I2S_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_I2S_CTRL, codec->CHIP_I2S_CTRL, 0xFEFF, 1 << 8);    // 32 Fs (DCI uses 16-bit per data)
+    codec->CHIP_I2S_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_I2S_CTRL, codec->CHIP_I2S_CTRL, 0xFF7F, 1 << 7);    // CODEC is master
+    codec->CHIP_I2S_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_I2S_CTRL, codec->CHIP_I2S_CTRL, 0xFFCF, 3 << 4);    // DLEN = 16 bits
 
-    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xBFFF, 0<<14);  // Set DAC to MONO
-    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xFFBF, 0<<6);   // Set ADC to MONO
+    CODEC_set_adc_mono(codec);
+    CODEC_set_dac_mono(codec);
 
     // CODEC default input / output route
     CODEC_set_audio_path(codec, CODEC_INPUT_MIC, CODEC_OUTPUT_I2S, CODEC_DAP_DISABLE);
@@ -381,6 +392,26 @@ void CODEC_mic_config (STRUCT_CODEC *codec, uint8_t bias_res, uint8_t bias_volt,
     codec->CHIP_MIC_CTRL = CODEC_spi_modify_write(codec, CODEC_CHIP_MIC_CTRL, codec->CHIP_MIC_CTRL, 0xFF8F, bias_volt << 4);
     // Set microphone gain
     CODEC_set_mic_gain(codec, gain);  
+}
+
+void CODEC_set_dac_mono (STRUCT_CODEC *codec)
+{
+    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xBFFF, 0<<14);  // Set DAC to MONO     
+}
+
+void CODEC_set_dac_stereo (STRUCT_CODEC *codec)
+{
+    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xBFFF, 1<<14);  // Set DAC to STEREO    
+}
+
+void CODEC_set_adc_mono (STRUCT_CODEC *codec)
+{
+    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xFFBF, 0<<6);   // Set ADC to MONO      
+}
+
+void CODEC_set_adc_stereo (STRUCT_CODEC *codec)
+{
+    codec->CHIP_ANA_POWER = CODEC_spi_modify_write(codec, CODEC_CHIP_ANA_POWER, codec->CHIP_ANA_POWER, 0xFFBF, 1<<6);   // Set ADC to STEREO          
 }
 
 void CODEC_set_audio_path (STRUCT_CODEC *codec, uint8_t in_channel, uint8_t out_channel, uint8_t dap_enable)
@@ -726,10 +757,10 @@ uint8_t DCI_fill_dma_tx_buf (STRUCT_CODEC *codec, uint16_t *buf, uint16_t length
 {
 #ifdef DCI0_DMA_ENABLE
     uint16_t i=0;
-    if (length > CODEC_BLOCK_TRANSFER){length = CODEC_BLOCK_TRANSFER;}
-    for (i = 0; i<length; i++)
-    {
-        //if (DMA_get_pingpong_state(codec->DMA_tx_channel) == 0)
+    if (length > codec->DCI_transmit_length){length = codec->DCI_transmit_length;}
+    
+    for (; i<length; i++)
+    {        
         if (codec->DMA_tx_buf_pp == 1)
         {
             codec_dma_tx_buf_B[i] = *buf++;
@@ -746,24 +777,26 @@ uint8_t DCI_fill_dma_tx_buf (STRUCT_CODEC *codec, uint16_t *buf, uint16_t length
 #endif
 }
 
-uint16_t * DCI_unload_dma_rx_buf (STRUCT_CODEC *codec)
+uint16_t * DCI_unload_dma_rx_buf (STRUCT_CODEC *codec, uint16_t length)
 {
 #ifdef DCI0_DMA_ENABLE
-    uint16_t i;
-    if (codec->DMA_rx_buf_pp == 0) 
+    uint16_t i = 0;
+    if (length > codec->DCI_receive_length){length = codec->DCI_receive_length;}
+
+    if (codec->DMA_rx_buf_pp == 1) 
     {
-        for (i=0; i<codec->DCI_receive_length; i++)
+        for (; i<length; i++)
         {
             codec->DCI_receive_buffer[i] = codec_dma_rx_buf_A[i];
         }
     }
     else
     {
-        for (i=0; i<codec->DCI_receive_length; i++)
+        for (; i<length; i++)
         {
             codec->DCI_receive_buffer[i] = codec_dma_rx_buf_B[i];
         }        
-    }
+    }  
     return &codec->DCI_receive_buffer[0];
 #endif
 #ifndef DCI0_DMA_ENABLE
@@ -818,8 +851,8 @@ uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx)
         if (codec->DCI_receive_enable == DCI_RECEIVE_ENABLE)
         {
             if (DMA_get_txfer_state(codec->DMA_rx_channel) == DMA_TXFER_DONE)
-            {              
-                codec->DMA_rx_buf_pp ^= 1;                
+            {       
+                LATCbits.LATC3 = 0;                           
                 return 1;
             }
             else
@@ -835,7 +868,7 @@ uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx)
         {
             if (DMA_get_txfer_state(codec->DMA_tx_channel) == DMA_TXFER_DONE)
             {
-                codec->DMA_tx_buf_pp ^= 1;
+                LATCbits.LATC4 = 0;
                 return 1;
             }
             else
@@ -849,10 +882,9 @@ uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx)
 #endif
 }
 
-void __attribute__((__interrupt__, auto_psv)) _DCIInterrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _DCIInterrupt(void)
 {
     IFS3bits.DCIIF = 0;      // clear DCI interrupt flag
-    
     // Without DMA
 #ifndef DCI0_DMA_ENABLE
     // I2S direct loopback (I2Sin -> I2Sout)

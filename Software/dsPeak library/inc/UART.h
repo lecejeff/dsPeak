@@ -57,7 +57,8 @@ typedef struct
     uint16_t tx_counter;
 }STRUCT_UART;
 
-void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_buf_length, uint16_t rx_buf_length);
+void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_buf_length, 
+                uint16_t rx_buf_length, uint8_t DMA_tx_channel);
 void UART_putc (STRUCT_UART *uart, uint8_t data);
 void UART_putstr (STRUCT_UART *uart, const char *string);
 uint8_t UART_putstr_dma (STRUCT_UART *uart, const char *string);

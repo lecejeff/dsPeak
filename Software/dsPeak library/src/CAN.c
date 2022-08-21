@@ -18,114 +18,373 @@
 #include "CAN.h"
 #include "DMA.h"
 
-__eds__ uint16_t CAN_MSG_BUFFER[32][8] __attribute__((eds, space(dma), aligned(32*16)));
-uint16_t CAN_RX_MSG[8] = {0};
+__eds__ uint16_t CAN_MSG_BUFFER[NUM_OF_CAN_BUFFERS][8] __attribute__((eds, space(dma), aligned(32*16)));
 
-uint8_t can_error_interrupt_flag = 0;
+STRUCT_CAN CAN_struct[CAN_QTY];
 
-//void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID, uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)//
+//void CAN_init_struct (STRUCT_CAN *node, uint8_t channel, uint32_t bus_freq, uint16_t SID, uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)//
 //Description : Function initialize CAN structure parameters
 //
-//Function prototype : void CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID, uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)
+//Function prototype : void CAN_init_struct (STRUCT_CAN *node, uint8_t channel, uint32_t bus_freq, uint16_t SID, uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)
 //
-//Enter params       : CAN_struct *node    : Pointer to a CAN_struct item
+//Enter params       : STRUCT_CAN *node    : Pointer to a STRUCT_CAN item
 //                   : uint8_t channel     : CAN physical channel
 //                   : uint32_t bus_freq   : CAN bus frequency, max is 550kbps (hardware constraint)
 //                   : uint16_t SID        : CAN Standard identifier
 //                   : uint16_t EID        : CAN extended identifier
-//                   : uint16_t rx_mask    : CAN receive mask
 //                   : uint16_t rx_sid     : CAN receive SID
 //
 //Exit params        : None
 //
-//Function call      : CAN_init_struct(&CAN_native, CAN_1, 500000, 0x0123, 0, 0x0300, 0x0300);
+//Function call      : CAN_init_struct(CAN_native, CAN_1, 500000, 0x0123, 0, 0x0300, 0x0300);
 //
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t CAN_init_struct (CAN_struct *node, uint8_t channel, uint32_t bus_freq, uint16_t SID,
-                        uint16_t EID, uint16_t rx_mask, uint16_t rx_sid)
+uint8_t CAN_init_message (STRUCT_CAN_MSG *msg, uint16_t SID, uint16_t EID, uint8_t SRR, uint8_t IDE, uint8_t RTR, uint8_t RB1, uint8_t RB0, 
+                            uint16_t rx_sid, uint8_t tx_msg_channel, uint8_t rx_msg_channel, uint8_t tx_length, uint8_t rx_length, uint8_t node_type)
 {
     uint8_t i = 0;
-    node->bus_freq = bus_freq;
-    node->channel = channel;
-    node->SID = SID;
-    node->EID = EID;
-    node->RX_MASK = rx_mask;
-    node->RX_SID = rx_sid;
-    node->txmsg_buffer_channel = 0; // Use CAN MSGBUF0 for message transmission
-    node->rxmsg_buffer_channel = 1; // Use CAN MSGBUF1 for message reception
+    if (node_type > 2){return 0;}
+    msg->node_type = node_type;
+
+    // Saturation for transmit / receive channel and length
+    if (tx_msg_channel > 7){return 0;}      // Only channel 0..7 can be used for transmission
+    msg->tx_msg_channel = tx_msg_channel;
+    if (rx_msg_channel > 31){return 0;}     // Channel 0..31 can be used for reception
+    msg->rx_msg_channel = rx_msg_channel;
+    if (tx_length > 8){return 0;}           // CAN 2.0B max payload length is 8 bytes
+    msg->tx_length = tx_length;
+    if (rx_length > 8){return 0;}           // CAN 2.0B max payload length is 8 bytes
+    msg->tx_length = rx_length;
     
-    node->error_ivr_flag = 0;           // Invalid error flag reset
-    node->transmit_retry_counter = 0;   // Rransmit retry counter reset
+    // CAN message configuration bits, see family reference manual
+    msg->SID = SID;                         // SID (standard identifier, 11 bits)
+    msg->EID = EID;                         // EID (extended identifier, 18 bits)
+    msg->SRR = SRR;                         // SRR (remote request substitute bit, 1 = remote, 0 = normal)
+    msg->IDE = IDE;                         // IDE (extended identifier bit, 1 = extended, 0 = standard)
+    msg->RTR = RTR;                         // RTR (remote transmission request)
     
-    // See if these should be configured by default
-    node->SRR = 0;
-    node->IDE = 0;    
-    node->RTR = 0;
-    node->RB1 = 0;
-    node->RB0 = 0;
-    node->DLC = 8;
-    
-    // Initialize payload bytes to 0 by default
-    for (; i<8; i++)
+    // Per CAN 2.0B specification, RB1 and RB0 must always be set to '0'
+    if (RB1 != 0){return 0;}
+    msg->RB1 = RB1;                         // RB1 (reserved bit 1, must be set to '0')
+    if (RB0 != 0){return 0;}
+    msg->RB0 = RB0;                         // RB1 (reserved bit 0, must be set to '0')
+  
+    msg->DLC = tx_length;   
+    // Initialize tx and rx payload bytes to 0 by default
+    for (i = 0; i < msg->tx_length; i++)
     {
-        node->can_tx_payload[i] = 0;
-        node->can_rx_payload[i] = 0;
+        msg->tx_payload[i] = 0;
+        msg->rx_payload[i] = 0;
+    }
+
+    // Set tx message channel register
+    if ((msg->node_type == CAN_NODE_TYPE_TX_ONLY) || (msg->node_type == CAN_NODE_TYPE_TX_RX))
+    {
+        switch (msg->tx_msg_channel)
+        {
+            case 0:
+                C1TR01CONbits.TXEN0 = 1;            // Set buffer 0 to transmit buffer
+                C1TR01CONbits.TX0PRI = 0x3;
+                break; 
+
+            case 1:
+                C1TR01CONbits.TXEN1 = 1;            // Set buffer 1 to transmit buffer
+                C1TR01CONbits.TX1PRI = 0x3;
+                break;
+
+            case 2:
+                C1TR23CONbits.TXEN2 = 1;            // Set buffer 2 to transmit buffer
+                C1TR23CONbits.TX2PRI = 0x3;
+                break;
+
+            case 3:
+                C1TR23CONbits.TXEN3 = 1;            // Set buffer 3 to transmit buffer
+                C1TR23CONbits.TX3PRI = 0x3;
+                break;
+
+            case 4:
+                C1TR45CONbits.TXEN4 = 1;            // Set buffer 4 to transmit buffer
+                C1TR45CONbits.TX4PRI = 0x3;
+                break; 
+
+            case 5:
+                C1TR45CONbits.TXEN5 = 1;            // Set buffer 5 to transmit buffer
+                C1TR45CONbits.TX5PRI = 0x3;
+                break;
+
+            case 6:
+                C1TR67CONbits.TXEN6 = 1;            // Set buffer 6 to transmit buffer
+                C1TR67CONbits.TX6PRI = 0x3;
+                break;
+
+            case 7:
+                C1TR67CONbits.TXEN7 = 1;            // Set buffer 7 to transmit buffer
+                C1TR67CONbits.TX7PRI = 0x3;
+                break;
+                
+            default:
+                return 0;
+                break;
+        }
+        
+        // Initialize CAN message
+        CAN_MSG_BUFFER[msg->tx_msg_channel][0] = ((msg->SID << 2) | (msg->SRR << 1) | msg->IDE);
+        CAN_MSG_BUFFER[msg->tx_msg_channel][1] = msg->EID & 0x3FFC0;
+        CAN_MSG_BUFFER[msg->tx_msg_channel][2] = (((msg->EID & 0x0003F) << 10) | (msg->RTR << 9)
+                                                | (msg->RB1 << 8) | (msg->RB0 << 4) | (msg->DLC));
+        // Initialize CAN message payload to 0
+        CAN_MSG_BUFFER[msg->tx_msg_channel][3] = 0;
+        CAN_MSG_BUFFER[msg->tx_msg_channel][4] = 0;
+        CAN_MSG_BUFFER[msg->tx_msg_channel][5] = 0;
+        CAN_MSG_BUFFER[msg->tx_msg_channel][6] = 0;    
+        CAN_MSG_BUFFER[msg->tx_msg_channel][7] = 0; 
     }
     
-    // Set node CAN channel to CAN_MODE_CONFIG
-    if (CAN_set_mode(node, CAN_MODE_CONFIG) == 0xFF)
+    if ((msg->node_type == CAN_NODE_TYPE_RX_ONLY) || (msg->node_type == CAN_NODE_TYPE_TX_RX))
     {
-        return 1;
+        msg->rx_sid = rx_sid;
     }
-    
-    return 0;
+
+    return 1;
 }
 
-//********************uint8_t CAN_init (CAN_struct *node)*********************//
+uint8_t CAN_set_rx_filter_sid (STRUCT_CAN_MSG *msg, uint8_t filter_channel, uint16_t filter_SID)
+{    
+    if ((msg->node_type == CAN_NODE_TYPE_RX_ONLY) || (msg->node_type == CAN_NODE_TYPE_TX_RX))
+    {
+        if (filter_channel > 15){return 0;}
+        msg->rx_filter_channel = filter_channel;
+        msg->rx_filter_SID = filter_SID;
+        C1CTRL1bits.WIN = 1;                        // Set at 1 to access CAN filter / mask registers  
+        switch (msg->rx_filter_channel)
+        {
+            case 0:
+                C1RXF0SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN0 = 1;              // Acceptance filter enabled          
+                break;
+
+            case 1:
+                C1RXF1SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN1 = 1;              // Acceptance filter enabled  
+                break;
+
+            case 2:
+                C1RXF2SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN2 = 1;              // Acceptance filter enabled          
+                break;
+
+            case 3:
+                C1RXF3SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN3 = 1;              // Acceptance filter enabled  
+                break;
+
+            case 4:
+                C1RXF4SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN4 = 1;              // Acceptance filter enabled          
+                break;
+
+            case 5:
+                C1RXF5SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN5 = 1;              // Acceptance filter enabled  
+                break;
+
+            case 6:
+                C1RXF6SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN6 = 1;              // Acceptance filter enabled          
+                break;
+
+            case 7:
+                C1RXF7SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN7 = 1;              // Acceptance filter enabled  
+                break;
+
+            case 8:
+                C1RXF8SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN8 = 1;              // Acceptance filter enabled          
+                break;
+
+            case 9:
+                C1RXF9SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN9 = 1;              // Acceptance filter enabled  
+                break;
+
+            case 10:
+                C1RXF10SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN10 = 1;              // Acceptance filter enabled          
+                break;
+
+            case 11:
+                C1RXF11SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN11 = 1;              // Acceptance filter enabled  
+                break;
+
+            case 12:
+                C1RXF12SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN12 = 1;              // Acceptance filter enabled          
+                break;
+
+            case 13:
+                C1RXF13SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN13 = 1;              // Acceptance filter enabled  
+                break;
+
+            case 14:
+                C1RXF14SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN14 = 1;              // Acceptance filter enabled          
+                break;
+
+            case 15:
+                C1RXF15SIDbits.SID = msg->rx_filter_SID;
+                C1FEN1bits.FLTEN15 = 1;              // Acceptance filter enabled  
+                break;
+        }
+        C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers   
+    }   
+    else
+        return 0;
+}
+
+uint8_t CAN_set_rx_mask (STRUCT_CAN_MSG *msg, uint8_t mask_channel, uint16_t mask)
+{
+    if ((msg->node_type == CAN_NODE_TYPE_RX_ONLY) || (msg->node_type == CAN_NODE_TYPE_TX_RX))
+    {  
+        if (mask_channel > 2){return 0;}            // dsPIC33E supports 3x different hardware defined masks
+        msg->rx_mask_channel = mask_channel;
+        msg->rx_mask = mask;
+        C1CTRL1bits.WIN = 1;                        // Set at 1 to access CAN filter / mask registers  
+        switch (msg->rx_mask_channel)
+        {
+            case 0:
+                C1RXM0SIDbits.SID = msg->rx_mask;   // Setup acceptance mask
+                //C1FMSKSEL1bits.F0MSK = 1;           // Acceptance mask registers contain mask
+                       
+                break;
+
+            case 1:
+                C1RXM1SIDbits.SID = msg->rx_mask;   // Setup acceptance mask
+                break;
+
+            case 2:
+                C1RXM2SIDbits.SID = msg->rx_mask;   // Setup acceptance mask
+                break;
+        }
+        C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers   
+    }
+    else
+        return 0;
+}
+
+uint8_t CAN_assign_rx_mask (STRUCT_CAN_MSG *msg, uint8_t mask_channel)
+{
+    if ((msg->node_type == CAN_NODE_TYPE_RX_ONLY) || (msg->node_type == CAN_NODE_TYPE_TX_RX))
+    {
+        if (mask_channel > 2){return 0;}
+        switch (msg->rx_msg_channel)
+        {
+            case 0:
+                C1BUFPNT1bits.F0BP = 0;             // Acceptance filter will use message buffer 0    
+                break;
+                
+            case 1:
+                C1BUFPNT1bits.F1BP = 1;             // Acceptance filter will use message buffer 1   
+                break;
+                
+            case 2:
+                break;
+                
+            case 3:
+                break;
+                
+            case 4:
+                break;
+        }
+    }
+    else
+        return 0;
+}
+
+//********************uint8_t CAN_init (STRUCT_CAN *node)*********************//
 //Description : Function initialize CAN state machine and registers
 //
-//Function prototype : uint8_t CAN_init (CAN_struct *node)
+//Function prototype : uint8_t CAN_init (STRUCT_CAN *node)
 //
-//Enter params       : CAN_struct *node    : Pointer to a CAN_struct item
+//Enter params       : STRUCT_CAN *node    : Pointer to a STRUCT_CAN item
 //
 //Exit params        : uint8_t : CAN configuration status
-//                               0 : Configuration successful
-//                               1 : Error
-//Function call      : CAN_init(&CAN_native);
+//                               1 : Configuration successful
+//                               0 : Error
+//Function call      : CAN_init(CAN_native);
 //
 // Intellitrol           MPLab X v5.45            XC16 v1.61          05/04/2021   
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t CAN_init (CAN_struct *node)
+uint8_t CAN_init (STRUCT_CAN *node, uint8_t channel, uint32_t bus_freq, uint16_t tx_retry,
+                uint8_t DMA_tx_channel, uint8_t DMA_rx_channel, uint8_t node_type)
 {
-    uint8_t i = 0, j = 0;
-   
+    node->channel = channel;
+    node->bus_freq = bus_freq;
+    node->DMA_tx_channel = DMA_tx_channel;
+    node->DMA_rx_channel = DMA_rx_channel;
+    node->ivr_flag = 0;                         // Invalid error flag reset
+    node->tbif_flag = 0;                        // Transmit buffer interrupt flag reset
+    node->rbif_flag = 0;                        // Receive buffer interrupt flag reset
+    node->transmit_retry_counter = tx_retry;    // Transmit retry counter reset
+    
     // Make sure node CAN physical channel is in config mode before initializing
     // the CAN registers, otherwise write to these registers will be discarded
-    if (CAN_get_mode(node) != CAN_MODE_CONFIG){return 1;}    
-    else
+    if (CAN_get_mode(node) != CAN_MODE_CONFIG)
     {
-        // Initialize CAN DMA message buffers to 0
-        for (; i < 8; i++)
+        CAN_set_mode (node, CAN_MODE_CONFIG);
+        if (CAN_get_mode(node) != CAN_MODE_CONFIG)
         {
-            for (; j < 32; j++)
-            {
-                CAN_MSG_BUFFER[j][i] = 0;
-            }
-        }        
+            return 0;
+        }
+    }    
+    else
+    {      
         switch (node->channel)
         {
             case CAN_1:
                 IEC2bits.C1IE = 0;                  // Disable CAN interrupt during initialization
                 IFS2bits.C1IF = 0;                  // Reset interrupt flag 
-                C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers               
-                C1FCTRLbits.DMABS = 6;              // 32 message buffers in device RAM
+                C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers                 
+                switch (NUM_OF_CAN_BUFFERS)
+                {
+                    case CAN_BUFFER_X32:
+                        C1FCTRLbits.DMABS = 6;              // 32 message buffers in device RAM
+                        break;
+                        
+                    case CAN_BUFFER_X24:
+                        C1FCTRLbits.DMABS = 5;              // 24 message buffers in device RAM
+                        break;
+                        
+                    case CAN_BUFFER_X16:
+                        C1FCTRLbits.DMABS = 4;              // 16 message buffers in device RAM
+                        break;
+                        
+                    case CAN_BUFFER_X12:
+                        C1FCTRLbits.DMABS = 3;              // 12 message buffers in device RAM
+                        break;
+                        
+                    case CAN_BUFFER_X8:
+                        C1FCTRLbits.DMABS = 2;              // 8 message buffers in device RAM
+                        break;
+                        
+                    case CAN_BUFFER_X6:
+                        C1FCTRLbits.DMABS = 1;              // 6 message buffers in device RAM
+                        break;
+                    
+                    case CAN_BUFFER_X4:
+                        C1FCTRLbits.DMABS = 0;              // 4 message buffers in device RAM
+                        break;
+                }
+                
                 // CAN channel physical pin configuration
                 TRISGbits.TRISG15 = 0;              // RG15 configured as an output (CAN1_LBK)
                 CAN_LBK_STATE = CAN_LBK_INACTIVE;   // Disable loopback during initialization
@@ -155,67 +414,86 @@ uint8_t CAN_init (CAN_struct *node)
                     C1CFG2bits.PRSEG = PROPAGATION_SEGMENT - 1;     // Set propagation segment
                     C1CFG1bits.SJW = SYNCHRONIZATION_JUMP_WIDTH - 1;// Set SJW
                 }
-                // Use CAN TX buffer 0 for message transmission
-                // Use CAN RX buffer 1 for message reception
+
                 // DMA channel initialization, 1x channel for message transmission
-                DMA_init(DMA_CH2);
+                node->DMA_tx_channel = DMA_CH2;
+                DMA_init(node->DMA_tx_channel);
                 DMA2CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
                 DMA2REQ = DMAREQ_ECAN1TX;
                 DMA2PAD = (volatile uint16_t)&C1TXD;
                 DMA2STAH = __builtin_dmapage(CAN_MSG_BUFFER);
                 DMA2STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
-                DMA2CNT = 0x7;        
+                DMA2CNT = 0x7;  
                 
                 // DMA channel initialization, 1x channel for message reception
-                DMA_init(DMA_CH3);
+                node->DMA_rx_channel = DMA_CH3;
+                DMA_init(node->DMA_rx_channel);
                 DMA3CON = DMA_SIZE_WORD | DMA_TXFER_RD_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
                 DMA3REQ = DMAREQ_ECAN1RX;
                 DMA3PAD = (volatile uint16_t)&C1RXD;
                 DMA3STAH = __builtin_dmapage(CAN_MSG_BUFFER);
-                DMA3STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
-                DMA3CNT = 0x7;                 
-                C1CTRL1bits.WIN = 1;                // Set at 1 to access CAN filter / mask registers                       
-                C1RXF1SIDbits.SID = node->RX_SID;   // Setup acceptance filter 1 SID
-                C1RXM1SIDbits.SID = node->RX_MASK;  // Setup acceptance mask 1
-                C1FMSKSEL1bits.F1MSK = 1;           // Acceptance mask 1 registers contain mask
-                C1BUFPNT1bits.F1BP = 1;             // Acceptance filter 1 will use message buffer 1
-                C1FEN1bits.FLTEN1 = 1;              // Acceptance filter 1 enabled 
+                DMA3STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                                         
+                DMA_set_txfer_length(node->DMA_rx_channel, 7);          // Always receive 8x 16-bits    
                 
-                C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers   
-                
-                C1TR01CONbits.TXEN0 = 1;            // Set buffer 0 to transmit buffer
-                C1TR01CONbits.RTREN1 = 1;           // Set buffer 1 to receive buffer
-                C1TR01CONbits.TX0PRI = 0x3; 
-
                 // Enable CAN interrupts
                 IEC2bits.C1IE = 1;
                 C1INTEbits.TBIE = 1;
                 C1INTEbits.RBIE = 1;
                
-                DMA_enable(DMA_CH2);                // Enable DMA channel and interrupt  
-                DMA_enable(DMA_CH3);                // Enable DMA channel and interrupt 
-                return 0;
+                DMA_enable(node->DMA_tx_channel);                // Enable DMA channel and interrupt  
+                DMA_enable(node->DMA_rx_channel);                // Enable DMA channel and interrupt 
+                return 1;
                 break;
 
             default:
-                return 1;                           // Return error 
+                return 0;                           // Return error 
                 break;
-        }
+        }       
     }
+    return 1;
 }
 
-void CAN_fill_payload (CAN_struct *node, uint8_t *buf, uint8_t length)
+void CAN_msg_set_payload (STRUCT_CAN_MSG *msg, uint8_t *buf, uint8_t length)
 {
     uint8_t i = 0;
-    for (; i < length; i++)
+    if (length > msg->tx_length){length = msg->tx_length;}
+    for (i = 0; i < length; i++)
     {
-        node->can_tx_payload[i] = *buf++;
+        msg->tx_payload[i] = *buf++;
     }
+    CAN_MSG_BUFFER[msg->tx_msg_channel][3] = (uint16_t)((msg->tx_payload[1]<<8) | msg->tx_payload[0]);
+    CAN_MSG_BUFFER[msg->tx_msg_channel][4] = (uint16_t)((msg->tx_payload[3]<<8) | msg->tx_payload[2]);
+    CAN_MSG_BUFFER[msg->tx_msg_channel][5] = (uint16_t)((msg->tx_payload[5]<<8) | msg->tx_payload[4]);
+    CAN_MSG_BUFFER[msg->tx_msg_channel][6] = (uint16_t)((msg->tx_payload[7]<<8) | msg->tx_payload[6]);
+}
+
+uint8_t * CAN_receive_msg (STRUCT_CAN_MSG *msg)
+{
+    uint8_t i = 0;
+    if (((CAN_MSG_BUFFER[msg->rx_msg_channel][i] & 0x1FFC) >> 2) == msg->SID)
+    {
+        for (i = 0; i < 8; i++)
+        {
+            msg->rx_message[i] = CAN_MSG_BUFFER[msg->rx_msg_channel][i];
+        }
+        msg->rx_payload[0] = CAN_MSG_BUFFER[msg->rx_msg_channel][3];
+        msg->rx_payload[1] = (CAN_MSG_BUFFER[msg->rx_msg_channel][3] >> 8);
+        msg->rx_payload[2] = CAN_MSG_BUFFER[msg->rx_msg_channel][4];
+        msg->rx_payload[3] = (CAN_MSG_BUFFER[msg->rx_msg_channel][4] >> 8);
+        msg->rx_payload[4] = CAN_MSG_BUFFER[msg->rx_msg_channel][5];
+        msg->rx_payload[5] = (CAN_MSG_BUFFER[msg->rx_msg_channel][5] >> 8);
+        msg->rx_payload[6] = CAN_MSG_BUFFER[msg->rx_msg_channel][6];
+        msg->rx_payload[7] = (CAN_MSG_BUFFER[msg->rx_msg_channel][6] >> 8);             
+        return &msg->rx_payload[0];
+    }
+    else
+        return 0;                   // Receive message did not match SID, return 0
 }
 
 // Returns 0 on successful execution
 // Returns 0xFF on error
-uint8_t CAN_set_mode (CAN_struct *node, uint8_t mode)
+// Blocking call
+uint8_t CAN_set_mode (STRUCT_CAN *node, uint8_t mode)
 {
     node->old_mode = node->mode;
     node->mode = mode;  
@@ -237,7 +515,7 @@ uint8_t CAN_set_mode (CAN_struct *node, uint8_t mode)
 
 // Returns 0,1,2,3,4 or 7 in case of successful operation
 // Returns 0xFF on error
-uint8_t CAN_get_mode (CAN_struct *node)
+uint8_t CAN_get_mode (STRUCT_CAN *node)
 {
     switch (node->channel)
     {
@@ -252,75 +530,151 @@ uint8_t CAN_get_mode (CAN_struct *node)
 }
 
 // Non-blocking
-// Return 0 on successful transmission
-// Return 1 if trying to send message but the CAN node is not in NORMAL mode
+// Return 1 on successful transmission
+// Return 0 if trying to send message but the CAN node is not in NORMAL mode
 // Return 2 if TXENn = 0 and trying to send a message using this TXENn buffer
 // Return 3 if trying to send a message but the module is already transmitting
-uint8_t CAN_send_txmsg (CAN_struct *node)
+// This function call assumes a message has already been properly configured
+uint8_t CAN_send_msg (STRUCT_CAN *node, STRUCT_CAN_MSG *msg, uint8_t priority)
 {
-    // TXREQn = 0 is module is ready to send a CAN message
-    if (C1TR01CONbits.TXREQ0 == 0)
+    if (priority > 3){return 0;}
+    if (CAN_get_mode(node) != CAN_MODE_NORMAL)
     {
-        if (CAN_get_mode(node) != CAN_MODE_NORMAL)
-        {
-            // CAN bus is not in normal mode, cannot transfer message
-            return 1;
-        }
-        CAN_MSG_BUFFER[0][0] = ((node->SID << 2) | (node->SRR << 1) | node->IDE);
-        CAN_MSG_BUFFER[0][1] = node->EID & 0x3FFC0;
-        CAN_MSG_BUFFER[0][2] = (((node->EID & 0x0003F) << 10) | (node->RTR << 9)
-                                | (node->RB1 << 8) | (node->RB0 << 4) | (node->DLC));
-        CAN_MSG_BUFFER[0][3] = (uint16_t)((node->can_tx_payload[1]<<8) | node->can_tx_payload[0]);
-        CAN_MSG_BUFFER[0][4] = (uint16_t)((node->can_tx_payload[3]<<8) | node->can_tx_payload[2]);
-        CAN_MSG_BUFFER[0][5] = (uint16_t)((node->can_tx_payload[5]<<8) | node->can_tx_payload[4]);
-        CAN_MSG_BUFFER[0][6] = (uint16_t)((node->can_tx_payload[7]<<8) | node->can_tx_payload[6]);
-        CAN_MSG_BUFFER[0][7] = 0;
-
-        // From CAN Family reference manual p.36, "Setting the TXREQm bit when the 
-        // TXENn bit is '0' will result in unpredictable module behavior"
-        if (C1TR01CONbits.TXEN0 == 0)
-        {
-            return 2;                   
-        }
-        else
-            C1TR01CONbits.TXREQ0 = 0x1; 
+        // CAN bus is not in normal mode, cannot send message
         return 0;
     }
-    
-    // Error, trying to send new message but the module is already transmitting
-    else
+
+    // From CAN Family reference manual p.36, "Setting the TXREQm bit when the 
+    // TXENn bit is '0' will result in unpredictable module behavior"
+    switch (msg->tx_msg_channel)
     {
-        return 3;       
+        case 0:
+            if (C1TR01CONbits.TXREQ0 == 0)
+            {
+                if (C1TR01CONbits.TXEN0 == 0){return 2;}
+                else
+                {
+                    C1TR01CONbits.TX0PRI = priority;
+                    C1TR01CONbits.TXREQ0 = 0x1; 
+                    return 1;
+                }
+            }
+            else
+                return 3;
+            break;
+
+        case 1:
+            if (C1TR01CONbits.TXREQ1 == 0)
+            {
+                if (C1TR01CONbits.TXEN1 == 0){return 2;}
+                else
+                {
+                    C1TR01CONbits.TX1PRI = priority;
+                    C1TR01CONbits.TXREQ1 = 0x1; 
+                    return 1;
+                }
+            }
+            else
+                return 3;
+            break;
+
+        case 2:
+            if (C1TR23CONbits.TXREQ2 == 0)
+            {
+                if (C1TR23CONbits.TXEN2 == 0){return 2;}
+                else
+                {
+                    C1TR23CONbits.TX2PRI = priority;
+                    C1TR23CONbits.TXREQ2 = 0x1; 
+                    return 1;
+                }
+            }
+            else
+                return 3;
+            break;
+
+        case 3:
+            if (C1TR23CONbits.TXREQ3 == 0)
+            {
+                if (C1TR23CONbits.TXEN3 == 0){return 2;}
+                else
+                {
+                    C1TR23CONbits.TX3PRI = priority;
+                    C1TR23CONbits.TXREQ3 = 0x1; 
+                    return 1;
+                }
+            }
+            else
+                return 3;
+            break;
+
+        case 4:
+            if (C1TR45CONbits.TXREQ4 == 0) 
+            {
+                if (C1TR45CONbits.TXEN4 == 0){return 2;}
+                else
+                {
+                    C1TR45CONbits.TX4PRI = priority;
+                    C1TR45CONbits.TXREQ4 = 0x1; 
+                    return 1;
+                }
+            }
+            else
+                return 3;
+            break;
+
+        case 5:
+            if (C1TR45CONbits.TXREQ5 == 0)
+            {
+                if (C1TR45CONbits.TXEN5 == 0){return 2;}
+                else
+                {
+                    C1TR45CONbits.TX5PRI = priority;
+                    C1TR45CONbits.TXREQ5 = 0x1; 
+                    return 1;
+                }
+            }
+            else
+                return 3;
+            break;
+
+        case 6:
+            if (C1TR67CONbits.TXREQ6 == 0)
+            {
+                if (C1TR67CONbits.TXEN6 == 0){return 2;}
+                else
+                {
+                    C1TR67CONbits.TX6PRI = priority;
+                    C1TR67CONbits.TXREQ6 = 0x1; 
+                    return 1;
+                }
+            }
+            else
+                return 3;
+            break;
+
+        case 7:
+            if (C1TR67CONbits.TXREQ7 == 0)
+            {
+                if (C1TR67CONbits.TXEN7 == 0){return 2;}
+                else
+                {
+                    C1TR67CONbits.TX7PRI = priority;
+                    C1TR67CONbits.TXREQ7 = 0x1; 
+                    return 1;
+                }
+            }
+            else
+                return 3;
+            break; 
+            
+        default:
+            return 0;
+            break;
     }
 }
 
-uint8_t CAN_parse_rxmsg (CAN_struct *node)
-{
-    if ((CAN_MSG_BUFFER[node->rxmsg_buffer_channel][0] & 0x1FFC)>>2 == node->RX_SID)
-    {
-        CAN_RX_MSG[0] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][0];
-        CAN_RX_MSG[1] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][1];
-        CAN_RX_MSG[2] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][2];
-        CAN_RX_MSG[3] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][3];
-        CAN_RX_MSG[4] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][4];
-        CAN_RX_MSG[5] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][5];
-        CAN_RX_MSG[6] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][6];
-        CAN_RX_MSG[7] = CAN_MSG_BUFFER[node->rxmsg_buffer_channel][7];
-        node->can_rx_payload[0] = CAN_RX_MSG[3];
-        node->can_rx_payload[1] = (CAN_RX_MSG[3] >> 8);
-        node->can_rx_payload[2] = CAN_RX_MSG[4];
-        node->can_rx_payload[3] = (CAN_RX_MSG[4] >> 8);
-        node->can_rx_payload[4] = CAN_RX_MSG[5];
-        node->can_rx_payload[5] = (CAN_RX_MSG[5] >> 8);
-        node->can_rx_payload[6] = CAN_RX_MSG[6];
-        node->can_rx_payload[7] = (CAN_RX_MSG[6] >> 8);        
-        return 1;
-    }
-    else
-        return 0;
-}
-
-uint16_t CAN_get_txmsg_errcnt (CAN_struct *node)
+uint16_t CAN_get_txmsg_errcnt (STRUCT_CAN *node)
 {
     switch (node->channel)
     {
@@ -334,7 +688,7 @@ uint16_t CAN_get_txmsg_errcnt (CAN_struct *node)
     }
 }
 
-uint16_t CAN_get_rxmsg_errcnt (CAN_struct *node)
+uint16_t CAN_get_rxmsg_errcnt (STRUCT_CAN *node)
 {
     switch (node->channel)
     {
@@ -348,34 +702,58 @@ uint16_t CAN_get_rxmsg_errcnt (CAN_struct *node)
     }    
 }
 
-uint8_t CAN_get_errint_state (void)
+uint8_t CAN_get_ivr_state (STRUCT_CAN *node)
 {
-    if (can_error_interrupt_flag == 1)
+    if (node->ivr_flag == 1)
     {
-        can_error_interrupt_flag = 0;
+        node->ivr_flag = 0;
         return 1;
     }
     else
         return 0;
 }
 
+uint8_t CAN_get_txbuf_state (STRUCT_CAN *node)
+{
+    if (node->tbif_flag == 1)
+    {
+        node->tbif_flag = 0;
+        return 1;
+    }
+    else
+        return 0;    
+}
+
+uint8_t CAN_get_rxbuf_state (STRUCT_CAN *node)
+{
+    if (node->rbif_flag == 1)
+    {
+        node->rbif_flag = 0;
+        return 1;
+    }
+    else
+        return 0;    
+}
+
 // ECAN1 event interrupt
 void __attribute__((__interrupt__, no_auto_psv))_C1Interrupt(void)
 {
     IFS2bits.C1IF = 0;      // clear interrupt flag
-    if(C1INTFbits.TBIF)
+    if(C1INTFbits.TBIF)     // Transmit buffer interrupt flag
     {
+        CAN_struct[CAN_1].tbif_flag = 1;
         C1INTFbits.TBIF = 0;
     }
 
-    if(C1INTFbits.RBIF)
+    if(C1INTFbits.RBIF)     // Receive buffer interrupt flag
     {
+        CAN_struct[CAN_1].rbif_flag = 1;
         C1INTFbits.RBIF = 0;
     }
     
     if (C1INTFbits.ERRIF)
     {        
-        can_error_interrupt_flag = 1;
+        CAN_struct[CAN_1].ivr_flag = 1;
         if (C1INTFbits.IVRIF)   // Invalid message interrupt triggered?
         {
             C1INTFbits.IVRIF = 0;

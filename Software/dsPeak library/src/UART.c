@@ -63,7 +63,8 @@ __eds__ uint8_t uart4_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_buf_length, uint16_t rx_buf_length)
+void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_buf_length, 
+                uint16_t rx_buf_length, uint8_t DMA_tx_channel)
 {
     switch (channel)
     {
@@ -108,14 +109,14 @@ void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_b
             IEC4bits.U1EIE = 1;             // Enable error interrupt 
             IEC0bits.U1RXIE = 1;            // Enable receive interrupt  
 
-#ifdef UART1_DMA_ENABLE            
+#ifdef UART1_DMA_ENABLE  
+            uart->DMA_tx_channel = DMA_CH0;
             DMA_init(DMA_CH0);
             DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
             DMA0REQ = DMAREQ_U1TX;
             DMA0PAD = (volatile uint16_t)&U1TXREG;
             DMA0STAH = __builtin_dmapage(uart1_dma_tx_buf);
-            DMA0STAL = __builtin_dmaoffset(uart1_dma_tx_buf);
-            uart->DMA_tx_channel = DMA_CH0; 
+            DMA0STAL = __builtin_dmaoffset(uart1_dma_tx_buf);           
 #endif
             break;
            
@@ -164,14 +165,14 @@ void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_b
             IEC4bits.U2EIE = 1;             // Enable error interrupt
             IEC1bits.U2RXIE = 1;            // Enable receive interrupt
 
-#ifdef UART2_DMA_ENABLE                
+#ifdef UART2_DMA_ENABLE 
+            uart->DMA_tx_channel = DMA_CH1;
             DMA_init(DMA_CH1);
             DMA1CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
             DMA1REQ = DMAREQ_U2TX;
             DMA1PAD = (volatile uint16_t)&U2TXREG;
             DMA1STAH = __builtin_dmapage(uart2_dma_tx_buf);
-            DMA1STAL = __builtin_dmaoffset(uart2_dma_tx_buf);  
-            uart->DMA_tx_channel = DMA_CH1;
+            DMA1STAL = __builtin_dmaoffset(uart2_dma_tx_buf);                
 #endif
             break;
             
@@ -212,14 +213,14 @@ void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_b
             IEC5bits.U3EIE = 1;             // Enable error interrupt
             IEC5bits.U3RXIE = 1;            // Enable receive interrupt
             
-#ifdef UART3_DMA_ENABLE            
+#ifdef UART3_DMA_ENABLE   
+            uart->DMA_tx_channel = DMA_CH6;
             DMA_init(DMA_CH6);
             DMA6CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
             DMA6REQ = DMAREQ_U3TX;
             DMA6PAD = (volatile uint16_t)&U3TXREG;
             DMA6STAH = __builtin_dmapage(uart3_dma_tx_buf);
-            DMA6STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
-            uart->DMA_tx_channel = DMA_CH6;
+            DMA6STAL = __builtin_dmaoffset(uart3_dma_tx_buf);       
 #endif
 #endif
             break; 

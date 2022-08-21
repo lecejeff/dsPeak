@@ -81,7 +81,7 @@ void I2C_init (STRUCT_I2C *i2c, uint8_t port, uint8_t mode, uint8_t address)
         {
             I2C1CONbits.I2CEN = 0;      // Disable module if it was in use
             I2C1CONbits.DISSLW = 1;     // Disable slew rate control 
-            I2C1BRG = I2C_FREQ_100k;    // Set I2C1 brg at 400kHz       
+            I2C1BRG = (uint16_t)I2C_FREQ_100k;    // Set I2C1 brg at 400kHz       
             IFS1bits.MI2C1IF = 0;       // Clear master I2C interrupt flag  
             IPC4bits.MI2C1IP = 1;       // Set default priority 
             IEC1bits.MI2C1IE = 0;       // Disable I2C master interrupt    

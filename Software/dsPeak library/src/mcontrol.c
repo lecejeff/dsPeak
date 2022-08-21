@@ -1,14 +1,16 @@
 #include "mcontrol.h"
 STRUCT_MCONTROL m_control[MOTOR_QTY];
 
-
-void MOTOR_init (uint8_t channel, uint16_t speed_fs)
+void MOTOR_init (STRUCT_PWM *pwm_h, STRUCT_PWM *pwm_l, uint8_t channel, uint16_t speed_fs)
 {
+    m_control[channel].pwm_h_ref = pwm_h;
+    m_control[channel].pwm_l_ref = pwm_l;
     switch (channel)
     {
         case MOTOR_1:
-            PWM_init(PWM_1L, PWM_TYPE_LOAD);    // Configure PWM_1L pin to output and enable PWM
-            PWM_init(PWM_1H, PWM_TYPE_LOAD);    // Configure PWM_1H pin to output and enable PWM
+            
+            PWM_init(m_control[channel].pwm_l_ref, PWM_1L, PWM_TYPE_LOAD);    // Configure PWM_1L pin to output and enable PWM
+            PWM_init(m_control[channel].pwm_h_ref, PWM_1H, PWM_TYPE_LOAD);    // Configure PWM_1H pin to output and enable PWM
             QEI_init(QEI_1);                    // Configure QEI_1 
             QEI_set_fs(QEI_1, speed_fs);        // Set QEI channel velocity refresh rate
             TRISGbits.TRISG14 = 1;              // RG14 configured as an input (nFAULT1)
@@ -30,8 +32,8 @@ void MOTOR_init (uint8_t channel, uint16_t speed_fs)
             break;
             
         case MOTOR_2:
-            PWM_init(PWM_2L, PWM_TYPE_LOAD);    // Configure PWM_2L pin to output and enable PWM
-            PWM_init(PWM_2H, PWM_TYPE_LOAD);    // Configure PWM_2H pin to output and enable PWM
+            PWM_init(m_control[channel].pwm_l_ref, PWM_2L, PWM_TYPE_LOAD);    // Configure PWM_2L pin to output and enable PWM
+            PWM_init(m_control[channel].pwm_h_ref, PWM_2H, PWM_TYPE_LOAD);    // Configure PWM_2H pin to output and enable PWM
             QEI_init(QEI_2);                    // Configure QEI_2
             QEI_set_fs(QEI_2, speed_fs);        // Set QEI channel velocity refresh rate
             TRISEbits.TRISE4 = 1;               // RE4 configured as an input (nFAULT2)
@@ -82,14 +84,14 @@ void MOTOR_drive_perc (uint8_t channel, uint8_t direction, uint8_t perc)
     
     if (m_control[channel].direction == DIRECTION_FORWARD)
     {
-        PWM_change_duty(m_control[channel].pwm_h_channel, PWM_TYPE_LOAD, m_control[channel].speed_perc);
-        PWM_change_duty(m_control[channel].pwm_l_channel, PWM_TYPE_LOAD,  0);        
+        PWM_change_duty_perc(m_control[channel].pwm_h_ref, m_control[channel].speed_perc);
+        PWM_change_duty_perc(m_control[channel].pwm_l_ref, 0);        
     }
 
     if (m_control[channel].direction == DIRECTION_BACKWARD)
     {
-        PWM_change_duty(m_control[channel].pwm_h_channel, PWM_TYPE_LOAD,  0);
-        PWM_change_duty(m_control[channel].pwm_l_channel, PWM_TYPE_LOAD,  m_control[channel].speed_perc);        
+        PWM_change_duty_perc(m_control[channel].pwm_h_ref,  0);
+        PWM_change_duty_perc(m_control[channel].pwm_l_ref,  m_control[channel].speed_perc);        
     }
 }
 

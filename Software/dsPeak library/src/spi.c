@@ -71,7 +71,8 @@ STRUCT_SPI SPI_struct[SPI_QTY];
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t ppre, 
-                uint8_t spre, uint16_t tx_buf_length, uint16_t rx_buf_length)
+                uint8_t spre, uint16_t tx_buf_length, uint16_t rx_buf_length,
+                uint8_t DMA_tx_channel, uint8_t DMA_rx_channel)
 {    
     switch (spi_channel)
     {
@@ -123,23 +124,7 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             }
             
 #ifdef SPI1_DMA_ENABLE
-//            // DMA_CH5 is SPI1 TX DMA channel
-//            DMA_init(DMA_CH5);
-//            DMA5CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-//            DMA5REQ = DMAREQ_SPI2;
-//            DMA5PAD = (volatile uint16_t)&SPI2BUF;
-//            DMA5STAH = __builtin_dmapage(spi2_dma_tx_buf);
-//            DMA5STAL = __builtin_dmaoffset(spi2_dma_tx_buf);   
-//            spi->DMA_tx_channel = DMA_CH5;
-//            
-//            // DMA_CH4 is SPI1 RX DMA channel
-//            DMA_init(DMA_CH4);
-//            DMA4CON = DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD;
-//            DMA4REQ = DMAREQ_SPI2;
-//            DMA4PAD = (volatile uint16_t)&SPI2BUF;
-//            DMA4STAH = __builtin_dmapage(spi2_dma_rx_buf);
-//            DMA4STAL = __builtin_dmaoffset(spi2_dma_rx_buf); 
-//            spi->DMA_rx_channel = DMA_CH4;
+
 #endif
 
             // SPI1 input/output pin mapping  
@@ -221,21 +206,25 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             IFS2bits.SPI2IF = 0;            // Clear SPI int flag                           
 
 #ifdef SPI2_DMA_ENABLE
-            // DMA_CH5 is SPI1 TX DMA channel
             spi->DMA_tx_channel = DMA_CH5;
-            DMA_init(spi->DMA_tx_channel);
+            DMA_init(DMA_CH5);
             DMA5CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
             DMA5REQ = DMAREQ_SPI2;
             DMA5PAD = (volatile uint16_t)&SPI2BUF;
+            //DMA_set_control_register(spi->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
+            //DMA_set_request_source(spi->DMA_tx_channel, DMAREQ_SPI2);
+            //DMA_set_peripheral_address(spi->DMA_tx_channel, DMAPAD_SPI2BUF);
             DMA5STAH = __builtin_dmapage(spi2_dma_tx_buf);
             DMA5STAL = __builtin_dmaoffset(spi2_dma_tx_buf);   
                         
-            // DMA_CH4 is SPI1 RX DMA channel
             spi->DMA_rx_channel = DMA_CH4;
-            DMA_init(spi->DMA_rx_channel);
+            DMA_init(DMA_CH4);
             DMA4CON = DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD;
             DMA4REQ = DMAREQ_SPI2;
             DMA4PAD = (volatile uint16_t)&SPI2BUF;
+            //DMA_set_control_register(spi->DMA_rx_channel, (DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD));
+            //DMA_set_request_source(spi->DMA_rx_channel, DMAREQ_SPI2);
+            //DMA_set_peripheral_address(spi->DMA_rx_channel, DMAPAD_SPI2BUF);
             DMA4STAH = __builtin_dmapage(spi2_dma_rx_buf);
             DMA4STAL = __builtin_dmaoffset(spi2_dma_rx_buf);           
 #endif
@@ -1079,7 +1068,7 @@ void SPI_flush_rxbuffer (STRUCT_SPI *spi)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, auto_psv)) _SPI1Interrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 {
     IFS0bits.SPI1IF = 0;                   
     uint16_t i=0;  
@@ -1137,7 +1126,7 @@ void __attribute__((__interrupt__, auto_psv)) _SPI1Interrupt(void)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, auto_psv)) _SPI2Interrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 {  
 #ifndef SPI2_DMA_ENABLE
         uint16_t i=0;  
@@ -1196,7 +1185,7 @@ void __attribute__((__interrupt__, auto_psv)) _SPI2Interrupt(void)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, auto_psv)) _SPI3Interrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 {
     uint16_t i=0;  
     // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
@@ -1253,7 +1242,7 @@ void __attribute__((__interrupt__, auto_psv)) _SPI3Interrupt(void)
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-void __attribute__((__interrupt__, auto_psv)) _SPI4Interrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _SPI4Interrupt(void)
 {
     IFS7bits.SPI4IF = 0; 
     uint16_t i=0;
@@ -1296,25 +1285,25 @@ void __attribute__((__interrupt__, auto_psv)) _SPI4Interrupt(void)
     }
 }
 
-void __attribute__((__interrupt__, auto_psv)) _SPI1ErrInterrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _SPI1ErrInterrupt(void)
 {
     SPI1STATbits.SPIROV = 0;
     IFS0bits.SPI1EIF = 0;
 }
 
-void __attribute__((__interrupt__, auto_psv)) _SPI2ErrInterrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _SPI2ErrInterrupt(void)
 {
     SPI2STATbits.SPIROV = 0;
     IFS2bits.SPI2EIF = 0;
 }
 
-void __attribute__((__interrupt__, auto_psv)) _SPI3ErrInterrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _SPI3ErrInterrupt(void)
 {
     SPI3STATbits.SPIROV = 0;
     IFS5bits.SPI3EIF = 0;
 }
 
-void __attribute__((__interrupt__, auto_psv)) _SPI4ErrInterrupt(void)
+void __attribute__((__interrupt__, no_auto_psv)) _SPI4ErrInterrupt(void)
 {
     SPI4STATbits.SPIROV = 0;
     IFS7bits.SPI4EIF = 0;

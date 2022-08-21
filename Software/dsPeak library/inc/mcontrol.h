@@ -38,6 +38,9 @@ typedef struct
     uint8_t pwm_h_channel;
     uint8_t pwm_l_channel;
     uint8_t qei_channel;
+    
+    STRUCT_PWM *pwm_h_ref;        // Reference to a PWM struct
+    STRUCT_PWM *pwm_l_ref;        // Reference to a PWM struct
 }STRUCT_MCONTROL;
 
 #define MOTOR_1             0
@@ -47,7 +50,7 @@ typedef struct
 #define DIRECTION_FORWARD   0
 #define DIRECTION_BACKWARD  1
 
-void MOTOR_init (uint8_t channel, uint16_t speed_fs);
+void MOTOR_init (STRUCT_PWM *pwm_h, STRUCT_PWM *pwm_l, uint8_t channel, uint16_t speed_fs);
 void MOTOR_drive_perc (uint8_t channel, uint8_t direction, uint8_t perc);
 void MOTOR_set_rpm (uint8_t channel, uint16_t new_rpm);
 void MOTOR_pid_calc_gains (uint8_t channel);

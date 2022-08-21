@@ -155,7 +155,7 @@
 #define DCI_TRANSMIT_COMPLETE   1
 
 // I2S BLOCK TRANSFER define
-// A single transfer is 2x words (4x bytes), one per channel (left and right)
+// 1x DMA transfer = 1x data word (1x sample)
 // 128 word transfer = 256 byte transfer
 #define CODEC_BLOCK_TRANSFER 128    
 
@@ -250,7 +250,8 @@ typedef struct
 }STRUCT_CODEC;
 
 // CODEC basic functions
-void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint8_t sys_fs, uint16_t tx_buf_length, uint16_t rx_buf_length);
+void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint8_t sys_fs, 
+                uint16_t tx_buf_length, uint16_t rx_buf_length, uint8_t DMA_tx_channel, uint8_t DMA_rx_channel);
 uint16_t CODEC_spi_write (STRUCT_CODEC *codec, uint16_t adr, uint16_t data);
 uint16_t CODEC_spi_modify_write (STRUCT_CODEC *codec, uint16_t adr, uint16_t reg, uint16_t mask, uint16_t data);
 
@@ -266,14 +267,20 @@ void CODEC_set_adc_volume (STRUCT_CODEC *codec, uint8_t range, uint8_t adc_vol_r
 void CODEC_set_dac_volume (STRUCT_CODEC *codec, uint8_t dac_vol_right, uint8_t dac_vol_left);
 void CODEC_set_hp_volume (STRUCT_CODEC *codec, uint8_t hp_vol_right, uint8_t hp_vol_left);
 void CODEC_set_lo_volume (STRUCT_CODEC *codec, uint8_t lo_vol_right, uint8_t lo_vol_left);
+void CODEC_set_dac_mono (STRUCT_CODEC *codec);
+void CODEC_set_dac_stereo (STRUCT_CODEC *codec);
+void CODEC_set_adc_mono (STRUCT_CODEC *codec);
+void CODEC_set_adc_stereo (STRUCT_CODEC *codec);
+
 
 // dsPIC33E DCI module functions
-void DCI_init (STRUCT_CODEC *codec, uint16_t tx_buf_length, uint16_t rx_buf_length);
+void DCI_init (STRUCT_CODEC *codec, uint16_t tx_buf_length, uint16_t rx_buf_length,
+                uint8_t DMA_tx_channel, uint8_t DMA_rx_channel);
 void DCI_enable (STRUCT_CODEC *codec);
 void DCI_disable (STRUCT_CODEC *codec);
 uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx);
 uint8_t DCI_fill_dma_tx_buf (STRUCT_CODEC *codec, uint16_t *buf, uint16_t length);
-uint16_t * DCI_unload_dma_rx_buf (STRUCT_CODEC *codec);
+uint16_t * DCI_unload_dma_rx_buf (STRUCT_CODEC *codec, uint16_t length);
 void DCI_set_transmit_state (STRUCT_CODEC *codec, uint8_t state);
 void DCI_set_receive_state (STRUCT_CODEC *codec, uint8_t state);
 #endif	

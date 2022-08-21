@@ -56,6 +56,7 @@
 // End of dsPIC33EP512MU814 configuration fuses ------------------------------//
 
 // dsPeak libraries
+#include "rc_dac.h"
 #include "adc.h"
 #include "rtcc.h"
 #include "timer.h"
@@ -74,8 +75,23 @@
 #include "ividac_driver.h"
 // End of dsPeak libraries
 
-CAN_struct CAN_native;
-STRUCT_IVIDAC IVIDAC_struct[2];
+// Access to CAN struct members
+extern STRUCT_CAN CAN_struct[CAN_QTY];
+STRUCT_CAN *CAN1_struct = &CAN_struct[CAN_1];
+STRUCT_CAN_MSG CAN_MSG_DSPEAK;
+
+// Access to RCDAC struct members
+extern STRUCT_RCDAC RCDAC_struct[RCDAC_QTY];
+STRUCT_RCDAC *RCDAC1_struct = &RCDAC_struct[RCDAC_1];
+STRUCT_RCDAC *RCDAC2_struct = &RCDAC_struct[RCDAC_2];
+
+// Access to PWM struct members
+extern STRUCT_PWM PWM_struct[PWM_QTY];
+STRUCT_PWM *PWM1L_struct = &PWM_struct[PWM_1L];
+STRUCT_PWM *PWM1H_struct = &PWM_struct[PWM_1H];
+STRUCT_PWM *PWM5H_struct = &PWM_struct[PWM_5H];
+STRUCT_PWM *PWM6L_struct = &PWM_struct[PWM_6L];
+STRUCT_PWM *PWM6H_struct = &PWM_struct[PWM_6H];
 
 // Access to I2C struct members
 extern STRUCT_I2C i2c_struct[I2C_QTY];
@@ -126,6 +142,8 @@ STRUCT_LED *LED2_dsPeak = &LED_struct[LED_2];
 STRUCT_LED *LED3_dsPeak = &LED_struct[LED_3];
 STRUCT_LED *LED4_dsPeak = &LED_struct[LED_4];
 
+STRUCT_ADC ADC_struct_AN0, ADC_struct_AN1, ADC_struct_AN2, ADC_struct_AN12, 
+            ADC_struct_AN13, ADC_struct_AN14, ADC_struct_AN15;
 
 uint8_t *flash_rx_data;
 uint8_t i = 0;
@@ -133,9 +151,6 @@ uint8_t i = 0;
 RTCC_time clock;
 uint8_t hour, minute, second;
 int error_rpm;
-
-STRUCT_ADC ADC_struct_AN0, ADC_struct_AN1, ADC_struct_AN2, ADC_struct_AN12, 
-            ADC_struct_AN13, ADC_struct_AN14, ADC_struct_AN15;
 
 uint16_t data_rx_can[4] = {0};
 uint8_t can_parse_return;
@@ -151,6 +166,7 @@ uint8_t u485_1_data_flag = 0;
 uint8_t u485_2_data_flag = 0;
 uint8_t counter_485 = 0;
 
+uint8_t new_pid_out1 = 0;
 uint16_t new_rpm_ain = 0;
 uint32_t tracker = 0, color = 0;
 uint16_t val = 0x7FFF;
@@ -162,35 +178,28 @@ uint8_t encoder_dir = 0;
 uint16_t encoder_rpm = 0;
 uint16_t encoder_tour = 0;
 
-uint16_t dac_out = 0;
-uint8_t dac_step = 0;
-uint32_t counter_zero = 0;
-uint8_t ividac_write_once = 0;
 uint8_t btn1_debounce = 1;
 uint8_t btn4_debounce = 1;
 
 uint8_t flash_state_machine = 0;
 
-uint16_t inact_counter = 0;
 uint8_t spi_release = 0;
 uint8_t DCI_tx_flag = 0;
 uint8_t DCI_rx_flag = 0;
 
 uint16_t codec_wr_ptr[CODEC_BLOCK_TRANSFER];
-uint8_t spi2_buf[60];
+uint8_t spi2_buf[260];
 
-uint16_t tx_buf_i = 0;
-
-uint8_t buf_a_b = 0;
-uint16_t * dci_tx_ptr;
 uint16_t * dci_rx_ptr;
-uint8_t * spi_wr_ptr;
 uint8_t * spi_rd_ptr;
 uint32_t flash_wr_adr = 0;  // 32Mbit = 4Mbyte / 4Byte/sample = 1Msample
 uint32_t flash_rd_adr = 0;
 uint8_t last_txfer = 0;
 
 uint8_t flash_status1_reg = 0;
+
+uint8_t pwm_cnt = 0, pwm_duty = 0;
+uint8_t wiper = 255;
 
 int main() 
 {
@@ -199,20 +208,30 @@ int main()
     dsPeak_button_init(BTN2_dsPeak, BTN_2, 10);
     dsPeak_button_init(BTN3_dsPeak, BTN_3, 10);
     dsPeak_button_init(BTN4_dsPeak, BTN_4, 10);
+ 
     dsPeak_led_init(LED1_dsPeak, LED_1, LOW);
     dsPeak_led_init(LED2_dsPeak, LED_2, LOW);
     dsPeak_led_init(LED3_dsPeak, LED_3, LOW);
-    dsPeak_led_init(LED4_dsPeak, LED_4, LOW);
+    dsPeak_led_init(LED4_dsPeak, LED_4, LOW);    
+    
+    TRISCbits.TRISC2 = 0;
+    TRISCbits.TRISC3 = 0;
+    TRISCbits.TRISC4 = 0;
+    
+    LATCbits.LATC2 = 0;
+    LATCbits.LATC3 = 0;
+    LATCbits.LATC4 = 0;
+    
     
     RTCC_init();
     RTCC_write_time(clock);
 
 #ifdef UART_DEBUG_ENABLE
-    UART_init(UART_DEBUG_struct, UART_3, 115200, UART_MAX_TX, UART_MAX_RX);
+    UART_init(UART_DEBUG_struct, UART_3, 115200, UART_MAX_TX, UART_MAX_RX, DMA_CH6);
     UART_putstr_dma(UART_DEBUG_struct, "dsPeak UART debug port with DMA is enabled\r\n");   
 #endif
 
-    //MOTOR_init(MOTOR_1, 30);
+    //MOTOR_init(PWM1H_struct, PWM1L_struct, MOTOR_1, 30);
     //MOTOR_init(MOTOR_2, 30);  
     
 //    SPI_init(SPI_4, SPI_MODE0, PPRE_4_1, SPRE_8_1);     // Max sclk of 9MHz on SPI4 = divide by 8
@@ -227,23 +246,34 @@ int main()
 //#endif
 //   
     
-    //PWM_init(PWM_5H, PWM_TYPE_SERVO);
+    //PWM_init(PWM5H_struct, PWM_5H, PWM_TYPE_SERVO);
+    
+    //I2C_init(I2C2_struct, I2C_2, I2C_mode_master, 0);
+    //RCDAC_init(RCDAC1_struct, PWM6L_struct, I2C2_struct, RCDAC_1, 0);
+    //RCDAC_init(RCDAC2_struct, PWM6H_struct, I2C2_struct, RCDAC_2, 0);
+    //PWM_change_duty_perc(PWM6L_struct, 50);
+    //PWM_change_duty_perc(PWM6H_struct, 50);
     //PWM_init(PWM_6L, PWM_TYPE_SERVO); 
 
     // TX / RX buf length = 256 (page write) + 4 bytes to provide the address to write
     // CODEC samples are 16bit for each channel, so 32b per stereo sample
     // The flash should save the channel sample one after another
     // 1x page = 256 bytes / (4bytes / sample) = 64 stereo sample / page
-    SPI_flash_init(FLASH_struct, SPI_flash, ((CODEC_BLOCK_TRANSFER * 2) + 4), ((CODEC_BLOCK_TRANSFER * 2) + 4));     
-    CODEC_init(CODEC_sgtl5000, SPI_codec, SPI_3, SYS_FS_16kHz, CODEC_BLOCK_TRANSFER, CODEC_BLOCK_TRANSFER);
+    SPI_flash_init(FLASH_struct, SPI_flash, ((CODEC_BLOCK_TRANSFER * 2) + 4), ((CODEC_BLOCK_TRANSFER * 2) + 4), DMA_CH5, DMA_CH4);     
+    CODEC_init(CODEC_sgtl5000, SPI_codec, SPI_3, SYS_FS_16kHz, CODEC_BLOCK_TRANSFER, CODEC_BLOCK_TRANSFER, DMA_CH7, DMA_CH8);
+    DCI_set_receive_state(CODEC_sgtl5000, DCI_RECEIVE_ENABLE);
+    DCI_set_transmit_state(CODEC_sgtl5000, DCI_TRANSMIT_ENABLE);
     
     // Enable dsPeak native RS-485 port @ 460800bps
-    UART_init(UART_485_struct, UART_1, 460800, 32, 32);
+    UART_init(UART_485_struct, UART_1, 460800, 32, 32, DMA_CH0);
     
 #ifdef RS485_CLICK_UART2
     // Enable RS-485 Click6 RS-485 interface on MikroBus port @ 460800bps
-    UART_init(UART_MKB_struct, UART_2, 460800, 32, 32);
+    UART_init(UART_MKB_struct, UART_2, 460800, 32, 32, DMA_CH1);
 #endif
+    
+    //CAN_init_message(&CAN_MSG_DSPEAK, 0x0123, 0, 0, 0, 0, 0, 0, 0x0300, 0, 1, 8, 8, CAN_NODE_TYPE_TX_RX);
+    //CAN_init(CAN1_struct, CAN_1, 500000, 8, DMA_CH2, DMA_CH3, CAN_NODE_TYPE_TX_RX);
     
 //#ifdef BRINGUP_DSPEAK_1    
 //    CAN_init_struct(&CAN_native, CAN_1, 500000, 0x0123, 0, 0x0300, 0x0300);
@@ -259,31 +289,26 @@ int main()
 //    CAN_fill_payload(&CAN_native, can_buf_2, 8);    
 //#endif
 //    
-    ADC_init_struct(&ADC_struct_AN12, ADC_PORT_1, ADC_CHANNEL_AN12, 
-                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
-    ADC_init_struct(&ADC_struct_AN13, ADC_PORT_1, ADC_CHANNEL_AN13, 
-                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100); 
-    ADC_init_struct(&ADC_struct_AN14, ADC_PORT_1, ADC_CHANNEL_AN14, 
-                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
-    ADC_init_struct(&ADC_struct_AN15, ADC_PORT_1, ADC_CHANNEL_AN15, 
-                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100); 
-    
-    ADC_init_struct(&ADC_struct_AN0, ADC_PORT_2, ADC_CHANNEL_AN0, 
-                    ADC_RESOLUTION_10b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
-    ADC_init_struct(&ADC_struct_AN1, ADC_PORT_2, ADC_CHANNEL_AN1, 
-                    ADC_RESOLUTION_10b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100); 
-    ADC_init_struct(&ADC_struct_AN2, ADC_PORT_2, ADC_CHANNEL_AN2, 
-                    ADC_RESOLUTION_10b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);    
- 
-    ADC_init(&ADC_struct_AN0);
-    ADC_init(&ADC_struct_AN1);
-    ADC_init(&ADC_struct_AN2); 
-    
-    ADC_init(&ADC_struct_AN12);
-    ADC_init(&ADC_struct_AN13);
-    ADC_init(&ADC_struct_AN14);
-    ADC_init(&ADC_struct_AN15);
-    
+//    ADC_init_struct(&ADC_struct_AN12, ADC_PORT_1, ADC_CHANNEL_AN12, 
+//                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
+//    ADC_init_struct(&ADC_struct_AN13, ADC_PORT_1, ADC_CHANNEL_AN13, 
+//                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100); 
+//    ADC_init_struct(&ADC_struct_AN14, ADC_PORT_1, ADC_CHANNEL_AN14, 
+//                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
+//    ADC_init_struct(&ADC_struct_AN15, ADC_PORT_1, ADC_CHANNEL_AN15, 
+//                    ADC_RESOLUTION_12b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100); 
+//    
+//    ADC_init_struct(&ADC_struct_AN0, ADC_PORT_2, ADC_CHANNEL_AN0, 
+//                    ADC_RESOLUTION_10b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);
+//    ADC_init_struct(&ADC_struct_AN1, ADC_PORT_2, ADC_CHANNEL_AN1, 
+//                    ADC_RESOLUTION_10b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100); 
+//    ADC_init_struct(&ADC_struct_AN2, ADC_PORT_2, ADC_CHANNEL_AN2, 
+//                    ADC_RESOLUTION_10b, ADC_FORMAT_UNSIGNED_INTEGER, ADC_AUTO_CONVERT, ADC_SSRCG_SET_0, 100);    
+// 
+//    ADC_init(&ADC_struct_AN0);
+//    ADC_init(&ADC_struct_AN1);
+//    ADC_init(&ADC_struct_AN2); 
+//    
 //    ADC_start(ADC_PORT_1);      // Start ADC1
 //    ADC_start(ADC_PORT_2);      // Start ADC2
 //    
@@ -304,18 +329,20 @@ int main()
 //        __delay_ms(100);
 //    }
 //    
-//    ST7735_init();
-//    color = RGB888_to_RGB565(0x00FF00);
-//    ST7735_Clear(color);
+    PMP_init(PMP_MODE_TFT);
+    ST7735_init();
+    color = RGB888_to_RGB565(0x555500);
+    ST7735_Clear(color);
             
     // Timers init / start should be the last function calls made before while(1) 
     TIMER_init(TIMER1_struct, TIMER_1, TIMER_MODE_16B, TIMER_PRESCALER_256, 5);
     TIMER_init(TIMER2_struct, TIMER_2, TIMER_MODE_16B, TIMER_PRESCALER_256, 5);
-    TIMER_init(TIMER3_struct, TIMER_3, TIMER_MODE_16B, TIMER_PRESCALER_256, 30);
+    TIMER_init(TIMER3_struct, TIMER_3, TIMER_MODE_16B, TIMER_PRESCALER_256, 30);    
+    //TIMER_init(TIMER4_struct, TIMER_4, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
+    //TIMER_init(TIMER5_struct, TIMER_5, TIMER_MODE_16B, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
     
-    //TIMER_init(TIMER4_struct, TIMER_4, TIMER_MODE_32B, TIMER_PRESCALER_1, 1);
-    //TIMER_init(TIMER5_struct, TIMER_5, TIMER_MODE_16B, TIMER_PRESCALER_256, 5);
-    //TIMER_init(TIMER6_struct, TIMER_6, TIMER_MODE_32B, TIMER_PRESCALER_256, 2);
+    //TIMER_init(TIMER6_struct, TIMER_6, TIMER_MODE_16B, TIMER_PRESCALER_1, 1000000);
+    
     //TIMER_init(TIMER7_struct, TIMER_7, TIMER_PRESCALER_256, 10);
     
     // Non-blocking state machine for flash memory
@@ -327,8 +354,7 @@ int main()
                                   // 
     TIMER_start(TIMER1_struct);
     TIMER_start(TIMER2_struct);
-    TIMER_start(TIMER3_struct);
-    
+    TIMER_start(TIMER3_struct);   
     //TIMER_start(TIMER4_struct);
     //TIMER_start(TIMER5_struct);
     //TIMER_start(TIMER6_struct);
@@ -355,12 +381,16 @@ int main()
         if (DCI_get_interrupt_state(CODEC_sgtl5000, DCI_DMA_TX) == DCI_TRANSMIT_COMPLETE)
         {
             DCI_tx_flag = 1;
+            LATCbits.LATC4 = 1;
+            CODEC_sgtl5000->DMA_tx_buf_pp ^= 1; 
         }
 
         // Handle DCI receive DMA interrupt        
         if (DCI_get_interrupt_state(CODEC_sgtl5000, DCI_DMA_RX) == DCI_RECEIVE_COMPLETE)
         {
             DCI_rx_flag = 1;
+            LATCbits.LATC3 = 1;
+            CODEC_sgtl5000->DMA_rx_buf_pp ^= 1; 
         }
 #endif
         
@@ -399,6 +429,7 @@ int main()
                 if (BTN1_dsPeak->do_once == 0) 
                 {
                     BTN1_dsPeak->do_once = 1;
+                    UART_putstr_dma(UART_DEBUG_struct, "BTN1 pressed\r\n");
                     UART_putstr_dma(UART_485_struct, "Message sent from native port!\r\n");
                 }
             }
@@ -412,6 +443,7 @@ int main()
                 if (BTN2_dsPeak->do_once == 0) 
                 {
                     BTN2_dsPeak->do_once = 1;
+                    UART_putstr_dma(UART_DEBUG_struct, "BTN2 pressed\r\n");
                     record_flag = 1;            // CODEC record audio flag
                     flash_state_machine = 6;
                 }
@@ -426,6 +458,7 @@ int main()
                 if (BTN3_dsPeak->do_once == 0) 
                 {
                     BTN3_dsPeak->do_once = 1;
+                    UART_putstr_dma(UART_DEBUG_struct, "BTN3 pressed\r\n");
                     playback_flag = 1;
                     flash_state_machine = 6;
                 }
@@ -438,9 +471,10 @@ int main()
             if (dsPeak_button_get_state(BTN4_dsPeak) == LOW)
             {
                 if (BTN4_dsPeak->do_once == 0) 
-                {
-                    erase_flag = 1;
+                {                   
                     BTN4_dsPeak->do_once = 1;
+                    UART_putstr_dma(UART_DEBUG_struct, "BTN4 pressed\r\n");
+                    erase_flag = 1;
                     flash_state_machine = 6;
                 }
             }
@@ -450,24 +484,26 @@ int main()
             }               
         }   
         
-//        if (TIMER_get_state(TIMER4_struct, TIMER_INT_STATE) == 1)
-//        {
-//        }  
+        if (TIMER_get_state(TIMER4_struct, TIMER_INT_STATE) == 1)
+        {
+        }  
 //        
-//        if (TIMER_get_state(TIMER5_struct, TIMER_INT_STATE) == 1)
-//        {
-//        } 
+        if (TIMER_get_state(TIMER5_struct, TIMER_INT_STATE) == 1)
+        {
+        } 
+        
+        if (TIMER_get_state(TIMER6_struct, TIMER_INT_STATE) == 1)
+        {
+        } 
 //        
-//        if (TIMER_get_state(TIMER6_struct, TIMER_INT_STATE) == 1)
-//        {
-//        } 
 //        
-//        if (TIMER_get_state(TIMER7_struct, TIMER_INT_STATE) == 1)
-//        {           
-//        }
+        if (TIMER_get_state(TIMER7_struct, TIMER_INT_STATE) == 1)
+        {           
+        }
         
         if (TIMER_get_state(TIMER8_struct, TIMER_INT_STATE) == 1)
         {   
+            LATCbits.LATC2 = !LATCbits.LATC2;
             // SPI FLASH and CODEC state machine to record / playback audio            
             // If spi_release flag is set, call deassert_cs and get_rx_buf functions
             if (spi_release == 1)
@@ -481,7 +517,8 @@ int main()
 
             // Query the device busy status
             if (flash_state_machine == 0)
-            {               
+            {   
+                dsPeak_led_write(LED4_dsPeak, HIGH);
                 // DMA channel is in idle, ready for another transfer
                 if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_tx_channel) == DMA_TXFER_IDLE)
                 {
@@ -559,6 +596,7 @@ int main()
                     // Busy indicator low, flash is ready
                     erase_flag = 0;
                     flash_state_machine = 6;
+                    dsPeak_led_write(LED4_dsPeak, HIGH);
                 }   
                 else
                 {
@@ -569,17 +607,22 @@ int main()
 
             // State machine is idle, waiting for user input
             else if (flash_state_machine == 6)
-            {
+            {    
+                dsPeak_led_write(LED4_dsPeak, LOW);
                 if (record_flag == 1) 
-                {
+                {                   
                     flash_state_machine = 7;
-                    CODEC_mute(CODEC_struct, HEADPHONE_MUTE);
+                    DCI_rx_flag = 0;
+                    CODEC_mute(CODEC_sgtl5000, HEADPHONE_MUTE);                    
                 }
+                
                 if (playback_flag == 1)
                 {
                     flash_state_machine = 12;
-                    CODEC_unmute(CODEC_struct, HEADPHONE_MUTE);
+                    DCI_tx_flag = 0;                              
+                    CODEC_unmute(CODEC_sgtl5000, HEADPHONE_MUTE);
                 }
+                
                 if (erase_flag == 1) 
                 {
                     spi_release = 1;
@@ -624,8 +667,8 @@ int main()
                 if ((flash_status1_reg & 0x03) == 2)
                 {
                     // WEL = 1 and BUSY = 0, flash is ready
-                    flash_state_machine = 10;
-                }   
+                    flash_state_machine = 10;                    
+                }
                 else
                 {
                     // WEL = 0 or BUSY = 1, keep polling
@@ -641,18 +684,17 @@ int main()
                 {    
                     spi_release = 1;
                     if (DCI_rx_flag == 1)       // DCI RX buffer full
-                    {                       
-                        DCI_rx_flag = 0;
+                    {   
+                        DCI_rx_flag = 0;                       
                         // Transfer data between DCI RX buffer and SPI TX buffer                       
                         spi2_buf[0] = CMD_PAGE_PROGRAM;
                         spi2_buf[1] = ((flash_wr_adr & 0xFF0000)>>16);
                         spi2_buf[2] = ((flash_wr_adr & 0x00FF00)>>8);
                         spi2_buf[3] = flash_wr_adr&0x0000FF;
-                        dci_rx_ptr = DCI_unload_dma_rx_buf(CODEC_struct);                       // 1x loop 128 iterations
-                        uint16_to_byte8(&dci_rx_ptr[0], &spi2_buf[4]);                          // 1x loop 128 iterations
-                                               
-                        //if (SPI_flash_page_write(FLASH_struct, flash_wr_adr, spi2_buf) == 1)    // 2x loop 260 iterations
-                        if (SPI_load_dma_tx_buffer(FLASH_struct->spi_ref, spi2_buf, 260) == 1)  // 1x loop (260 iterations)
+                        dci_rx_ptr = DCI_unload_dma_rx_buf(CODEC_sgtl5000, CODEC_BLOCK_TRANSFER);   // 1x loop 128 iterations
+                        uint16_to_byte8(&dci_rx_ptr[0], &spi2_buf[4]);                              // 1x loop 128 iterations                      
+                        
+                        if (SPI_load_dma_tx_buffer(FLASH_struct->spi_ref, spi2_buf, 260) == 1)      // 1x loop (260 iterations)
                         {
                             SPI_write_dma(FLASH_struct->spi_ref, FLASH_MEMORY_CS);
                             flash_wr_adr += 256;
@@ -662,7 +704,6 @@ int main()
                             }
                             else
                             {
-                                dsPeak_led_write(LED4_dsPeak, LOW);    // Debug
                                 flash_state_machine = 7;    // Continue recording
                             }
                         }                        
@@ -677,7 +718,6 @@ int main()
                 flash_wr_adr = 0;                       // Reset write address to 0
                 record_cnt = 1;                         // A record was completed
                 flash_state_machine = 6;                // Return to record wait state
-                dsPeak_led_write(LED4_dsPeak, LOW);     // Debug
             }
 
             // Playback started
@@ -708,7 +748,7 @@ int main()
                     spi_release = 1;
                     // SPI read is complete, parse buffers
                     spi_rd_ptr = SPI_unload_dma_rx_buffer(FLASH_struct->spi_ref);
-                    byte8_to_uint16(&spi_rd_ptr[4], &codec_wr_ptr[0]);                    
+                    byte8_to_uint16(&spi_rd_ptr[4], &codec_wr_ptr[0]);           
                     flash_state_machine = 14;                         
                 }
             }
@@ -718,7 +758,7 @@ int main()
                 if (DCI_tx_flag == 1)
                 {
                     DCI_tx_flag = 0;
-                    DCI_fill_dma_tx_buf(CODEC_struct, codec_wr_ptr, CODEC_BLOCK_TRANSFER);
+                    DCI_fill_dma_tx_buf(CODEC_sgtl5000, codec_wr_ptr, CODEC_BLOCK_TRANSFER);
                     if (last_txfer == 0)
                     {
                         flash_state_machine = 12;
@@ -732,13 +772,12 @@ int main()
 
             else if (flash_state_machine == 15)
             {
-                CODEC_mute(CODEC_struct, HEADPHONE_MUTE);
+                CODEC_mute(CODEC_sgtl5000, HEADPHONE_MUTE);
                 playback_flag = 0;
                 flash_rd_adr = 0;
                 playback_cnt = 1;
                 last_txfer = 0;
                 flash_state_machine = 6;
-                dsPeak_led_write(LED4_dsPeak, LOW);     // Debug
             }
             
             else

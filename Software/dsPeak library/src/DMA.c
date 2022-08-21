@@ -4,8 +4,8 @@ STRUCT_DMA DMA_struct[DMA_QTY];
 // DMA channel usage
 // DMA_CH0 -> UART1_TX
 // DMA_CH1 -> UART2_TX
-// DMA_CH2 -> CAN1_RX
-// DMA_CH3 -> CAN1_TX
+// DMA_CH2 -> CAN1_TX
+// DMA_CH3 -> CAN1_RX
 // DMA_CH4 -> SPI2_RX FLASH_SD
 // DMA_CH5 -> SPI2_TX FLASH_SD
 // DMA_CH6 -> UART3 TX debug port
@@ -585,6 +585,144 @@ uint16_t DMA_get_buffer_address (uint8_t channel)
     }    
 }
 
+//void DMA_set_control_register (uint8_t channel, uint16_t DMAxCON)
+//{
+//    switch (channel)
+//    {
+//        case DMA_CH0:
+//            DMA0CON = 0xFFFF & DMAxCON;                    
+//            break;
+//            
+//        case DMA_CH1:
+//            DMA1CON = 0xFFFF & DMAxCON;                 
+//            break;
+//
+//        case DMA_CH2:
+//            DMA2CON = 0xFFFF & DMAxCON;             
+//            break;
+//
+//        case DMA_CH3:
+//            DMA3CON = 0xFFFF & DMAxCON;            
+//            break;
+//
+//        case DMA_CH4:
+//            DMA4CON = 0xFFFF & DMAxCON;             
+//            break;
+//
+//        case DMA_CH5:
+//            DMA5CON = 0xFFFF & DMAxCON;   
+//            break;
+//
+//        case DMA_CH6:
+//            DMA6CON = 0xFFFF & DMAxCON;   
+//            break;
+//
+//        case DMA_CH7:
+//            DMA7CON = 0xFFFF & DMAxCON;   
+//            break;
+//
+//        case DMA_CH8:
+//            DMA8CON = 0xFFFF & DMAxCON;   
+//            break;
+//
+//        case DMA_CH9:
+//            DMA9CON = 0xFFFF & DMAxCON;   
+//            break;
+//
+//        case DMA_CH10:
+//            DMA10CON = 0xFFFF & DMAxCON;   
+//            break;
+//
+//        case DMA_CH11:
+//            DMA11CON = 0xFFFF & DMAxCON;   
+//            break;
+//
+//        case DMA_CH12:
+//            DMA12CON = 0xFFFF & DMAxCON;   
+//            break;
+//
+//        case DMA_CH13:
+//            DMA13CON = 0xFFFF & DMAxCON;   
+//            break;
+//
+//        case DMA_CH14:
+//            DMA14CON = 0xFFFF & DMAxCON;             
+//            break;     
+//            
+//        default:
+//            break;
+//    }    
+//}
+
+//void DMA_set_peripheral_address (uint8_t channel, uint16_t DMAxPAD)
+//{
+//    switch (channel)
+//    {
+//        case DMA_CH0:
+//            DMA0PAD = DMAxPAD;                    
+//            break;
+//            
+//        case DMA_CH1:
+//            DMA1PAD = DMAxPAD;                  
+//            break;
+//
+//        case DMA_CH2:
+//            DMA2PAD = DMAxPAD;              
+//            break;
+//
+//        case DMA_CH3:
+//            DMA3PAD = DMAxPAD;            
+//            break;
+//
+//        case DMA_CH4:
+//            DMA4PAD = DMAxPAD;              
+//            break;
+//
+//        case DMA_CH5:
+//            DMA5PAD = DMAxPAD;    
+//            break;
+//
+//        case DMA_CH6:
+//            DMA6PAD = DMAxPAD;    
+//            break;
+//
+//        case DMA_CH7:
+//            DMA7PAD = DMAxPAD;    
+//            break;
+//
+//        case DMA_CH8:
+//            DMA8PAD = DMAxPAD;    
+//            break;
+//
+//        case DMA_CH9:
+//            DMA9PAD = DMAxPAD;    
+//            break;
+//
+//        case DMA_CH10:
+//            DMA10PAD = DMAxPAD;   
+//            break;
+//
+//        case DMA_CH11:
+//            DMA11PAD = DMAxPAD;    
+//            break;
+//
+//        case DMA_CH12:
+//            DMA12PAD = DMAxPAD;    
+//            break;
+//
+//        case DMA_CH13:
+//            DMA13PAD = DMAxPAD;    
+//            break;
+//
+//        case DMA_CH14:
+//            DMA14PAD = DMAxPAD;              
+//            break;     
+//            
+//        default:
+//            break;
+//    }    
+//}
+
 void DMA_set_txfer_length(uint8_t channel, uint16_t length)
 {
     // Saturate DMA tx length
@@ -659,6 +797,75 @@ void DMA_set_txfer_length(uint8_t channel, uint16_t length)
             break;
     }
 }
+
+//void DMA_set_request_source (uint8_t channel, uint16_t req_source)
+//{
+//    switch (channel)
+//    {
+//        case DMA_CH0:
+//            DMA0REQ = req_source & 0x7FFF;                    
+//            break;
+//            
+//        case DMA_CH1:
+//            DMA1REQ = req_source & 0x7FFF;                 
+//            break;
+//
+//        case DMA_CH2:
+//            DMA2REQ = req_source & 0x7FFF;             
+//            break;
+//
+//        case DMA_CH3:
+//            DMA3REQ = req_source & 0x7FFF;            
+//            break;
+//
+//        case DMA_CH4:
+//            DMA4REQ = req_source & 0x7FFF;             
+//            break;
+//
+//        case DMA_CH5:
+//            DMA5REQ = req_source & 0x7FFF;   
+//            break;
+//
+//        case DMA_CH6:
+//            DMA6REQ = req_source & 0x7FFF;   
+//            break;
+//
+//        case DMA_CH7:
+//            DMA7REQ = req_source & 0x7FFF;   
+//            break;
+//
+//        case DMA_CH8:
+//            DMA8REQ = req_source & 0x7FFF;   
+//            break;
+//
+//        case DMA_CH9:
+//            DMA9REQ = req_source & 0x7FFF;   
+//            break;
+//
+//        case DMA_CH10:
+//            DMA10REQ = req_source & 0x7FFF;   
+//            break;
+//
+//        case DMA_CH11:
+//            DMA11REQ = req_source & 0x7FFF;   
+//            break;
+//
+//        case DMA_CH12:
+//            DMA12REQ = req_source & 0x7FFF;   
+//            break;
+//
+//        case DMA_CH13:
+//            DMA13REQ = req_source & 0x7FFF;   
+//            break;
+//
+//        case DMA_CH14:
+//            DMA14REQ = req_source & 0x7FFF;             
+//            break;     
+//            
+//        default:
+//            break; 
+//    }
+//}
 
 uint8_t DMA_get_txfer_state (uint8_t channel)
 {

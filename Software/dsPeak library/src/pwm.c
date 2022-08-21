@@ -25,11 +25,14 @@ STRUCT_PWM PWM_struct[PWM_QTY];
 //
 //
 ///*****************************************************************************
-void PWM_init (uint8_t channel, uint8_t type)
+void PWM_init (STRUCT_PWM *pwm, uint8_t channel, uint8_t type)
 {
     PTCONbits.PTEN = 0;     // Shutdown PWM engine if it was on 
-    PTCON2bits.PCLKDIV = 6; // Clock divide by 64
-    switch (channel)
+    PTCON2bits.PCLKDIV = 6; // Clock divide by 1
+    pwm->PWM_channel = channel;  
+    pwm->pwm_type = type;
+    
+    switch (pwm->PWM_channel)
     {
         case PWM_1L:
             DTR1 = 0;               // No PWM dead time for PWM1
@@ -44,19 +47,19 @@ void PWM_init (uint8_t channel, uint8_t type)
             SPHASE1 = (uint16_t)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
             SDC1 = (uint16_t)(FOSC / (PWM1L_PHASE * PWM_CLOCK_PRESCALE));
             
-            // In load type, the PWM channel acts as a 0-100% variable duty cycle
+            // In load pwm->pwm_type, the PWM channel acts as a 0-100% variable duty cycle
             if (type == PWM_TYPE_LOAD)
             {
-                PWM_struct[channel].base_value = 0;                 
-                PWM_struct[channel].end_value = SDC1;                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+                pwm->base_value = 0;                 
+                pwm->end_value = SDC1;                
+                pwm->range = pwm->end_value - pwm->base_value;   
             }
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (uint16_t)(SDC1 * PWM1L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
-                PWM_struct[channel].end_value = (uint16_t)(SDC1 * PWM1L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+                pwm->base_value = (uint16_t)(SDC1 * PWM1L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                pwm->end_value = (uint16_t)(SDC1 * PWM1L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                pwm->range = pwm->end_value - pwm->base_value;                  
             }            
             break;
             
@@ -74,18 +77,18 @@ void PWM_init (uint8_t channel, uint8_t type)
             PDC1 = (uint16_t)(FOSC / (PWM1H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
-            if (type == PWM_TYPE_LOAD)
+            if (pwm->pwm_type == PWM_TYPE_LOAD)
             {
-                PWM_struct[channel].base_value = 0;                 
-                PWM_struct[channel].end_value = PDC1;                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+                pwm->base_value = 0;                 
+                pwm->end_value = PDC1;                
+                pwm->range = pwm->end_value - pwm->base_value;   
             }
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (uint16_t)(PDC1 * PWM1H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
-                PWM_struct[channel].end_value = (uint16_t)(PDC1 * PWM1H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+                pwm->base_value = (uint16_t)(PDC1 * PWM1H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                pwm->end_value = (uint16_t)(PDC1 * PWM1H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                pwm->range = pwm->end_value - pwm->base_value;                  
             }            
             break;
             
@@ -103,18 +106,18 @@ void PWM_init (uint8_t channel, uint8_t type)
             SDC2 = (uint16_t)(FOSC / (PWM2L_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
-            if (type == PWM_TYPE_LOAD)
+            if (pwm->pwm_type == PWM_TYPE_LOAD)
             {
-                PWM_struct[channel].base_value = 0;                 
-                PWM_struct[channel].end_value = SDC2;                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+                pwm->base_value = 0;                 
+                pwm->end_value = SDC2;                
+                pwm->range = pwm->end_value - pwm->base_value;   
             }
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (uint16_t)(SDC2 * PWM2L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
-                PWM_struct[channel].end_value = (uint16_t)(SDC2 * PWM2L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+                pwm->base_value = (uint16_t)(SDC2 * PWM2L_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                pwm->end_value = (uint16_t)(SDC2 * PWM2L_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                pwm->range = pwm->end_value - pwm->base_value;                  
             }            
             break;
             
@@ -132,18 +135,18 @@ void PWM_init (uint8_t channel, uint8_t type)
             PDC2 = (uint16_t)(FOSC / (PWM2H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
-            if (type == PWM_TYPE_LOAD)
+            if (pwm->pwm_type == PWM_TYPE_LOAD)
             {
-                PWM_struct[channel].base_value = 0;                 
-                PWM_struct[channel].end_value = PDC2;                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+                pwm->base_value = 0;                 
+                pwm->end_value = PDC2;                
+                pwm->range = pwm->end_value - pwm->base_value;   
             }
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (uint16_t)(PDC2 * PWM2H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
-                PWM_struct[channel].end_value = (uint16_t)(PDC2 * PWM2H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+                pwm->base_value = (uint16_t)(PDC2 * PWM2H_SERVO_BASE);  // PWM base value is 1ms on a phase of 20ms                 
+                pwm->end_value = (uint16_t)(PDC2 * PWM2H_SERVO_END);    // PWM end value is 2ms on a phase of 20ms                
+                pwm->range = pwm->end_value - pwm->base_value;                  
             }            
             break;
             
@@ -161,18 +164,18 @@ void PWM_init (uint8_t channel, uint8_t type)
             PDC4 = (uint16_t)(FOSC / (PWM4H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
-            if (type == PWM_TYPE_LOAD)
+            if (pwm->pwm_type == PWM_TYPE_LOAD)
             {
-                PWM_struct[channel].base_value = 0;                 
-                PWM_struct[channel].end_value = PDC4;                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+                pwm->base_value = 0;                 
+                pwm->end_value = PDC4;                
+                pwm->range = pwm->end_value - pwm->base_value;   
             }
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (uint16_t)(PDC4 * PWM4H_SERVO_BASE);                
-                PWM_struct[channel].end_value = (uint16_t)(PDC4 * PWM4H_SERVO_END);               
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+                pwm->base_value = (uint16_t)(PDC4 * PWM4H_SERVO_BASE);                
+                pwm->end_value = (uint16_t)(PDC4 * PWM4H_SERVO_END);               
+                pwm->range = pwm->end_value - pwm->base_value;                  
             }            
             break;
             
@@ -190,18 +193,18 @@ void PWM_init (uint8_t channel, uint8_t type)
             SDC5 = (uint16_t)(FOSC / (PWM5L_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
-            if (type == PWM_TYPE_LOAD)
+            if (pwm->pwm_type == PWM_TYPE_LOAD)
             {
-                PWM_struct[channel].base_value = 0;                 
-                PWM_struct[channel].end_value = SDC5;                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+                pwm->base_value = 0;                 
+                pwm->end_value = SDC5;                
+                pwm->range = pwm->end_value - pwm->base_value;   
             }
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (uint16_t)(SDC5 * PWM5L_SERVO_BASE);                
-                PWM_struct[channel].end_value = (uint16_t)(SDC5 * PWM5L_SERVO_END);               
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+                pwm->base_value = (uint16_t)(SDC5 * PWM5L_SERVO_BASE);                
+                pwm->end_value = (uint16_t)(SDC5 * PWM5L_SERVO_END);               
+                pwm->range = pwm->end_value - pwm->base_value;                  
             }               
             break;
             
@@ -219,18 +222,18 @@ void PWM_init (uint8_t channel, uint8_t type)
             PDC5 = (uint16_t)(FOSC / (PWM5H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
-            if (type == PWM_TYPE_LOAD)
+            if (pwm->pwm_type == PWM_TYPE_LOAD)
             {
-                PWM_struct[channel].base_value = 0;                 
-                PWM_struct[channel].end_value = PDC5;                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+                pwm->base_value = 0;                 
+                pwm->end_value = PDC5;                
+                pwm->range = pwm->end_value - pwm->base_value;   
             }
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (uint16_t)(PDC5 * PWM5H_SERVO_BASE);                
-                PWM_struct[channel].end_value = (uint16_t)(PDC5 * PWM5H_SERVO_END);               
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+                pwm->base_value = (uint16_t)(PDC5 * PWM5H_SERVO_BASE);                
+                pwm->end_value = (uint16_t)(PDC5 * PWM5H_SERVO_END);               
+                pwm->range = pwm->end_value - pwm->base_value;                  
             }                     
             break;
             
@@ -248,18 +251,18 @@ void PWM_init (uint8_t channel, uint8_t type)
             SDC6 = (uint16_t)(FOSC / (PWM6L_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
-            if (type == PWM_TYPE_LOAD)
+            if (pwm->pwm_type == PWM_TYPE_LOAD)
             {
-                PWM_struct[channel].base_value = 0;                 
-                PWM_struct[channel].end_value = SDC6;                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+                pwm->base_value = 0;                 
+                pwm->end_value = SDC6;                
+                pwm->range = pwm->end_value - pwm->base_value;   
             }
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (uint16_t)(SDC6 * PWM6L_SERVO_BASE);                
-                PWM_struct[channel].end_value = (uint16_t)(SDC6 * PWM6L_SERVO_END);               
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+                pwm->base_value = (uint16_t)(SDC6 * PWM6L_SERVO_BASE);                
+                pwm->end_value = (uint16_t)(SDC6 * PWM6L_SERVO_END);               
+                pwm->range = pwm->end_value - pwm->base_value;                  
             }            
             break;
             
@@ -277,26 +280,27 @@ void PWM_init (uint8_t channel, uint8_t type)
             PDC6 = (uint16_t)(FOSC / (PWM6H_PHASE * PWM_CLOCK_PRESCALE));
             
             // In load type, the PWM channel acts as a 0-100% variable duty cycle
-            if (type == PWM_TYPE_LOAD)
+            if (pwm->pwm_type == PWM_TYPE_LOAD)
             {
-                PWM_struct[channel].base_value = 0;                 
-                PWM_struct[channel].end_value = PDC6;                
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;   
+                pwm->base_value = 0;                 
+                pwm->end_value = PDC6;                
+                pwm->range = pwm->end_value - pwm->base_value;   
             }
             // In servo type, the PWM channel duty cycle depends on the servo type
             else
             {
-                PWM_struct[channel].base_value = (uint16_t)(PDC6 * PWM6H_SERVO_BASE);                
-                PWM_struct[channel].end_value = (uint16_t)(PDC6 * PWM6H_SERVO_END);               
-                PWM_struct[channel].range = PWM_struct[channel].end_value - PWM_struct[channel].base_value;                  
+                pwm->base_value = (uint16_t)(PDC6 * PWM6H_SERVO_BASE);                
+                pwm->end_value = (uint16_t)(PDC6 * PWM6H_SERVO_END);               
+                pwm->range = pwm->end_value - pwm->base_value;                  
             }             
             break;
             
             default:
             break;
-    }    
-    PWM_change_duty(channel, type, 0);  // Initialize the channel at either 0 duty cycle, or base duty cycle if servo    
-    PTCONbits.PTEN = 1;                 // Enable hardware PWM generator 
+    }
+    
+    PWM_change_duty_perc(pwm, 0);   // Initialize the channel at either 0 duty cycle, or base duty cycle if servo    
+    PTCONbits.PTEN = 1;             // Enable hardware PWM generator 
 }
 
 //**********uint8_t PWM_get_position (uint8_t channel)************//
@@ -312,9 +316,9 @@ void PWM_init (uint8_t channel, uint8_t type)
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 ///*****************************************************************************
-uint8_t PWM_get_position (uint8_t channel)
+uint8_t PWM_get_position (STRUCT_PWM *pwm)
 {
-    return PWM_struct[channel].value_p;
+    return pwm->value_p;
 }
 
 //*******void PWM_change_duty (uint8_t channel, uint8_t duty)*****//
@@ -331,60 +335,59 @@ uint8_t PWM_get_position (uint8_t channel)
 //
 //Jean-Francois Bilodeau    MPLab X v5.45    30/01/2021  
 ///*****************************************************************************
-void PWM_change_duty (uint8_t channel, uint8_t type, uint8_t duty)
+void PWM_change_duty_perc (STRUCT_PWM *pwm, uint8_t duty)
 {
-    if (duty <= 100)
+    if (duty > 100){duty = 100;}
+
+    if (pwm->pwm_type == PWM_TYPE_LOAD)
     {
-        if (type == PWM_TYPE_LOAD)
-        {
-            PWM_struct[channel].new_duty = (uint16_t)((PWM_struct[channel].range * (float)duty/100.0));// Change duty percentage;
-        }
-        else
-        {
-            PWM_struct[channel].new_duty = (uint16_t)((PWM_struct[channel].range * ((float)duty/100.0)) + PWM_struct[channel].base_value);// Change duty percentage                     
-        }
-        PWM_struct[channel].value_p = duty;     // Update struct variable with new percentage
-        
-        switch (channel)
-        {        
-            case PWM_1L:               
-                SDC1 = PWM_struct[channel].new_duty;    // Update duty cycle
-                break;  
-                
-            case PWM_1H:
-                PDC1 = PWM_struct[channel].new_duty;    // Update duty cycle
-                break;                
+        pwm->new_duty = (uint16_t)((pwm->range * (float)duty/100.0));                   // Change duty percentage;
+    }
+    else
+    {
+        pwm->new_duty = (uint16_t)((pwm->range * ((float)duty/100.0)) + pwm->base_value);// Change duty percentage                     
+    }
+    pwm->value_p = duty;     // Update struct variable with new percentage
 
-            case PWM_2L:               
-                SDC2 = PWM_struct[channel].new_duty;    // Update duty cycle
-                break;  
-                
-            case PWM_2H:
-                PDC2 = PWM_struct[channel].new_duty;    // Update duty cycle
-                break;                
-                
-            case PWM_4H:
-                PDC4 = PWM_struct[channel].new_duty;    // Update duty cycle
-                break; 
+    switch (pwm->PWM_channel)
+    {        
+        case PWM_1L:               
+            SDC1 = pwm->new_duty;    // Update duty cycle
+            break;  
 
-            case PWM_5L:
-                SDC5 = PWM_struct[channel].new_duty;    // Update duty cycle
-                break;
-                
-            case PWM_5H:
-                PDC5 = PWM_struct[channel].new_duty;    // Update duty cycle
-                break;
+        case PWM_1H:
+            PDC1 = pwm->new_duty;    // Update duty cycle
+            break;                
 
-            case PWM_6L:
-                SDC6 = PWM_struct[channel].new_duty;    // Update duty cycle
-                break;             
+        case PWM_2L:               
+            SDC2 = pwm->new_duty;    // Update duty cycle
+            break;  
 
-            case PWM_6H:
-                PDC6 = PWM_struct[channel].new_duty;    // Update duty cycle
-                break;
+        case PWM_2H:
+            PDC2 = pwm->new_duty;    // Update duty cycle
+            break;                
 
-            default:    
-                break;
-        }
+        case PWM_4H:
+            PDC4 = pwm->new_duty;    // Update duty cycle
+            break; 
+
+        case PWM_5L:
+            SDC5 = pwm->new_duty;    // Update duty cycle
+            break;
+
+        case PWM_5H:
+            PDC5 = pwm->new_duty;    // Update duty cycle
+            break;
+
+        case PWM_6L:
+            SDC6 = pwm->new_duty;    // Update duty cycle
+            break;             
+
+        case PWM_6H:
+            PDC6 = pwm->new_duty;    // Update duty cycle
+            break;
+
+        default:    
+            break;
     }
 }

@@ -124,7 +124,9 @@ typedef struct
     uint16_t tx_cnt;
 }STRUCT_SPI;
 
-void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t ppre, uint8_t spre, uint16_t tx_buf_length, uint16_t rx_buf_length); 
+void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t ppre, 
+                uint8_t spre, uint16_t tx_buf_length, uint16_t rx_buf_length,
+                uint8_t DMA_tx_channel, uint8_t DMA_rx_channel); 
 uint8_t SPI_write (STRUCT_SPI *spi, uint8_t chip);
 uint8_t SPI_write_dma (STRUCT_SPI *spi, uint8_t chip);
 uint8_t SPI_release_port (STRUCT_SPI *spi);

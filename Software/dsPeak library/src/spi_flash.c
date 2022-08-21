@@ -4,7 +4,8 @@
 
 STRUCT_FLASH FLASH_struct[FLASH_QTY];
 
-void SPI_flash_init (STRUCT_FLASH *flash, STRUCT_SPI *spi, uint16_t tx_buf_length, uint16_t rx_buf_length)
+void SPI_flash_init (STRUCT_FLASH *flash, STRUCT_SPI *spi, uint16_t tx_buf_length, uint16_t rx_buf_length,
+                    uint8_t DMA_tx_channel, uint8_t DMA_rx_channel)
 {
     TRISJbits.TRISJ15 = 0;              // Set flash WP pin to output
     TRISAbits.TRISA0 = 0;               // Set flash HOLD pin to output
@@ -20,7 +21,7 @@ void SPI_flash_init (STRUCT_FLASH *flash, STRUCT_SPI *spi, uint16_t tx_buf_lengt
     flash->hold_state = FLASH_HOLD_PIN;
     flash->wp_state = FLASH_WP_PIN;
     
-    SPI_init(flash->spi_ref, SPI_2, SPI_MODE0, PPRE_1_1, SPRE_7_1, tx_buf_length, rx_buf_length);   // Set SPI2 to 10MHz (70MIPS / 7)
+    SPI_init(flash->spi_ref, SPI_2, SPI_MODE0, PPRE_1_1, SPRE_7_1, tx_buf_length, rx_buf_length, DMA_tx_channel, DMA_rx_channel);   // Set SPI2 to 10MHz (70MIPS / 7)
 }
 
 // Page write = 256 bytes of data + 4 bytes for the flash command

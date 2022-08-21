@@ -75,7 +75,8 @@ typedef struct
 
 #define PAGE_PROGRAM            0xFF
 
-void SPI_flash_init (STRUCT_FLASH *flash, STRUCT_SPI *spi, uint16_t tx_buf_length, uint16_t rx_buf_length);
+void SPI_flash_init (STRUCT_FLASH *flash, STRUCT_SPI *spi, uint16_t tx_buf_length, uint16_t rx_buf_length,
+                    uint8_t DMA_tx_channel, uint8_t DMA_rx_channel);
 uint8_t SPI_flash_page_write (STRUCT_FLASH *flash, uint32_t adr, uint8_t *ptr);
 uint8_t SPI_flash_read_page (STRUCT_FLASH *flash, uint32_t adr);
 uint8_t SPI_flash_erase (STRUCT_FLASH *flash, uint8_t type, uint32_t adr);
