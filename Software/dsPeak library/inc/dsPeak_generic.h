@@ -40,6 +40,7 @@
 #include <libpic30.h>
 #include <dsp.h>
 #include <string.h>
+#include "DMA.h"
 // End of Microchip libraries
 
 typedef struct
@@ -140,8 +141,8 @@ uint8_t dsPeak_button_get_state (STRUCT_BUTTON *btn);
 uint8_t dsPeak_led_init (STRUCT_LED *led, uint8_t channel, uint8_t value);
 uint8_t dsPeak_led_write (STRUCT_LED *led, uint8_t value);
 
-void uint16_to_byte8 (uint16_t *ptr_16, uint8_t *ptr_8);
-void byte8_to_uint16 (uint8_t *ptr_8, uint16_t *ptr_16);
+void uint16_to_byte8 (uint16_t *ptr_16, uint8_t *ptr_8, uint16_t length);
+void byte8_to_uint16 (uint8_t *ptr_8, uint16_t *ptr_16, uint16_t length);
 
 #endif	/* __dspeak_generic_H_ */
 

@@ -110,13 +110,12 @@ void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_b
             IEC0bits.U1RXIE = 1;            // Enable receive interrupt  
 
 #ifdef UART1_DMA_ENABLE  
-            uart->DMA_tx_channel = DMA_CH0;
-            DMA_init(DMA_CH0);
-            DMA0CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-            DMA0REQ = DMAREQ_U1TX;
-            DMA0PAD = (volatile uint16_t)&U1TXREG;
-            DMA0STAH = __builtin_dmapage(uart1_dma_tx_buf);
-            DMA0STAL = __builtin_dmaoffset(uart1_dma_tx_buf);           
+            uart->DMA_tx_channel = DMA_tx_channel;
+            DMA_init(uart->DMA_tx_channel);
+            DMA_set_control_register(uart->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(uart->DMA_tx_channel, DMAREQ_U1TX);
+            DMA_set_peripheral_address(uart->DMA_tx_channel, (volatile uint16_t)&U1TXREG);
+            DMA_set_buffer_offset_sgl(uart->DMA_tx_channel, __builtin_dmapage(uart1_dma_tx_buf), __builtin_dmaoffset(uart1_dma_tx_buf));
 #endif
             break;
            
@@ -166,13 +165,12 @@ void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_b
             IEC1bits.U2RXIE = 1;            // Enable receive interrupt
 
 #ifdef UART2_DMA_ENABLE 
-            uart->DMA_tx_channel = DMA_CH1;
-            DMA_init(DMA_CH1);
-            DMA1CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-            DMA1REQ = DMAREQ_U2TX;
-            DMA1PAD = (volatile uint16_t)&U2TXREG;
-            DMA1STAH = __builtin_dmapage(uart2_dma_tx_buf);
-            DMA1STAL = __builtin_dmaoffset(uart2_dma_tx_buf);                
+            uart->DMA_tx_channel = DMA_tx_channel;
+            DMA_init(uart->DMA_tx_channel);
+            DMA_set_control_register(uart->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(uart->DMA_tx_channel, DMAREQ_U2TX);
+            DMA_set_peripheral_address(uart->DMA_tx_channel, (volatile uint16_t)&U2TXREG);
+            DMA_set_buffer_offset_sgl(uart->DMA_tx_channel, __builtin_dmapage(uart2_dma_tx_buf), __builtin_dmaoffset(uart2_dma_tx_buf));               
 #endif
             break;
             
@@ -214,13 +212,12 @@ void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_b
             IEC5bits.U3RXIE = 1;            // Enable receive interrupt
             
 #ifdef UART3_DMA_ENABLE   
-            uart->DMA_tx_channel = DMA_CH6;
-            DMA_init(DMA_CH6);
-            DMA6CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-            DMA6REQ = DMAREQ_U3TX;
-            DMA6PAD = (volatile uint16_t)&U3TXREG;
-            DMA6STAH = __builtin_dmapage(uart3_dma_tx_buf);
-            DMA6STAL = __builtin_dmaoffset(uart3_dma_tx_buf);       
+            uart->DMA_tx_channel = DMA_tx_channel;
+            DMA_init(uart->DMA_tx_channel);
+            DMA_set_control_register(uart->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(uart->DMA_tx_channel, DMAREQ_U3TX);
+            DMA_set_peripheral_address(uart->DMA_tx_channel, (volatile uint16_t)&U3TXREG);
+            DMA_set_buffer_offset_sgl(uart->DMA_tx_channel, __builtin_dmapage(uart3_dma_tx_buf), __builtin_dmaoffset(uart3_dma_tx_buf));        
 #endif
 #endif
             break; 
@@ -257,13 +254,12 @@ void UART_init (STRUCT_UART *uart, uint8_t channel, uint32_t baud, uint16_t tx_b
             IEC5bits.U4RXIE = 1;            // Enable receive interrupt
   
 #ifdef UART4_DMA_ENABLE
-//            DMA_init(DMA_CH5);
-//            DMA5CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-//            DMA5REQ = DMAREQ_U3TX;
-//            DMA5PAD = (volatile uint16_t)&U3TXREG;
-//            DMA5STAH = __builtin_dmapage(uart3_dma_tx_buf);
-//            DMA5STAL = __builtin_dmaoffset(uart3_dma_tx_buf);
-//            uart->DMA_tx_channel = DMA_CH5;
+            uart->DMA_tx_channel = DMA_tx_channel;
+            DMA_init(uart->DMA_tx_channel);
+            DMA_set_control_register(uart->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(uart->DMA_tx_channel, DMAREQ_U4TX);
+            DMA_set_peripheral_address(uart->DMA_tx_channel, (volatile uint16_t)&U4TXREG);
+            DMA_set_buffer_offset_sgl(uart->DMA_tx_channel, __builtin_dmapage(uart4_dma_tx_buf), __builtin_dmaoffset(uart4_dma_tx_buf));  
 #endif
             break; 
             

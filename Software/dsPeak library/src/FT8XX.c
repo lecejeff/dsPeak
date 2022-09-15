@@ -124,6 +124,7 @@ void FT8XX_init (void)
     uint8_t duty = 0, gpio = 0, reg_id_value = 0;
    
     // Initialize FT8XX SPI port. SPI1 maximum clock frequency for full duplex is 9MHz
+    // initialize without DMA support
     SPI_init(EVE_spi, SPI_1, SPI_MODE0, 2, 0, SPI_BUF_LENGTH, SPI_BUF_LENGTH, 0xFF, 0xFF);  // DMA not used on FT8XX      
                                                     // PPRE = 2, primary prescale 1:4
                                                     // SPRE = 0, Secondary prescale 8:1

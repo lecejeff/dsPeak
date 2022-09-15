@@ -124,7 +124,19 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             }
             
 #ifdef SPI1_DMA_ENABLE
+            spi->DMA_tx_channel = DMA_tx_channel;           
+            DMA_init(spi->DMA_tx_channel);
+            DMA_set_control_register(spi->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(spi->DMA_tx_channel, DMAREQ_SPI1);
+            DMA_set_peripheral_address(spi->DMA_tx_channel, (volatile uint16_t)&SPI1BUF);
+            DMA_set_buffer_offset_sgl(spi->DMA_tx_channel, __builtin_dmapage(spi1_dma_tx_buf), __builtin_dmaoffset(spi1_dma_tx_buf)); 
 
+            spi->DMA_rx_channel = DMA_rx_channel;           
+            DMA_init(spi->DMA_rx_channel);
+            DMA_set_control_register(spi->DMA_rx_channel, (DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(spi->DMA_rx_channel, DMAREQ_SPI2);
+            DMA_set_peripheral_address(spi->DMA_rx_channel, (volatile uint16_t)&SPI2BUF);
+            DMA_set_buffer_offset_sgl(spi->DMA_rx_channel, __builtin_dmapage(spi2_dma_rx_buf), __builtin_dmaoffset(spi2_dma_rx_buf));    
 #endif
 
             // SPI1 input/output pin mapping  
@@ -206,27 +218,19 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             IFS2bits.SPI2IF = 0;            // Clear SPI int flag                           
 
 #ifdef SPI2_DMA_ENABLE
-            spi->DMA_tx_channel = DMA_CH5;
-            DMA_init(DMA_CH5);
-            DMA5CON = DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD;
-            DMA5REQ = DMAREQ_SPI2;
-            DMA5PAD = (volatile uint16_t)&SPI2BUF;
-            //DMA_set_control_register(spi->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
-            //DMA_set_request_source(spi->DMA_tx_channel, DMAREQ_SPI2);
-            //DMA_set_peripheral_address(spi->DMA_tx_channel, DMAPAD_SPI2BUF);
-            DMA5STAH = __builtin_dmapage(spi2_dma_tx_buf);
-            DMA5STAL = __builtin_dmaoffset(spi2_dma_tx_buf);   
-                        
-            spi->DMA_rx_channel = DMA_CH4;
-            DMA_init(DMA_CH4);
-            DMA4CON = DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD;
-            DMA4REQ = DMAREQ_SPI2;
-            DMA4PAD = (volatile uint16_t)&SPI2BUF;
-            //DMA_set_control_register(spi->DMA_rx_channel, (DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD));
-            //DMA_set_request_source(spi->DMA_rx_channel, DMAREQ_SPI2);
-            //DMA_set_peripheral_address(spi->DMA_rx_channel, DMAPAD_SPI2BUF);
-            DMA4STAH = __builtin_dmapage(spi2_dma_rx_buf);
-            DMA4STAL = __builtin_dmaoffset(spi2_dma_rx_buf);           
+            spi->DMA_tx_channel = DMA_tx_channel;           
+            DMA_init(spi->DMA_tx_channel);
+            DMA_set_control_register(spi->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(spi->DMA_tx_channel, DMAREQ_SPI2);
+            DMA_set_peripheral_address(spi->DMA_tx_channel, (volatile uint16_t)&SPI2BUF);
+            DMA_set_buffer_offset_sgl(spi->DMA_tx_channel, __builtin_dmapage(spi2_dma_tx_buf), __builtin_dmaoffset(spi2_dma_tx_buf)); 
+
+            spi->DMA_rx_channel = DMA_rx_channel;           
+            DMA_init(spi->DMA_rx_channel);
+            DMA_set_control_register(spi->DMA_rx_channel, (DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(spi->DMA_rx_channel, DMAREQ_SPI2);
+            DMA_set_peripheral_address(spi->DMA_rx_channel, (volatile uint16_t)&SPI2BUF);
+            DMA_set_buffer_offset_sgl(spi->DMA_rx_channel, __builtin_dmapage(spi2_dma_rx_buf), __builtin_dmaoffset(spi2_dma_rx_buf));          
 #endif
             SPI2STATbits.SPIEN = 1;         // Enable SPI module   
             SPI_struct[SPI_2].nonblock_state = SPI_IS_INITIALIZED;
@@ -290,7 +294,24 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             
             IPC22bits.SPI3IP = 4;           // SPI int priority is 4  
             IEC5bits.SPI3EIE = 1;           // Enable SPI error interrupt detection
-            IFS5bits.SPI3IF = 0;            // Clear SPI int flag               
+            IFS5bits.SPI3IF = 0;            // Clear SPI int flag  
+            
+#ifdef SPI3_DMA_ENABLE
+            spi->DMA_tx_channel = DMA_tx_channel;           
+            DMA_init(spi->DMA_tx_channel);
+            DMA_set_control_register(spi->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(spi->DMA_tx_channel, DMAREQ_SPI3);
+            DMA_set_peripheral_address(spi->DMA_tx_channel, (volatile uint16_t)&SPI3BUF);
+            DMA_set_buffer_offset_sgl(spi->DMA_tx_channel, __builtin_dmapage(spi3_dma_tx_buf), __builtin_dmaoffset(spi3_dma_tx_buf)); 
+
+            spi->DMA_rx_channel = DMA_rx_channel;           
+            DMA_init(spi->DMA_rx_channel);
+            DMA_set_control_register(spi->DMA_rx_channel, (DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(spi->DMA_rx_channel, DMAREQ_SPI3);
+            DMA_set_peripheral_address(spi->DMA_rx_channel, (volatile uint16_t)&SPI3BUF);
+            DMA_set_buffer_offset_sgl(spi->DMA_rx_channel, __builtin_dmapage(spi3_dma_rx_buf), __builtin_dmaoffset(spi3_dma_rx_buf));    
+#endif
+            
             SPI3STATbits.SPIEN = 1;         // Enable SPI module                   
             break;
           
@@ -357,7 +378,24 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             
             IPC30bits.SPI4IP = 4;           // SPI int priority is 4  
             IEC7bits.SPI4EIE = 1;           // Enable SPI error interrupt detection
-            IFS7bits.SPI4IF = 0;            // Clear SPI int flag                
+            IFS7bits.SPI4IF = 0;            // Clear SPI int flag     
+            
+#ifdef SPI4_DMA_ENABLE
+            spi->DMA_tx_channel = DMA_tx_channel;           
+            DMA_init(spi->DMA_tx_channel);
+            DMA_set_control_register(spi->DMA_tx_channel, (DMA_SIZE_BYTE | DMA_TXFER_WR_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(spi->DMA_tx_channel, DMAREQ_SPI4);
+            DMA_set_peripheral_address(spi->DMA_tx_channel, (volatile uint16_t)&SPI4BUF);
+            DMA_set_buffer_offset_sgl(spi->DMA_tx_channel, __builtin_dmapage(spi4_dma_tx_buf), __builtin_dmaoffset(spi4_dma_tx_buf)); 
+
+            spi->DMA_rx_channel = DMA_rx_channel;           
+            DMA_init(spi->DMA_rx_channel);
+            DMA_set_control_register(spi->DMA_rx_channel, (DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD));
+            DMA_set_request_source(spi->DMA_rx_channel, DMAREQ_SPI4);
+            DMA_set_peripheral_address(spi->DMA_rx_channel, (volatile uint16_t)&SPI4BUF);
+            DMA_set_buffer_offset_sgl(spi->DMA_rx_channel, __builtin_dmapage(spi4_dma_rx_buf), __builtin_dmaoffset(spi4_dma_rx_buf));    
+#endif
+            
             SPI4STATbits.SPIEN = 1;         // Enable SPI module              
             break;
     }

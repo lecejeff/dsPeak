@@ -350,21 +350,21 @@ uint8_t hex_to_dec (uint8_t hex)
     return decimal;    
 }
 
-void uint16_to_byte8 (uint16_t *ptr_16, uint8_t *ptr_8)
+void uint16_to_byte8 (uint16_t *ptr_16, uint8_t *ptr_8, uint16_t length)
 {
     uint16_t i = 0;
-    for (; i < 128; i++)
+    for (; i < length; i++)
     {
         *ptr_8++ = ((*ptr_16 & 0xFF00) >> 8);
         *ptr_8++ = (*ptr_16++ & 0x00FF);
     }
 }
 
-void byte8_to_uint16 (uint8_t *ptr_8, uint16_t *ptr_16)
+void byte8_to_uint16 (uint8_t *ptr_8, uint16_t *ptr_16, uint16_t length)
 {
     uint16_t i = 0;
     //uint16_t temp = 0;
-    for (; i<128; i++)
+    for (; i<length; i++)
     { 
         *ptr_16 = ((*ptr_8++ << 8) & 0xFF00);
         *ptr_16 = (*ptr_16 | *ptr_8++);

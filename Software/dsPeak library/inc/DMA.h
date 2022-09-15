@@ -34,6 +34,9 @@
 #define DMA_STATE_ASSIGNED      1
 #define DMA_STATE_UNASSIGNED    0
 
+#define DMA_BUF_MODE_PP         0
+#define DMA_BUF_MODE_SGL        1
+
 //DPSRAM MEMORY LOCATION
 #define DPSRAM_BASE         0xD000
 #define DPSRAM_END          0xDFFF
@@ -143,9 +146,11 @@ void DMA_init (uint8_t channel);
 uint8_t DMA_get_txfer_state (uint8_t channel);
 void DMA_force_txfer (uint8_t channel);
 uint8_t DMA_get_force_state (uint8_t channel);
-//void DMA_set_control_register (uint8_t channel, uint16_t DMAxCON);
-//void DMA_set_peripheral_address (uint8_t channel, uint16_t DMAxPAD);
-//void DMA_set_request_source (uint8_t channel, uint16_t req_source);
+void DMA_set_control_register (uint8_t channel, uint16_t DMAxCON);
+void DMA_set_peripheral_address (uint8_t channel, uint16_t DMAxPAD);
+void DMA_set_request_source (uint8_t channel, uint16_t req_source);
+void DMA_set_buffer_offset_sgl (uint8_t channel, uint16_t offset_h, uint16_t offset_l);
+void DMA_set_buffer_offset_pp (uint8_t channel, uint16_t offset_h_a, uint16_t offset_l_a, uint16_t offset_h_b, uint16_t offset_l_b);
 void DMA_set_txfer_length(uint8_t channel, uint16_t length);
 void DMA_enable (uint8_t channel);
 void DMA_disable (uint8_t channel);

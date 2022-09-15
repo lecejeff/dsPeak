@@ -416,24 +416,22 @@ uint8_t CAN_init (STRUCT_CAN *node, uint8_t channel, uint32_t bus_freq, uint16_t
                 }
 
                 // DMA channel initialization, 1x channel for message transmission
-                node->DMA_tx_channel = DMA_CH2;
+                node->DMA_tx_channel = DMA_tx_channel;
                 DMA_init(node->DMA_tx_channel);
-                DMA2CON = DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
-                DMA2REQ = DMAREQ_ECAN1TX;
-                DMA2PAD = (volatile uint16_t)&C1TXD;
-                DMA2STAH = __builtin_dmapage(CAN_MSG_BUFFER);
-                DMA2STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                      
-                DMA2CNT = 0x7;  
+                DMA_set_control_register(node->DMA_tx_channel, (DMA_SIZE_WORD | DMA_TXFER_WR_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD));
+                DMA_set_request_source(node->DMA_tx_channel, DMAREQ_ECAN1TX);
+                DMA_set_peripheral_address(node->DMA_tx_channel, (volatile uint16_t)&C1TXD);
+                DMA_set_buffer_offset_sgl(node->DMA_tx_channel, __builtin_dmapage(CAN_MSG_BUFFER), __builtin_dmaoffset(CAN_MSG_BUFFER));
+                DMA_set_txfer_length(node->DMA_tx_channel, 7); 
                 
                 // DMA channel initialization, 1x channel for message reception
-                node->DMA_rx_channel = DMA_CH3;
+                node->DMA_rx_channel = DMA_tx_channel;
                 DMA_init(node->DMA_rx_channel);
-                DMA3CON = DMA_SIZE_WORD | DMA_TXFER_RD_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD;
-                DMA3REQ = DMAREQ_ECAN1RX;
-                DMA3PAD = (volatile uint16_t)&C1RXD;
-                DMA3STAH = __builtin_dmapage(CAN_MSG_BUFFER);
-                DMA3STAL = __builtin_dmaoffset(CAN_MSG_BUFFER);                                         
-                DMA_set_txfer_length(node->DMA_rx_channel, 7);          // Always receive 8x 16-bits    
+                DMA_set_control_register(node->DMA_rx_channel, (DMA_SIZE_WORD | DMA_TXFER_RD_PER | DMA_AMODE_PIA | DMA_CHMODE_CPPD));
+                DMA_set_request_source(node->DMA_rx_channel, DMAREQ_ECAN1RX);
+                DMA_set_peripheral_address(node->DMA_rx_channel, (volatile uint16_t)&C1RXD);
+                DMA_set_buffer_offset_sgl(node->DMA_rx_channel, __builtin_dmapage(CAN_MSG_BUFFER), __builtin_dmaoffset(CAN_MSG_BUFFER));
+                DMA_set_txfer_length(node->DMA_rx_channel, 7);  
                 
                 // Enable CAN interrupts
                 IEC2bits.C1IE = 1;
