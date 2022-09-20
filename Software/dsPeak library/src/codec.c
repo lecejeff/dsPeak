@@ -355,10 +355,10 @@ void CODEC_init (STRUCT_CODEC *codec, STRUCT_SPI *spi, uint8_t spi_channel, uint
 }
 
 uint16_t CODEC_spi_write (STRUCT_CODEC *codec, uint16_t adr, uint16_t data) 
-{
-    uint8_t buf[4] = {((adr & 0xFF00)>>8), adr, ((data & 0xFF00)>>8), data};
+{    
     // Blocking SPI call
-    while (SPI_module_busy(codec->spi_ref) != SPI_MODULE_FREE);
+    while (SPI_module_busy(codec->spi_ref) != SPI_MODULE_FREE);   
+    uint8_t buf[4] = {((adr & 0xFF00)>>8), adr, ((data & 0xFF00)>>8), data};
     SPI_load_tx_buffer(codec->spi_ref, buf, 4);
     SPI_write(codec->spi_ref, AUDIO_CODEC_CS);
     // End of SPI transaction
@@ -369,7 +369,8 @@ uint16_t CODEC_spi_modify_write (STRUCT_CODEC *codec, uint16_t adr, uint16_t reg
 {
     reg &= mask;
     reg |= data;
-    uint8_t buf[4] = {((adr & 0xFF00)>>8), adr, ((reg & 0xFF00)>>8), reg};
+    uint8_t buf[4] = {((adr & 0xFF00)>>8), (adr&0x00FF), ((reg & 0xFF00)>>8), (reg&0x00FF)};
+    
     // Blocking SPI call
     while (SPI_module_busy(codec->spi_ref) != SPI_MODULE_FREE);
     SPI_load_tx_buffer(codec->spi_ref, buf, 4);

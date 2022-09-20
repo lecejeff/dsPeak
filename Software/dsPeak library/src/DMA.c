@@ -5,7 +5,7 @@ void DMA_init (uint8_t channel)
 { 
     if ((channel >= 0 ) && (channel < DMA_QTY))
     {
-        DMA_struct[channel].state = DMA_STATE_ASSIGNED;
+        DMA_struct[channel].prev_txfer_state = DMA_TXFER_DONE;
         DMA_struct[channel].txfer_state = DMA_TXFER_DONE; 
 
         switch (channel)
@@ -96,8 +96,8 @@ void DMA_disable (uint8_t channel)
 {
     if ((channel >= 0 ) && (channel < DMA_QTY))
     {
-        DMA_struct[channel].state = DMA_STATE_DISABLED;
-        DMA_struct[channel].txfer_state = DMA_TXFER_DONE;
+        DMA_struct[channel].prev_txfer_state = DMA_TXFER_DONE;
+        DMA_struct[channel].txfer_state = DMA_TXFER_DONE; 
         switch (channel)
         {
             case DMA_CH0:
@@ -200,7 +200,7 @@ void DMA_enable (uint8_t channel)
 {
     if ((channel >= 0 ) && (channel < DMA_QTY))
     {
-        DMA_struct[channel].state = DMA_STATE_ENABLED;
+        DMA_struct[channel].prev_txfer_state = DMA_TXFER_DONE;
         DMA_struct[channel].txfer_state = DMA_TXFER_IN_PROGRESS;
         switch (channel)
         {
@@ -1026,6 +1026,7 @@ uint8_t DMA_get_txfer_state (uint8_t channel)
     {    
         if (DMA_struct[channel].txfer_state == DMA_TXFER_DONE)
         {
+            DMA_struct[channel].prev_txfer_state = DMA_struct[channel].txfer_state;
             DMA_struct[channel].txfer_state = DMA_TXFER_IDLE;
             return DMA_TXFER_DONE;
         }
@@ -1040,6 +1041,14 @@ uint8_t DMA_get_txfer_state (uint8_t channel)
         return DMA_TXFER_IDLE;
 }
 
+void DMA_set_txfer_state (uint8_t channel, uint8_t state)
+{
+    if ((channel >= 0 ) && (channel < DMA_QTY))
+    {    
+        DMA_struct[channel].txfer_state = state;
+    }
+}
+
 void __attribute__((__interrupt__, no_auto_psv))_DMA0Interrupt(void)
 {
     IFS0bits.DMA0IF = 0;
@@ -1049,12 +1058,6 @@ void __attribute__((__interrupt__, no_auto_psv))_DMA0Interrupt(void)
 void __attribute__((__interrupt__, no_auto_psv))_DMA1Interrupt(void)
 {
     IFS0bits.DMA1IF = 0;
-#ifdef RS485_CLICK_UART2    
-    while(!U2STAbits.TRMT);
-    // Put the transceiver in receive mode
-    LATDbits.LATD0 = 0;     // DE = 0
-    LATHbits.LATH15 = 0;    // RE = 0    
-#endif
     DMA_struct[DMA_CH1].txfer_state = DMA_TXFER_DONE;
 }
 

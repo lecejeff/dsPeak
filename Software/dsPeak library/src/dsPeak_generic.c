@@ -4,7 +4,7 @@ STRUCT_LED LED_struct[LED_QTY];
 
 void dsPeak_init(void)
 { 
-    INTCON1bits.NSTDIS = 0;                         // Nested interrupt enabled 
+    INTCON1bits.NSTDIS = 1;                         // Nested interrupt disabled# 
     RCONbits.SWDTEN=0;                              // Watchdog timer disabled 
     
     dsPeak_posc_20MHz_init();

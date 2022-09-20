@@ -485,7 +485,7 @@ uint8_t FT8XX_rd8 (uint32_t adr)
     uint8_t data[5] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0};
     SPI_load_tx_buffer(EVE_spi, data, 5);
     SPI_write(EVE_spi, FT8XX_EVE_CS);    
-    while(SPI_txfer_done(EVE_spi)!= 1);
+    while(SPI_get_txfer_state(EVE_spi)!= SPI_TX_COMPLETE);
     return SPI_get_rx_buffer_index(EVE_spi, 4);
     // byte 0 = (uint8_t)((adr >> 16) | MEM_READ);   // Write 24 bit ADR
     // byte 1 = (uint8_t)(adr>>8);                    // 
@@ -514,7 +514,7 @@ uint16_t FT8XX_rd16 (uint32_t adr)
     uint8_t data[6] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0};
     SPI_load_tx_buffer(EVE_spi, data, 6);
     SPI_write(EVE_spi, FT8XX_EVE_CS);    
-    while(SPI_txfer_done(EVE_spi)!= 1);
+    while(SPI_get_txfer_state(EVE_spi)!= SPI_TX_COMPLETE);
     data_read1 = SPI_get_rx_buffer_index(EVE_spi, 4);    
     data_read2 = SPI_get_rx_buffer_index(EVE_spi, 5); 
     rd16 = ((data_read2 << 8) | data_read1);
@@ -547,7 +547,7 @@ uint32_t FT8XX_rd32 (uint32_t adr)
     uint8_t data[8] = {((adr >> 16) | MEM_READ), (adr>>8), adr, 0, 0, 0, 0, 0};
     SPI_load_tx_buffer(EVE_spi, data, 8);
     SPI_write(EVE_spi, FT8XX_EVE_CS);    
-    while(SPI_txfer_done(EVE_spi)!= 1);
+    while(SPI_get_txfer_state(EVE_spi)!= SPI_TX_COMPLETE);
     data_read1 = SPI_get_rx_buffer_index(EVE_spi, 4);    
     data_read2 = SPI_get_rx_buffer_index(EVE_spi, 5); 
     data_read3 = SPI_get_rx_buffer_index(EVE_spi, 6);    

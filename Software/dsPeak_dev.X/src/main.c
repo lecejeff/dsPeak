@@ -150,20 +150,12 @@ STRUCT_RTCC *RTC1_struct = &RTCC_struct[RTC_1];
 
 uint16_t i = 0;
 
-//RTCC_time clock;
-//uint8_t hour, minute, second;
-//int error_rpm;
-
-//uint16_t data_rx_can[4] = {0};
-//uint8_t can_parse_return;
-//uint8_t I2C_buf[4] = {0};
-//uint16_t i2c_sine_counter = 0;
-
 uint8_t *u485_rx_buf1;
 uint8_t *u485_rx_buf2;
 uint8_t u485_1_data_flag = 0;
 uint8_t u485_2_data_flag = 0;
-uint8_t counter_485 = 0;
+uint8_t counter_485_native = 0;
+uint8_t u485_2_rx = 0;
 
 uint8_t record_flag = 0, playback_flag = 0, erase_flag = 0;
 uint8_t record_cnt = 0, playback_cnt = 0;
@@ -197,6 +189,11 @@ uint8_t hp_vol_r = 0x18;
 
 uint8_t spi_codec_state = 0;
 
+uint8_t codec_volume_flag = 0;
+uint8_t codec_spi_tx_flag = 0;
+
+uint8_t buf_test[9] = {0};
+
 int main() 
 {
     dsPeak_init(); 
@@ -211,13 +208,12 @@ int main()
     dsPeak_led_init(LED3_struct, LED_3, LOW);
     dsPeak_led_init(LED4_struct, LED_4, LOW);    
     
-    RTCC_init(RTC1_struct, RTC_1);
-    
+    RTCC_init(RTC1_struct, RTC_1);   
     RTCC_write_time(RTC1_struct);
 
 #ifdef UART_DEBUG_ENABLE
     UART_init(UART_DEBUG_struct, UART_3, 115200, UART_MAX_TX, UART_MAX_RX, DMA_CH14);
-    UART_putstr_dma(UART_DEBUG_struct, "dsPeak UART debug port with DMA is enabled\r\n");   
+    while(UART_putstr_dma(UART_DEBUG_struct, "dsPeak UART debug port with DMA is enabled\r\n") != 1);   
 #endif
 
     //MOTOR_init(PWM1H_struct, PWM1L_struct, MOTOR_1, 30);
@@ -248,15 +244,15 @@ int main()
     // CODEC samples are 16bit for each channel, so 32b per stereo sample
     // The flash should save the channel sample one after another
     // 1x page = 256 bytes / (4bytes / sample) = 64 stereo sample / page
-    SPI_flash_init(FLASH_struct, SPI_flash, ((CODEC_BLOCK_TRANSFER * 2) + 4), ((CODEC_BLOCK_TRANSFER * 2) + 4), DMA_CH4, DMA_CH5);     
-    CODEC_init(CODEC_sgtl5000, SPI_codec, SPI_3, SYS_FS_16kHz, CODEC_BLOCK_TRANSFER, CODEC_BLOCK_TRANSFER, DMA_CH2, DMA_CH3);
+    SPI_flash_init(FLASH_struct, SPI_flash, ((CODEC_BLOCK_TRANSFER * 2) + 4), ((CODEC_BLOCK_TRANSFER * 2) + 4), DMA_CH2, DMA_CH1);     
+    CODEC_init(CODEC_sgtl5000, SPI_codec, SPI_3, SYS_FS_16kHz, CODEC_BLOCK_TRANSFER, CODEC_BLOCK_TRANSFER, DMA_CH3, DMA_CH0);
     
     // Enable dsPeak native RS-485 port @ 460800bps
-    UART_init(UART_485_struct, UART_1, 460800, 32, 32, DMA_CH0);
+    UART_init(UART_485_struct, UART_1, 460800, 32, 32, DMA_CH12);
     
 #ifdef RS485_CLICK_UART2
     // Enable RS-485 Click6 RS-485 interface on MikroBus port @ 460800bps
-    UART_init(UART_MKB_struct, UART_2, 460800, 32, 32, DMA_CH1);
+    UART_init(UART_MKB_struct, UART_2, 460800, 32, 32, DMA_CH13);
 #endif
     
     //CAN_init_message(&CAN_MSG_DSPEAK, 0x0123, 0, 0, 0, 0, 0, 0, 0x0300, 0, 1, 8, 8, CAN_NODE_TYPE_TX_RX);
@@ -322,22 +318,21 @@ int main()
     ST7735_Clear(color);
             
     // Timers init / start should be the last function calls made before while(1) 
-    TIMER_init(TIMER1_struct, TIMER_1, TIMER_MODE_16B, TIMER_PRESCALER_256, 5);
-    TIMER_init(TIMER2_struct, TIMER_2, TIMER_MODE_16B, TIMER_PRESCALER_256, 5);
+    TIMER_init(TIMER1_struct, TIMER_1, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
+    TIMER_init(TIMER2_struct, TIMER_2, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER3_struct, TIMER_3, TIMER_MODE_16B, TIMER_PRESCALER_256, 30);    
-    //TIMER_init(TIMER4_struct, TIMER_4, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
-    //TIMER_init(TIMER5_struct, TIMER_5, TIMER_MODE_16B, TIMER_PRESCALER_256, QEI_get_fs(QEI_1));
+    //TIMER_init(TIMER5_struct, TIMER_5, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
     
     //TIMER_init(TIMER6_struct, TIMER_6, TIMER_MODE_16B, TIMER_PRESCALER_1, 1000000);
     
     //TIMER_init(TIMER7_struct, TIMER_7, TIMER_PRESCALER_256, 10);
     
     // Non-blocking state machine for flash memory
-    TIMER_init(TIMER8_struct, TIMER_8, TIMER_MODE_16B, TIMER_PRESCALER_1, 800000);
+    TIMER_init(TIMER8_struct, TIMER_8, TIMER_MODE_16B, TIMER_PRESCALER_1, 900000);
     
     //Encoder initialization with associated velocity timer   
-    ENCODER_init(ENC1_struct, ENC_1, 10); 
-    TIMER_init(TIMER4_struct, TIMER_4, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
+    ENCODER_init(ENC1_struct, ENC_1, 30); 
+    TIMER_init(TIMER4_struct, TIMER_4, TIMER_MODE_16B, TIMER_PRESCALER_256, ENCODER_get_fs(ENC1_struct));
 
     TIMER_start(TIMER1_struct);
     TIMER_start(TIMER2_struct);
@@ -348,19 +343,26 @@ int main()
     //TIMER_start(TIMER7_struct);
     TIMER_start(TIMER8_struct);
     //TIMER_start(TIMER9_struct);
-
+    
+    TRISCbits.TRISC2 = 0;
+    TRISCbits.TRISC3 = 0;
+    LATCbits.LATC2 = 0;
+    LATCbits.LATC3 = 0;
+    
     while (1)
     {   
+        // Handle UART_1 RX interrupt flag
         if (UART_rx_done(UART_485_struct) == UART_RX_COMPLETE)
         {            
             u485_1_data_flag = 1;
             dsPeak_led_write(LED1_struct, LOW);
         } 
 
+        // Handle UART_2 RX interrupt flag
         if (UART_rx_done(UART_MKB_struct) == UART_RX_COMPLETE)
         {           
             u485_2_data_flag = 1; 
-            dsPeak_led_write(LED2_struct, LOW);
+            dsPeak_led_write(LED2_struct, LOW); 
         }
         
         // Handle DCI transfer DMA interrupt
@@ -379,25 +381,49 @@ int main()
         }
 #endif
         
+#ifdef RS485_CLICK_UART2             
+        if (U2STAbits.TRMT == 1)
+        {
+            // Put the transceiver in receive mode
+            LATDbits.LATD0 = 0;     // DE = 0
+            LATHbits.LATH15 = 0;    // RE = 0              
+        }
+#endif    
+        
+        // Handle UART_1 TX
         if (TIMER_get_state(TIMER1_struct, TIMER_INT_STATE) == 1)
         {
             if (u485_1_data_flag == 1)
-            {                
-                u485_1_data_flag = 0;
-                UART_putstr_dma(UART_485_struct, "Message sent from native port!\r\n");
-                dsPeak_led_write(LED1_struct, HIGH);
+            {                              
+                if (UART_putstr_dma(UART_485_struct, "Message sent from native port!\r\n") == 1)
+                {
+                    u485_1_data_flag = 0;
+                    counter_485_native = 0;
+                    dsPeak_led_write(LED1_struct, HIGH);
+                }             
+            }
+            else
+            {
+                if (++counter_485_native > 25)
+                {
+                    counter_485_native = 0;
+                    u485_1_data_flag = 1;   // Auto-retry transmission after 5s
+                }
             }
         }       
 
+        // Handle UART_2 TX
         if (TIMER_get_state(TIMER2_struct, TIMER_INT_STATE) == 1)
         {
 #ifdef RS485_CLICK_UART2               
             if (u485_2_data_flag == 1)
-            {                
-                u485_2_data_flag = 0;
-                UART_putstr_dma(UART_MKB_struct, "Message sent from MikroB port!\r\n");
-                dsPeak_led_write(LED2_struct, HIGH);
-            }              
+            {        
+                if (UART_putstr_dma(UART_MKB_struct, "Message sent from MikroB port!\r\n") == 1)
+                {
+                    u485_2_data_flag = 0;
+                    dsPeak_led_write(LED2_struct, HIGH);
+                }
+            }
 #endif      
         }         
         
@@ -415,7 +441,6 @@ int main()
                 {
                     BTN1_struct->do_once = 1;
                     UART_putstr_dma(UART_DEBUG_struct, "BTN1 pressed\r\n");
-                    UART_putstr_dma(UART_485_struct, "Message sent from native port!\r\n");
                 }
             }
             else
@@ -430,7 +455,7 @@ int main()
                     BTN2_struct->do_once = 1;
                     UART_putstr_dma(UART_DEBUG_struct, "BTN2 pressed\r\n");
                     record_flag = 1;            // CODEC record audio flag
-                    flash_state_machine = 6;
+                    //flash_state_machine = 6;
                 }
             }
             else
@@ -445,7 +470,7 @@ int main()
                     BTN3_struct->do_once = 1;
                     UART_putstr_dma(UART_DEBUG_struct, "BTN3 pressed\r\n");
                     playback_flag = 1;
-                    flash_state_machine = 6;
+                    //flash_state_machine = 6;
                 }
             }
             else
@@ -460,7 +485,7 @@ int main()
                     BTN4_struct->do_once = 1;
                     UART_putstr_dma(UART_DEBUG_struct, "BTN4 pressed\r\n");
                     erase_flag = 1;
-                    flash_state_machine = 6;
+                    //flash_state_machine = 6;
                 }
             }
             else
@@ -469,35 +494,35 @@ int main()
             }               
         }   
         
+        // CODEC HP volume management
         if (TIMER_get_state(TIMER4_struct, TIMER_INT_STATE) == 1)
-        {
+        {   
+            LATCbits.LATC3 = !LATCbits.LATC3;
             encoder_direction = ENCODER_get_direction(ENC1_struct);
             encoder_old_position = encoder_new_position;
-            encoder_new_position = ENCODER_get_position(ENC1_struct); 
+            encoder_new_position = ENCODER_get_position(ENC1_struct);  
             
             if (playback_flag == 1)
             {  
                 if (encoder_new_position > encoder_old_position)
                 {
-                    if (encoder_direction == 0) // FW, increase volume
+                    if (encoder_direction == 0) // FW, decrease volume
                     {                    
                         dsPeak_led_write(LED3_struct, HIGH);
                         if (++hp_vol_l > 0x7F){hp_vol_l = 0x7F;}
-                        if (++hp_vol_r > 0x7F){hp_vol_r = 0x7F;}
-                        if (SPI_module_busy(CODEC_sgtl5000->spi_ref) == SPI_MODULE_FREE)
-                        {
-                            CODEC_set_hp_volume(CODEC_sgtl5000, hp_vol_l, hp_vol_r);
-                        }
+                        if (++hp_vol_r > 0x7F){hp_vol_r = 0x7F;}  
+                        UART_putstr_dma(UART_DEBUG_struct, "Volume DOWN requested\r\n");
                     }
-                    else                        // BW, decrease volume
+                    else
                     {
                         dsPeak_led_write(LED3_struct, LOW);
                         if (--hp_vol_l < 1){hp_vol_l = 1;}
                         if (--hp_vol_r < 1){hp_vol_r = 1;}
-                        if (SPI_module_busy(CODEC_sgtl5000->spi_ref) == SPI_MODULE_FREE)
-                        {
-                            CODEC_set_hp_volume(CODEC_sgtl5000, hp_vol_l, hp_vol_r);
-                        }
+                        UART_putstr_dma(UART_DEBUG_struct, "Volume UP requested\r\n");
+                    }
+                    if (SPI_module_busy(CODEC_struct->spi_ref) == SPI_MODULE_FREE)
+                    {
+                        CODEC_set_hp_volume(CODEC_struct, hp_vol_r, hp_vol_l);
                     }
                 }
             }
@@ -797,6 +822,7 @@ int main()
             else
             {
                 // Nothing to do here
+                flash_state_machine = 6;    // Put state machine to IDLE                
             }
         } 
                

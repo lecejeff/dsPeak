@@ -140,7 +140,7 @@ uint8_t SPI_flash_busy_polling (STRUCT_FLASH *flash)
     // Blocking SPI call
     SPI_load_tx_buffer(flash->spi_ref, buf, 2);
     SPI_write(flash->spi_ref, FLASH_MEMORY_CS); 
-    while(SPI_txfer_done(flash->spi_ref)!= SPI_TX_COMPLETE);
+    while(SPI_get_txfer_state(flash->spi_ref)!= SPI_TX_COMPLETE);
     return SPI_get_rx_buffer_index(flash->spi_ref, 1);
 }
 

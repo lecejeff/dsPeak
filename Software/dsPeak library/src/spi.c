@@ -3,7 +3,7 @@
 //
 // Functions : void SPI_init (uint8_t channel, uint8_t mode, uint8_t ppre, uint8_t spre); 
 //              void SPI_write (uint8_t channel, uint8_t *data, uint8_t length, uint8_t chip);
-//              uint8_t SPI_txfer_done (uint8_t channel);
+//              uint8_t SPI_txfer_state (uint8_t channel);
 //              uint8_t * SPI_get_rx_buffer (uint8_t channel);
 //              uint8_t SPI_get_rx_buffer_index (uint8_t channel, uint8_t index);
 //              void SPI_deassert_cs (uint8_t chip);
@@ -233,7 +233,6 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             DMA_set_buffer_offset_sgl(spi->DMA_rx_channel, __builtin_dmapage(spi2_dma_rx_buf), __builtin_dmaoffset(spi2_dma_rx_buf));          
 #endif
             SPI2STATbits.SPIEN = 1;         // Enable SPI module   
-            SPI_struct[SPI_2].nonblock_state = SPI_IS_INITIALIZED;
             break;  
             
         // SPI3 is the AUDIO CODEC configuration interface    
@@ -404,7 +403,7 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
     spi->mode = spi_mode;
     spi->ppre = ppre;
     spi->spre = spre;
-    spi->txfer_done = SPI_TX_IDLE;
+    spi->txfer_state = SPI_TX_IDLE;         // Ready for a transmission
     spi->tx_buf_length = tx_buf_length;
     spi->rx_buf_length = rx_buf_length;
     spi->tx_cnt = 0;
@@ -442,14 +441,13 @@ uint8_t SPI_write (STRUCT_SPI *spi, uint8_t chip)
     uint16_t i = 0;   
     // *** Data should be loaded in SPI_load_tx_buffer function ***
     // Check if previous transaction was completed
-    while (SPI_module_busy(spi) != SPI_MODULE_FREE);          
+    while (SPI_module_busy(spi) != SPI_MODULE_FREE); 
     // Reset state machine variables
     spi->rx_cnt = 0;                // Set receive counter to 0 
     spi->tx_cnt = 0;                // Set transmit counter to 0
     spi->chip = chip;               // Set SPI module chip to struct 
     spi->last_tx_length = 0;        
     spi->tx_remaining = 0;
-    spi->txfer_done = SPI_TX_IDLE;  // Set SPI module state to transmit idle
     switch (spi->SPI_channel)
     {
         case SPI_1:
@@ -551,7 +549,7 @@ uint8_t SPI_write (STRUCT_SPI *spi, uint8_t chip)
             return 0;
             break;               
     }        
-    spi->state = SPI_TX_IN_PROGRESS;
+    spi->txfer_state = SPI_TX_IN_PROGRESS;
     return 1;
 }
 
@@ -564,7 +562,7 @@ uint8_t SPI_write_dma (STRUCT_SPI *spi, uint8_t chip)
     spi->chip = chip;              // Set SPI module chip to struct 
     spi->last_tx_length = 0;
     spi->tx_remaining = 0;
-    spi->txfer_done = SPI_TX_IDLE; // Set SPI module state to transmit idle                  
+    spi->txfer_state = SPI_TX_IN_PROGRESS; // Set SPI module state to transmit idle                  
         
     DMA_set_txfer_length(spi->DMA_tx_channel, spi->tx_length - 1);
     DMA_set_txfer_length(spi->DMA_rx_channel, spi->tx_length - 1);  // RX = TX in length
@@ -587,18 +585,18 @@ uint8_t SPI_load_tx_buffer (STRUCT_SPI *spi, uint8_t *data, uint16_t length)
         length = spi->tx_buf_length;
     }
 
-    for (; i<length; i++)                       
+    for (i=0; i<length; i++)                       
     {
        spi->tx_data[i] = data[i];
     }
     spi->tx_length = length;
-    spi->state = SPI_TX_LOADED;
+    spi->txfer_state = SPI_TX_LOADED;
     return 1;
 }
 
 uint8_t SPI_load_dma_tx_buffer (STRUCT_SPI *spi, uint8_t *data, uint16_t length)
 {
-    uint16_t i;
+    uint16_t i=0;
     // Saturate length
     if (length > spi->tx_buf_length)
     {
@@ -648,7 +646,7 @@ uint8_t SPI_load_dma_tx_buffer (STRUCT_SPI *spi, uint8_t *data, uint16_t length)
         return 0;
     
     spi->tx_length = length;
-    spi->state = SPI_TX_LOADED;
+    spi->txfer_state = SPI_TX_LOADED;
     return 1;
 }
 
@@ -682,7 +680,7 @@ uint8_t SPI_set_interrupt_enable (STRUCT_SPI *spi)
 uint8_t SPI_release_port (STRUCT_SPI *spi)
 {
     SPI_deassert_cs(spi);
-    spi->txfer_done = SPI_TX_COMPLETE;  
+    spi->txfer_state = SPI_TX_COMPLETE;  
     switch (spi->SPI_channel)
     {
         case SPI_1:    
@@ -957,42 +955,48 @@ uint8_t SPI_get_rx_buffer_index (STRUCT_SPI *spi, uint16_t index)
     return spi->rx_data[index];
 }
 
-uint8_t SPI_get_nonblock_state (STRUCT_SPI *spi)
-{
-    return spi->nonblock_state;
-}
-
-void SPI_set_nonblock_state (STRUCT_SPI *spi, uint8_t state)
-{
-    spi->nonblock_state = state;
-}
-
-//***************uint8_t SPI_txfer_done (uint8_t channel)*********************//
+//***************uint8_t SPI_get_txfer_state (uint8_t channel)*********************//
 //Description : Function checks wether a transfer is in progress on the specified
 //              SPI channel or if the bus is free.
 //
-//Function prototype : uint8_t SPI_txfer_done (uint8_t channel)
+//Function prototype : uint8_t SPI_txfer_state (uint8_t channel)
 //
 //Enter params       : uint8_t channel : SPI_x channel
 //
 //Exit params        : uint8_t       0 : Bus is BUSY -> SPI_TX_BUSY
 //                                   1 : Bus is FREE -> SPI_TX_COMPLETE
 //
-//Function call      : uint8_t = SPI_txfer_done(SPI_1); 
+//Function call      : uint8_t = SPI_get_txfer_state(SPI_1); 
 //
 // Intellitrol           MPLab X v5.45            XC16 v1.61          04/04/2021  
 // Jean-Francois Bilodeau, B.E.Eng/CPI #6022173 
 // jeanfrancois.bilodeau@hotmail.fr
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
-uint8_t SPI_txfer_done (STRUCT_SPI *spi)
+uint8_t SPI_get_txfer_state (STRUCT_SPI *spi)
 {
-    if (spi->txfer_done == SPI_TX_COMPLETE)
+    if (spi->txfer_state == SPI_TX_IDLE)
     {
-        spi->txfer_done = SPI_TX_IDLE;
+        return SPI_TX_IDLE;
+    }
+    else if (spi->txfer_state == SPI_TX_LOADED)
+    {
+        return SPI_TX_LOADED;
+    }
+    else if (spi->txfer_state == SPI_TX_IN_PROGRESS)
+    {
+        return SPI_TX_IN_PROGRESS;
+    }
+    else if (spi->txfer_state == SPI_TX_COMPLETE)
+    {
         return SPI_TX_COMPLETE;
     }
-    else return 0;
+    else return SPI_TX_IDLE;
+}
+
+void SPI_set_txfer_state (STRUCT_SPI *spi, uint8_t state)
+{
+    spi->txfer_state = state;
 }
 
 //***************uint8_t SPI_module_busy (uint8_t channel)********************//
@@ -1107,15 +1111,22 @@ void SPI_flush_rxbuffer (STRUCT_SPI *spi)
 // www.github.com/lecejeff/dspeak
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
-{
-    IFS0bits.SPI1IF = 0;                   
+{                
     uint16_t i=0;  
+    uint8_t temp;
     // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
     for (i=0; i<SPI_struct[SPI_1].last_tx_length; i++)
     {
-        SPI_struct[SPI_1].rx_data[SPI_struct[SPI_1].rx_cnt++] = SPI1BUF;
-        SPI1STATbits.SPIROV = 0;
+        SPI_struct[SPI_1].rx_data[SPI_struct[SPI_1].rx_cnt++] = SPI1BUF;       
     }
+    
+    // Was there more data received than expected? Error, flush RX buffer
+    while (SPI1STATbits.SRXMPT == 0)
+    {
+        temp = SPI1BUF;
+    }
+    SPI1STATbits.SPIROV = 0;
+    
     // Is there more data to transmit?
     if (SPI_struct[SPI_1].tx_cnt < SPI_struct[SPI_1].tx_length)
     {     
@@ -1143,7 +1154,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
         if (SPI1STATbits.SRXMPT == 1)
         {  
             SPI_deassert_cs(&SPI_struct[SPI_1]);
-            SPI_struct[SPI_1].txfer_done = SPI_TX_COMPLETE;       
+            SPI_struct[SPI_1].txfer_state = SPI_TX_COMPLETE;       
             IEC0bits.SPI1IE = 0;             
         }
     } 
@@ -1167,13 +1178,21 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI1Interrupt(void)
 void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 {  
 #ifndef SPI2_DMA_ENABLE
-        uint16_t i=0;  
+    uint16_t i=0;  
+    uint8_t temp;
     // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
     for (i=0; i<SPI_struct[SPI_2].last_tx_length; i++)
     {
         SPI_struct[SPI_2].rx_data[SPI_struct[SPI_2].rx_cnt++] = SPI2BUF;
-        SPI2STATbits.SPIROV = 0;
     }
+    
+    // Was there more data received than expected? Error, flush RX buffer
+    while (SPI2STATbits.SRXMPT == 0)
+    {
+        temp = SPI2BUF;
+    }
+    SPI2STATbits.SPIROV = 0;
+    
     // Is there more data to transmit?
     if (SPI_struct[SPI_2].tx_cnt < SPI_struct[SPI_2].tx_length)
     {     
@@ -1201,7 +1220,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
         if (SPI2STATbits.SRXMPT == 1)
         {  
             SPI_deassert_cs(&SPI_struct[SPI_2]);
-            SPI_struct[SPI_2].txfer_done = SPI_TX_COMPLETE;       
+            SPI_struct[SPI_2].txfer_state = SPI_TX_COMPLETE;       
             IEC2bits.SPI2IE = 0;             
         }
     } 
@@ -1225,13 +1244,21 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI2Interrupt(void)
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 {
-    uint16_t i=0;  
+    uint16_t i=0;
+    uint8_t temp;
     // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
     for (i=0; i<SPI_struct[SPI_3].last_tx_length; i++)
     {
-        SPI_struct[SPI_3].rx_data[SPI_struct[SPI_3].rx_cnt++] = SPI3BUF;
-        SPI3STATbits.SPIROV = 0;
+        SPI_struct[SPI_3].rx_data[SPI_struct[SPI_3].rx_cnt++] = SPI3BUF;        
     }
+    
+    // Was there more data received than expected? Error, flush RX buffer
+    while (SPI3STATbits.SRXMPT == 0)
+    {
+        temp = SPI3BUF;
+    }
+    SPI3STATbits.SPIROV = 0;
+    
     // Is there more data to transmit?
     if (SPI_struct[SPI_3].tx_cnt < SPI_struct[SPI_3].tx_length)
     {     
@@ -1259,7 +1286,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
         if (SPI3STATbits.SRXMPT == 1)
         {  
             SPI_deassert_cs(&SPI_struct[SPI_3]);
-            SPI_struct[SPI_3].txfer_done = SPI_TX_COMPLETE;       
+            SPI_struct[SPI_3].txfer_state = SPI_TX_COMPLETE;       
             IEC5bits.SPI3IE = 0;             
         }
     } 
@@ -1282,14 +1309,21 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI3Interrupt(void)
 //****************************************************************************//
 void __attribute__((__interrupt__, no_auto_psv)) _SPI4Interrupt(void)
 {
-    IFS7bits.SPI4IF = 0; 
+    uint8_t temp; 
     uint16_t i=0;
     // Based on last transfer length, read SPI RXFIFO and put value in struct rx buffer
     for (i=0; i<SPI_struct[SPI_4].last_tx_length; i++)
     {
-        SPI_struct[SPI_4].rx_data[SPI_struct[SPI_4].rx_cnt++] = SPI4BUF;
-        SPI4STATbits.SPIROV = 0;
+        SPI_struct[SPI_4].rx_data[SPI_struct[SPI_4].rx_cnt++] = SPI4BUF;       
     }
+    
+    // Was there more data received than expected? Error, flush RX buffer
+    while (SPI4STATbits.SRXMPT == 0)
+    {
+        temp = SPI4BUF;
+    }
+    SPI4STATbits.SPIROV = 0;
+
     // Is there more data to transmit?
     if (SPI_struct[SPI_4].tx_cnt < SPI_struct[SPI_4].tx_length)
     {     
@@ -1317,10 +1351,11 @@ void __attribute__((__interrupt__, no_auto_psv)) _SPI4Interrupt(void)
         if (SPI4STATbits.SRXMPT == 1)
         {  
             SPI_deassert_cs(&SPI_struct[SPI_4]);
-            SPI_struct[SPI_4].txfer_done = SPI_TX_COMPLETE;       
+            SPI_struct[SPI_4].txfer_state = SPI_TX_COMPLETE;       
             IEC7bits.SPI4IE = 0;             
         }                      
     }
+    IFS7bits.SPI4IF = 0;
 }
 
 void __attribute__((__interrupt__, no_auto_psv)) _SPI1ErrInterrupt(void)

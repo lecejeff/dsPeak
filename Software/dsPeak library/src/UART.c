@@ -732,7 +732,6 @@ void UART_send_tx_buffer (STRUCT_UART *uart)
             LATHbits.LATH15 = 1;    // RE = 1
 #endif            
             IEC1bits.U2TXIE = 1;
-
             break;
             
         case UART_3:

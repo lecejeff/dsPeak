@@ -136,14 +136,15 @@
 typedef struct
 {
     uint16_t buf_length;
-    uint8_t state;
     uint8_t txfer_state;
+    uint8_t prev_txfer_state;
     uint8_t ping_pong;
 }STRUCT_DMA;
 
 void DMA_struct_init (uint8_t channel);
 void DMA_init (uint8_t channel);
 uint8_t DMA_get_txfer_state (uint8_t channel);
+void DMA_set_txfer_state (uint8_t channel, uint8_t state);
 void DMA_force_txfer (uint8_t channel);
 uint8_t DMA_get_force_state (uint8_t channel);
 void DMA_set_control_register (uint8_t channel, uint16_t DMAxCON);
