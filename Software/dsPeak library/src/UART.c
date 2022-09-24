@@ -31,8 +31,8 @@ __eds__ uint8_t uart1_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 __eds__ uint8_t uart2_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 #endif
 
-#ifdef UART3_DMA_ENABLE
 #ifdef UART_DEBUG_ENABLE
+#ifdef UART3_DMA_ENABLE
 __eds__ uint8_t uart3_dma_tx_buf[UART_MAX_TX] __attribute__((eds,space(dma)));
 #endif
 #endif
