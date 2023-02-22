@@ -426,14 +426,14 @@ void QEI_calculate_velocity (uint8_t channel)
     {
         case QEI_1:
             // Update the actual speed
-            QEI_struct[channel].velocity = VEL1CNT;
+            QEI_struct[channel].velocity = abs(VEL1CNT);
             QEI_struct[channel].speed_rps = (uint16_t)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
             QEI_struct[channel].speed_rpm = (uint16_t)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / QEI_struct[channel].pulse_per_tour);
             break; 
             
         case QEI_2:
             // Update the actual speed
-            QEI_struct[channel].velocity = VEL2CNT;
+            QEI_struct[channel].velocity = abs(VEL2CNT);
             QEI_struct[channel].speed_rps = (uint16_t)(QEI_struct[channel].velocity * QEI_struct[channel].refresh_freq);
             QEI_struct[channel].speed_rpm = (uint16_t)((QEI_struct[channel].velocity * 60 * QEI_struct[channel].refresh_freq) / QEI_struct[channel].pulse_per_tour);
             break;          

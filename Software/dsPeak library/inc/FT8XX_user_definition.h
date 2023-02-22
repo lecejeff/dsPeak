@@ -33,20 +33,19 @@
 
 // Definitions of the amount of primitives to compile
 #define MAX_STR_LEN 128
-#define MAX_RECT_NB 0
+#define MAX_RECT_NB 1
 #define MAX_GRADIENT_NB 1
-#define MAX_WINDOW_NB 0
 #define MAX_SLIDER_NB 1
-#define MAX_BUTTON_NB 2
-#define MAX_TEXT_NB 16
-#define MAX_NUMBER_NB 9
+#define MAX_BUTTON_NB 0
+#define MAX_TEXT_NB 4
+#define MAX_NUMBER_NB 0
 #define MAX_TOGGLE_NB 0
-#define MAX_DIAL_NB 1
+#define MAX_DIAL_NB 0
 #define MAX_PROGRESS_NB 0
 #define MAX_SCROLLBAR_NB 0
 #define MAX_CLOCK_NB 0
 #define MAX_GAUGE_NB 0
-#define MAX_KEYS_NB 0
+#define MAX_KEYS_NB 4
 
 #if MAX_GRADIENT_NB > 0
 #define GRADIENT_X0     0
@@ -69,6 +68,12 @@ extern STGradient st_Gradient[MAX_GRADIENT_NB];
 #endif
 
 #if MAX_KEYS_NB > 0
+#define KEYS_X        0
+#define KEYS_Y        1
+#define KEYS_WIDTH        2
+#define KEYS_HEIGHT        3
+#define KEYS_FONT     4
+#define KEYS_OPT      5
 typedef struct
 {
     uint16_t x;
@@ -287,24 +292,6 @@ typedef struct
 extern STSlider st_Slider[MAX_SLIDER_NB]; // slider struct initialization
 #endif
 
-#if MAX_WINDOW_NB > 0
-typedef struct
-{
-   uint8_t ucNewState;
-   uint8_t ucOldState;
-   uint8_t ucCntr;
-   uint8_t ucTouchGood;
-   uint16_t x1;
-   uint16_t y1;
-   uint16_t x2;
-   uint16_t y2; 
-   uint8_t ucReadOK; 
-   uint8_t one_touch;
-   uint8_t touch_tag;
-}STWindow;
-extern STWindow st_Window[MAX_WINDOW_NB]; // window struct initialization
-#endif
-
 typedef struct
 {
     uint16_t X0;
@@ -317,8 +304,7 @@ typedef struct
     uint16_t Y3;
     uint16_t X4;
     uint16_t Y4;    
-}STTouch;
-extern STTouch Touch_data;
+}STRUCT_TOUCH;
 //
 
 #define FONT_15 15

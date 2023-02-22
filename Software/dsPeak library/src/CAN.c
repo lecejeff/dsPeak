@@ -243,6 +243,7 @@ uint8_t CAN_set_rx_filter_sid (STRUCT_CAN_MSG *msg, uint8_t filter_channel, uint
                 break;
         }
         C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers   
+        return 1;
     }   
     else
         return 0;
@@ -273,6 +274,7 @@ uint8_t CAN_set_rx_mask (STRUCT_CAN_MSG *msg, uint8_t mask_channel, uint16_t mas
                 break;
         }
         C1CTRL1bits.WIN = 0;                // Set at 0 to access CAN control registers   
+        return 1;
     }
     else
         return 0;
@@ -302,6 +304,7 @@ uint8_t CAN_assign_rx_mask (STRUCT_CAN_MSG *msg, uint8_t mask_channel)
             case 4:
                 break;
         }
+        return 1;
     }
     else
         return 0;

@@ -30,8 +30,8 @@
 STRUCT_SPI SPI_struct[SPI_QTY];
 
 #ifdef SPI1_DMA_ENABLE
-    __eds__ uint8_t spi1_dma_tx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
-    __eds__ uint8_t spi1_dma_rx_buf[SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+    __eds__ uint8_t spi1_dma_tx_buf[EVE_SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
+    __eds__ uint8_t spi1_dma_rx_buf[EVE_SPI_BUF_LENGTH] __attribute__((eds,space(dma)));
 #endif
 
 #ifdef SPI2_DMA_ENABLE
@@ -134,9 +134,9 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             spi->DMA_rx_channel = DMA_rx_channel;           
             DMA_init(spi->DMA_rx_channel);
             DMA_set_control_register(spi->DMA_rx_channel, (DMA_SIZE_BYTE | DMA_TXFER_RD_PER | DMA_CHMODE_OPPD));
-            DMA_set_request_source(spi->DMA_rx_channel, DMAREQ_SPI2);
-            DMA_set_peripheral_address(spi->DMA_rx_channel, (volatile uint16_t)&SPI2BUF);
-            DMA_set_buffer_offset_sgl(spi->DMA_rx_channel, __builtin_dmapage(spi2_dma_rx_buf), __builtin_dmaoffset(spi2_dma_rx_buf));    
+            DMA_set_request_source(spi->DMA_rx_channel, DMAREQ_SPI1);
+            DMA_set_peripheral_address(spi->DMA_rx_channel, (volatile uint16_t)&SPI1BUF);
+            DMA_set_buffer_offset_sgl(spi->DMA_rx_channel, __builtin_dmapage(spi1_dma_rx_buf), __builtin_dmaoffset(spi1_dma_rx_buf));    
 #endif
 
             // SPI1 input/output pin mapping  
@@ -315,7 +315,6 @@ void SPI_init (STRUCT_SPI *spi, uint8_t spi_channel, uint8_t spi_mode, uint8_t p
             break;
           
         // SPI4 is the MikroBus interface   
-        // Testing SPI enhanced buffer mode (see if it removes the delay between consecutive bytes)    
         case SPI_4:
             IEC7bits.SPI4IE = 0;            // Disable SPI module interrupt
             SPI4STATbits.SPIEN = 0;         // Disable SPI module 

@@ -21,7 +21,10 @@ typedef struct
     double d_value;
     double d_input;
     double i_term;
+    double pid_float;
 
+    int32_t test_error;
+    
     uint16_t pid_high_limit;
     double error_rpm;
     double last_error_rpm;
@@ -59,6 +62,8 @@ uint8_t MOTOR_get_direction (uint8_t channel);
 uint16_t MOTOR_get_speed_rpm (uint8_t channel);
 uint8_t MOTOR_get_speed_perc (uint8_t channel);
 uint16_t MOTOR_get_setpoint_rpm (uint8_t channel);
+void MOTOR_set_direction (uint8_t channel, uint8_t direction);
+int32_t MOTOR_get_test_error (uint8_t channel);
 //char MOTOR_drive_pid (uint8_t channel);
 uint8_t MOTOR_drive_pid (uint8_t channel);
 #endif

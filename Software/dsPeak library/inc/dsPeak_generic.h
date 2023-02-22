@@ -64,13 +64,13 @@ typedef struct
 // dsPeak generic I/Os definition
 // Basically LEDs, Pushbutton, Encoder switch, buzzer, RGB LED
 // ---------------------- dsPeak on-board pushbuttons ------------------------//
-#define DSPEAK_BTN1_STATE       PORTAbits.RA9
+#define DSPEAK_BTN1_RD          PORTAbits.RA9
 #define DSPEAK_BTN1_DIR         TRISAbits.TRISA9
-#define DSPEAK_BTN2_STATE       PORTFbits.RF2
+#define DSPEAK_BTN2_RD          PORTFbits.RF2
 #define DSPEAK_BTN2_DIR         TRISFbits.TRISF2
-#define DSPEAK_BTN3_STATE       PORTFbits.RF8
+#define DSPEAK_BTN3_RD          PORTFbits.RF8
 #define DSPEAK_BTN3_DIR         TRISFbits.TRISF8
-#define DSPEAK_BTN4_STATE       PORTAbits.RA4
+#define DSPEAK_BTN4_RD          PORTAbits.RA4
 #define DSPEAK_BTN4_DIR         TRISAbits.TRISA4
 #define BTN_1                   0
 #define BTN_2                   1
@@ -81,13 +81,13 @@ typedef struct
 #define BTN_QTY                 4
 
 // ---------------------- dsPeak on-board LEDs -------------------------------//
-#define DSPEAK_LED1_STATE       LATHbits.LATH8
+#define DSPEAK_LED1_WR          LATHbits.LATH8
 #define DSPEAK_LED1_DIR         TRISHbits.TRISH8
-#define DSPEAK_LED2_STATE       LATHbits.LATH9
+#define DSPEAK_LED2_WR          LATHbits.LATH9
 #define DSPEAK_LED2_DIR         TRISHbits.TRISH9
-#define DSPEAK_LED3_STATE       LATHbits.LATH10
+#define DSPEAK_LED3_WR          LATHbits.LATH10
 #define DSPEAK_LED3_DIR         TRISHbits.TRISH10
-#define DSPEAK_LED4_STATE       LATHbits.LATH11
+#define DSPEAK_LED4_WR          LATHbits.LATH11
 #define DSPEAK_LED4_DIR         TRISHbits.TRISH11
 #define LED_1                   0
 #define LED_2                   1
@@ -102,16 +102,92 @@ typedef struct
 #define DSPEAK_ENC_SW_DIR       TRISAbits.TRISA5
 
 // ---------------------------- dsPeak buzzer --------------------------------//
-#define DSPEAK_BUZZ_STATE       LATDbits.LATD8
+#define DSPEAK_BUZZ_WR          LATDbits.LATD8
 #define DSPEAK_BUZZ_DIR         TRISDbits.TRISD8
 
 // ---------------------- dsPeak on-board RGB LED ----------------------------//
-#define DSPEAK_RGB_RED_STATE    LATBbits.LATB3    
+#define DSPEAK_RGB_RED_WR       LATBbits.LATB3    
 #define DSPEAK_RGB_RED_DIR      TRISBbits.TRISB3  
-#define DSPEAK_RGB_GREEN_STATE  LATBbits.LATB4    
+#define DSPEAK_RGB_GREEN_WE     LATBbits.LATB4    
 #define DSPEAK_RGB_GREEN_DIR    TRISBbits.TRISB4  
-#define DSPEAK_RGB_BLUE_STATE   LATBbits.LATB5    
+#define DSPEAK_RGB_BLUE_WE      LATBbits.LATB5    
 #define DSPEAK_RGB_BLUE_DIR     TRISBbits.TRISB5 
+
+// ------------------------- dsPeak MikroBUS #1 ------------------------------//
+// AIN
+#define DSPEAK_MKB1_AIN1_DIR    TRISEbits.TRISE8
+#define DSPEAK_MKB1_AIN1_ANS    ANSELEbits.ANSE8
+#define DSPEAK_MKB1_AIN1_WR     LATEbits.LATE8
+#define DSPEAK_MKB1_AIN1_RD     PORTEbits.RE8
+// RST
+#define DSPEAK_MKB1_RST_DIR     TRISHbits.TRISH14
+#define DSPEAK_MKB1_RST_WR      LATHbits.LATH14
+#define DSPEAK_MKB1_RST_RD      PORTHbits.RH14
+// SPI CSn
+#define DSPEAK_MKB1_CSn_DIR     TRISHbits.TRISH15
+#define DSPEAK_MKB1_CSn_WR      LATHbits.LATH15
+#define DSPEAK_MKB1_CSn_RD      PORTHbits.RH15
+// INT
+#define DSPEAK_MKB1_INT_DIR     TRISDbits.TRISD0
+#define DSPEAK_MKB1_INT_WR      LATDbits.LATD0
+#define DSPEAK_MKB1_INT_RD      PORTDbits.RD0
+// PWM
+#define DSPEAK_MKB1_PWM_DIR     TRISEbits.TRISE7
+#define DSPEAK_MKB1_PWM_WR      LATEbits.LATE7
+#define DSPEAK_MKB1_PWM_RD      PORTEbits.RE7
+
+// ------------------------- dsPeak MikroBUS #2 ------------------------------//
+// AIN
+#define DSPEAK_MKB2_AIN1_DIR    TRISEbits.TRISE9
+#define DSPEAK_MKB2_AIN1_ANS    ANSELEbits.ANSE9
+#define DSPEAK_MKB2_AIN1_WR     LATEbits.LATE9
+#define DSPEAK_MKB2_AIN1_RD     PORTEbits.RE9
+// RST
+#define DSPEAK_MKB2_RST_DIR     TRISHbits.TRISH12
+#define DSPEAK_MKB2_RST_WR      LATHbits.LATH12
+#define DSPEAK_MKB2_RST_RD      PORTHbits.RH12
+// SPI CSn
+#define DSPEAK_MKB2_CSn_DIR     TRISHbits.TRISH13
+#define DSPEAK_MKB2_CSn_WR      LATHbits.LATH13
+#define DSPEAK_MKB2_CSn_RD      PORTHbits.RH13
+// INT
+#define DSPEAK_MKB2_INT_DIR     TRISDbits.TRISD11
+#define DSPEAK_MKB2_INT_WR      LATDbits.LATD11
+#define DSPEAK_MKB2_INT_RD      PORTDbits.RD11
+// PWM
+#define DSPEAK_MKB2_PWM_DIR     TRISCbits.TRISC1
+#define DSPEAK_MKB2_PWM_WR      LATCbits.LATC1
+#define DSPEAK_MKB2_PWM_RD      PORTCbits.RC1
+
+// ----------------------- dsPeak MikroBUS shared ----------------------------//
+// SPI SCLK
+#define DSPEAK_MKB_SCLK_DIR     TRISDbits.TRISD7
+#define DSPEAK_MKB_SCLK_WR      LATDbits.LATD7
+#define DSPEAK_MKB_SCLK_RD      PORTDbits.RD7
+// SPI MISO
+#define DSPEAK_MKB_MISO_DIR     TRISDbits.TRISD13
+#define DSPEAK_MKB_MISO_WR      LATDbits.LATD13
+#define DSPEAK_MKB_MISO_RD      PORTDbits.RD13
+// SPI MOSI
+#define DSPEAK_MKB_MOSI_DIR     TRISFbits.TRISF0
+#define DSPEAK_MKB_MOSI_WR      LATFbits.LATF0
+#define DSPEAK_MKB_MOSI_RD      PORTFbits.RF0
+// SDA
+#define DSPEAK_MKB_SDA_DIR      TRISDbits.TRISD9
+#define DSPEAK_MKB_SDA_WR       LATDbits.LATD9
+#define DSPEAK_MKB_SDA_RD       PORTDbits.RD9
+// SCL
+#define DSPEAK_MKB_SCL_DIR      TRISDbits.TRISD10
+#define DSPEAK_MKB_SCL_WR       LATDbits.LATD10
+#define DSPEAK_MKB_SCL_RD       PORTDbits.RD10
+// UART TX
+#define DSPEAK_MKB_UART_TX_DIR  TRISFbits.TRISF1
+#define DSPEAK_MKB_UART_TX_WR   LATFbits.LATF1
+#define DSPEAK_MKB_UART_TX_RD   PORTFbits.RF1
+// UART RX
+#define DSPEAK_MKB_UART_RX_DIR  TRISGbits.TRISG1
+#define DSPEAK_MKB_UART_RX_WR   LATGbits.LATG1
+#define DSPEAK_MKB_UART_RX_RD   PORTGbits.RG1
 
 // ---------------------------- Bringup defines ----------------------------- //
 // Before release of the documentation, these defines should be removes
@@ -123,10 +199,10 @@ typedef struct
     
 // MikroBus various ClickBOard bringup defines
 // To use RS-485 CLICK 6 on UART_2
-#define RS485_CLICK_UART2
+// #define RS485_CLICK_UART2
     
 // To use the FTDI EVE port, uncomment the following line
-//#define EVE_SCREEN_ENABLE  
+//#define EVE_SCREEN_ENABLE
     
    
 void dsPeak_init(void);

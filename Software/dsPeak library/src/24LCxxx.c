@@ -11,9 +11,9 @@ uint8_t EEPROM_discover (STRUCT_EEPROM *mem, uint8_t base_adr, uint8_t end_adr)
         while(i <= end_adr)
         {
             i2c_buf[0] = i;
-            I2C_master_write(I2C_port_1, i2c_buf, 1);
-            while(I2C_wait(I2C_port_1)==1);
-            adr_ack = I2C_get_ack_state(I2C_port_1);
+            I2C_master_write(I2C_1, i2c_buf, 1);
+            while(I2C_wait(I2C_1)==1);
+            adr_ack = I2C_get_ack_state(I2C_1);
             if (adr_ack == 0)     // I2C slave acknowledged?
             {
                 mem->address = i;

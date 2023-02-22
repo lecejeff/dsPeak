@@ -809,6 +809,18 @@ void DCI_set_receive_state (STRUCT_CODEC *codec, uint8_t state)
     codec->DCI_receive_enable = state;
 }
 
+uint8_t DCI_get_pp_buffer_state (STRUCT_CODEC *codec, uint8_t tx_rx)
+{
+    if (tx_rx == DCI_DMA_TX)
+    {
+        return codec->DMA_tx_buf_pp;
+    }
+    else
+    {
+        return codec->DMA_rx_buf_pp;
+    }
+}
+
 void DCI_enable (STRUCT_CODEC *codec)
 {
     codec->DCI_enable_state = 1;

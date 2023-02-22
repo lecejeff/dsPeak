@@ -30,7 +30,7 @@
 #define DCI_0               0
 
 // To use DCI module with DMA transfers (both transmit and receive), uncomment
-#define DCI0_DMA_ENABLE
+// #define DCI0_DMA_ENABLE
 
 // SGTL5000 CODEC registers definition -----------------------------------------
 #define CODEC_CHIP_ID                   0x0000
@@ -280,6 +280,7 @@ void DCI_enable (STRUCT_CODEC *codec);
 void DCI_disable (STRUCT_CODEC *codec);
 uint8_t DCI_get_interrupt_state (STRUCT_CODEC *codec, uint8_t tx_rx);
 uint8_t DCI_fill_dma_tx_buf (STRUCT_CODEC *codec, uint16_t *buf, uint16_t length);
+uint8_t DCI_get_pp_buffer_state (STRUCT_CODEC *codec, uint8_t tx_rx);
 uint16_t * DCI_unload_dma_rx_buf (STRUCT_CODEC *codec, uint16_t length);
 void DCI_set_transmit_state (STRUCT_CODEC *codec, uint8_t state);
 void DCI_set_receive_state (STRUCT_CODEC *codec, uint8_t state);

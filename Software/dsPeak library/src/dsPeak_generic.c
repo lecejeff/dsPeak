@@ -172,22 +172,22 @@ uint8_t dsPeak_button_debounce (STRUCT_BUTTON *btn)
     {
         case BTN_1:
             btn->prev_state = btn->state;
-            btn->state = DSPEAK_BTN1_STATE;
+            btn->state = DSPEAK_BTN1_RD;
             break;
             
         case BTN_2:
             btn->prev_state = btn->state;
-            btn->state = DSPEAK_BTN2_STATE;
+            btn->state = DSPEAK_BTN2_RD;
             break;
             
         case BTN_3:
             btn->prev_state = btn->state;
-            btn->state = DSPEAK_BTN3_STATE;
+            btn->state = DSPEAK_BTN3_RD;
             break;
             
         case BTN_4:
             btn->prev_state = btn->state;
-            btn->state = DSPEAK_BTN4_STATE;
+            btn->state = DSPEAK_BTN4_RD;
             break;
             
         default: 
@@ -231,22 +231,22 @@ uint8_t dsPeak_led_init (STRUCT_LED *led, uint8_t channel, uint8_t value)
     {
         case LED_1:
             DSPEAK_LED1_DIR = OUTPUT;
-            DSPEAK_LED1_STATE = value;
+            DSPEAK_LED1_WR = value;
             break;
             
         case LED_2:
             DSPEAK_LED2_DIR = OUTPUT;
-            DSPEAK_LED2_STATE = value;
+            DSPEAK_LED2_WR = value;
             break;
             
         case LED_3:
             DSPEAK_LED3_DIR = OUTPUT;
-            DSPEAK_LED3_STATE = value;
+            DSPEAK_LED3_WR = value;
             break;
             
         case LED_4:
             DSPEAK_LED4_DIR = OUTPUT;
-            DSPEAK_LED4_STATE = value;
+            DSPEAK_LED4_WR = value;
             break;
             
         default:
@@ -264,19 +264,19 @@ uint8_t dsPeak_led_write (STRUCT_LED *led, uint8_t value)
     switch (led->channel)
     {
         case LED_1:
-            DSPEAK_LED1_STATE = value;
+            DSPEAK_LED1_WR = value;
             break;
             
         case LED_2:
-            DSPEAK_LED2_STATE = value;
+            DSPEAK_LED2_WR = value;
             break;
             
         case LED_3:
-            DSPEAK_LED3_STATE = value;
+            DSPEAK_LED3_WR = value;
             break;
             
         case LED_4:
-            DSPEAK_LED4_STATE = value;
+            DSPEAK_LED4_WR = value;
             break;
             
         default:

@@ -72,7 +72,7 @@
 #define SPI_BUF_LENGTH 260
 
 #ifdef EVE_SCREEN_ENABLE
-    #define EVE_SPI_BUF_LENGTH  4096
+    #define EVE_SPI_BUF_LENGTH  SPI_BUF_LENGTH
 #endif
 
 #define SPI_TX_IDLE         0
