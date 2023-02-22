@@ -171,8 +171,7 @@ int main()
     // 1x page = 256 bytes / (4bytes / sample) = 64 stereo sample / page
     SPI_flash_init(FLASH_struct, SPI_flash, ((CODEC_BLOCK_TRANSFER * 2) + 4), ((CODEC_BLOCK_TRANSFER * 2) + 4), DMA_CH2, DMA_CH1);     
     CODEC_init(CODEC_sgtl5000, SPI_codec, SPI_3, SYS_FS_16kHz, CODEC_BLOCK_TRANSFER, CODEC_BLOCK_TRANSFER, DMA_CH3, DMA_CH0);
-    
-            
+                
     // Timers init / start should be the last function calls made before while(1) 
     TIMER_init(TIMER1_struct, TIMER_1, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER2_struct, TIMER_2, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
@@ -519,7 +518,8 @@ int main()
                         spi2_buf[0] = CMD_PAGE_PROGRAM;
                         spi2_buf[1] = ((flash_wr_adr & 0xFF0000)>>16);
                         spi2_buf[2] = ((flash_wr_adr & 0x00FF00)>>8);
-                        spi2_buf[3] = flash_wr_adr&0x0000FF;
+                        spi2_buf[3] = flash_wr_adr&0x0000FF;                     
+                        
                         dci_rx_ptr = DCI_unload_dma_rx_buf(CODEC_sgtl5000, CODEC_BLOCK_TRANSFER);   // 1x loop 128 iterations
                         uint16_to_byte8(&dci_rx_ptr[0], &spi2_buf[4], CODEC_BLOCK_TRANSFER);                              // 1x loop 128 iterations                      
                         
