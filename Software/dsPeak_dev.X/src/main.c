@@ -73,6 +73,7 @@
 #include "i2c.h"
 #include "rot_encoder.h"
 #include "ividac_driver.h"
+#include "ft8xx.h"
 
 // Access to CAN struct members
 extern STRUCT_CAN CAN_struct[CAN_QTY];
@@ -88,6 +89,8 @@ STRUCT_RCDAC *RCDAC2_struct = &RCDAC_struct[RCDAC_2];
 extern STRUCT_PWM PWM_struct[PWM_QTY];
 STRUCT_PWM *PWM1L_struct = &PWM_struct[PWM_1L];
 STRUCT_PWM *PWM1H_struct = &PWM_struct[PWM_1H];
+STRUCT_PWM *PWM2L_struct = &PWM_struct[PWM_2L];
+STRUCT_PWM *PWM2H_struct = &PWM_struct[PWM_2H];
 STRUCT_PWM *PWM5H_struct = &PWM_struct[PWM_5H];
 STRUCT_PWM *PWM6L_struct = &PWM_struct[PWM_6L];
 STRUCT_PWM *PWM6H_struct = &PWM_struct[PWM_6H];
@@ -117,7 +120,8 @@ STRUCT_TIMER *TIMER9_struct = &TIMER_struct[TIMER_9];
 
 // Access to SPI struct members
 extern STRUCT_SPI SPI_struct[SPI_QTY];
-STRUCT_SPI *SPI_codec = &SPI_struct[SPI_3];
+STRUCT_SPI *EVE_spi = &SPI_struct[SPI_1];       // Assign EVE_spi to SPI_1
+STRUCT_SPI *SPI_codec = &SPI_struct[SPI_3];     // Assign CODEC to SPI_3
 
 // Access to CODEC struct members
 extern STRUCT_CODEC CODEC_struct[CODEC_QTY];
@@ -145,8 +149,23 @@ STRUCT_LED *LED4_struct = &LED_struct[LED_4];
 extern STRUCT_ENCODER ENCODER_struct[ENCODER_QTY];
 STRUCT_ENCODER *ENC1_struct = &ENCODER_struct[ENC_1];
 
+// Access to RTC struct member
 extern STRUCT_RTCC RTCC_struct[RTC_QTY];
 STRUCT_RTCC *RTC1_struct = &RTCC_struct[RTC_1];
+
+// Access to Bridgetek EVE struct member
+extern STRUCT_BT8XX BT8XX_struct[BT8XX_QTY];
+STRUCT_BT8XX *eve = &BT8XX_struct[BT8XX_1];
+
+// Debug variables related to functions under development
+char new_pid_out1 = 0, new_pid_out2 = 0;
+uint8_t state = 0;
+uint16_t counter_5sec  = 0;
+uint16_t speed_rpm_table[5] = {30, 95, 60, 18, 55};
+uint8_t motor_debug_buf[18] = {0};
+int error_rpm;
+uint16_t setpoint_rpm;
+uint16_t actual_rpm;
 
 uint16_t i = 0;
 
@@ -194,6 +213,12 @@ uint8_t codec_spi_tx_flag = 0;
 
 uint8_t buf_test[9] = {0};
 
+uint8_t tag = 0;
+uint16_t track_upd = 0;
+uint32_t tracker = 0;
+uint8_t track_counter = 0;
+uint8_t key = 0;
+
 int main() 
 {
     dsPeak_init(); 
@@ -215,9 +240,74 @@ int main()
     UART_init(UART_DEBUG_struct, UART_3, 115200, UART_MAX_TX, UART_MAX_RX, DMA_CH14);
     while(UART_putstr_dma(UART_DEBUG_struct, "dsPeak UART debug port with DMA is enabled\r\n") != 1);   
 #endif
+    
+#ifdef EVE_SCREEN_ENABLE
+    FT8XX_init (eve, EVE_spi, SPI_1, DMA_CH4, DMA_CH5);
+    
+    // Initialize DisplayList
+    FT8XX_CMD_gradient(0, 0, 0, 0xFF0000, 480, 272, 0x5500FF);
+    FT8XX_set_touch_tag(FT_PRIM_GRADIENT, 0, 1);
+    
+    FT8XX_CMD_text(0, 10, 7, 18, 0, "dsPeak bring-up Rev1_00-0B");
+    FT8XX_CMD_text(1, 10, 25, 18, 0, "Designed by : Intellitrol");
+    FT8XX_CMD_text(2, 390, 242, 18, 0, "Brightness"); 
+    FT8XX_CMD_text(3, 314, 8, 18, 0, "Keypad input"); 
+       
+    FT8XX_CMD_slider(0, 20, 245, 350, 10, 0, 65535, 65535);
+    FT8XX_set_touch_tag(FT_PRIM_SLIDER, 0, 2);
+    
+    FT8XX_CMD_keys(0, 13, 65, 234, 31, 27, OPT_FLAT | OPT_CENTERX, "1234567890");
+    FT8XX_set_touch_tag(FT_PRIM_KEYS, 0, 3);
+    
+    FT8XX_CMD_keys(1, 13, 100, 234, 31, 27, OPT_FLAT | OPT_CENTERX, "QWERTYUIOP");
+    FT8XX_set_touch_tag(FT_PRIM_KEYS, 1, 4);
+    
+    FT8XX_CMD_keys(2, 13, 135, 234, 31, 27, OPT_FLAT | OPT_CENTERX, "ASDFGHJKL");
+    FT8XX_set_touch_tag(FT_PRIM_KEYS, 2, 5);
+    
+    FT8XX_CMD_keys(3, 13, 170, 234, 31, 27, OPT_FLAT | OPT_CENTERX, "ZXCVBNM");
+    FT8XX_set_touch_tag(FT_PRIM_KEYS, 3, 6);
+    // End of DisplayList initialization
+    
+    // DisplayList write to BT8XX
+    FT8XX_start_new_dl(eve);					// Start a new display list, reset ring buffer and ring pointer
+    FT8XX_write_dl_long(eve, TAG_MASK(1));
+    FT8XX_write_dl_long(eve, CMD_COLDSTART);
+    
+    FT8XX_write_dl_long(eve, TAG(st_Gradient[0].touch_tag));
+    FT8XX_draw_gradient(eve, &st_Gradient[0]);
+    
+    FT8XX_draw_text(eve, &st_Text[0]);    
+    FT8XX_draw_text(eve, &st_Text[1]);    
+    FT8XX_draw_text(eve, &st_Text[2]);    
+    FT8XX_draw_text(eve, &st_Text[3]);     
+    
+    FT8XX_write_dl_long(eve, COLOR_RGB(85, 170, 0));
+    FT8XX_set_context_fcolor(eve, 0xFDFF59);
+    FT8XX_write_dl_long(eve, COLOR_RGB(0, 0, 0));
+    FT8XX_write_dl_long(eve, TAG(st_Slider[0].touch_tag));
+    FT8XX_draw_slider(eve, &st_Slider[0]); 
+    
+    FT8XX_write_dl_long(eve, TAG(st_Keys[0].touch_tag));
+    FT8XX_draw_keys(eve, &st_Keys[0]);
+    FT8XX_write_dl_long(eve, TAG(st_Keys[1].touch_tag));
+    FT8XX_draw_keys(eve, &st_Keys[1]);
+    FT8XX_write_dl_long(eve, TAG(st_Keys[2].touch_tag));
+    FT8XX_draw_keys(eve, &st_Keys[2]);
+    FT8XX_write_dl_long(eve, TAG(st_Keys[3].touch_tag));
+    FT8XX_draw_keys(eve, &st_Keys[3]);
+    
+    FT8XX_write_dl_long(eve, BEGIN(RECTS));
+    FT8XX_write_dl_long(eve, COLOR_RGB(0, 0, 0));
+    FT8XX_write_dl_long(eve, VERTEX2II(250, 30, 0, 0));
+    FT8XX_write_dl_long(eve, VERTEX2II(460, 230, 0, 0));
+    FT8XX_write_dl_long(eve, END());
+    
+    FT8XX_update_screen_dl(eve);         		// Update display list 
+#endif
 
-    //MOTOR_init(PWM1H_struct, PWM1L_struct, MOTOR_1, 30);
-    //MOTOR_init(MOTOR_2, 30);  
+    MOTOR_init(PWM1H_struct, PWM1L_struct, MOTOR_1, 30);
+    MOTOR_init(PWM2H_struct, PWM2L_struct, MOTOR_2, 30);    
     
 //    SPI_init(SPI_4, SPI_MODE0, PPRE_4_1, SPRE_8_1);     // Max sclk of 9MHz on SPI4 = divide by 8
 //#ifdef IVIDAC_RESOLUTION_12BIT
@@ -244,8 +334,8 @@ int main()
     // CODEC samples are 16bit for each channel, so 32b per stereo sample
     // The flash should save the channel sample one after another
     // 1x page = 256 bytes / (4bytes / sample) = 64 stereo sample / page
-    SPI_flash_init(FLASH_struct, SPI_flash, ((CODEC_BLOCK_TRANSFER * 2) + 4), ((CODEC_BLOCK_TRANSFER * 2) + 4), DMA_CH2, DMA_CH1);     
-    CODEC_init(CODEC_sgtl5000, SPI_codec, SPI_3, SYS_FS_16kHz, CODEC_BLOCK_TRANSFER, CODEC_BLOCK_TRANSFER, DMA_CH3, DMA_CH0);
+    //SPI_flash_init(FLASH_struct, SPI_flash, ((CODEC_BLOCK_TRANSFER * 2) + 4), ((CODEC_BLOCK_TRANSFER * 2) + 4), DMA_CH2, DMA_CH1);     
+    //CODEC_init(CODEC_sgtl5000, SPI_codec, SPI_3, SYS_FS_16kHz, CODEC_BLOCK_TRANSFER, CODEC_BLOCK_TRANSFER, DMA_CH3, DMA_CH0);
     
     // Enable dsPeak native RS-485 port @ 460800bps
     UART_init(UART_485_struct, UART_1, 460800, 32, 32, DMA_CH12);
@@ -254,6 +344,9 @@ int main()
     // Enable RS-485 Click6 RS-485 interface on MikroBus port @ 460800bps
     UART_init(UART_MKB_struct, UART_2, 460800, 32, 32, DMA_CH13);
 #endif
+    
+    //Physical rotary encoder initialization
+    //ENCODER_init(ENC1_struct, ENC_1, 30); 
     
     //CAN_init_message(&CAN_MSG_DSPEAK, 0x0123, 0, 0, 0, 0, 0, 0, 0x0300, 0, 1, 8, 8, CAN_NODE_TYPE_TX_RX);
     //CAN_init(CAN1_struct, CAN_1, 500000, 8, DMA_CH2, DMA_CH3, CAN_NODE_TYPE_TX_RX);
@@ -295,59 +388,30 @@ int main()
 //    ADC_start(ADC_PORT_1);      // Start ADC1
 //    ADC_start(ADC_PORT_2);      // Start ADC2
 //    
-//    MOTOR_set_rpm(MOTOR_1, speed_rpm_table[0]);
-//    MOTOR_set_rpm(MOTOR_2, speed_rpm_table[0]);  
-
-//    PMP_init(PMP_MODE_SRAM);
-//    for (i=0; i<10; i++)
-//    {
-//        PMP_write_single(PMP_MODE_SRAM, mem_adr[i], mem_dat[i]);
-//        if (PMP_read_single(PMP_MODE_SRAM, mem_adr[i]) != mem_dat[i])
-//        {
-//            LATHbits.LATH9 = !LATHbits.LATH9;
-//        }   
-//        else
-//        {
-//        }  
-//        __delay_ms(100);
-//    }
-//    
-    PMP_init(PMP_MODE_TFT);
-    ST7735_init();
-    color = RGB888_to_RGB565(0x555500);
-    ST7735_Clear(color);
-            
+        
+    //MOTOR_set_rpm(MOTOR_1, speed_rpm_table[0]);
+    //MOTOR_set_rpm(MOTOR_2, speed_rpm_table[0]);
+    
     // Timers init / start should be the last function calls made before while(1) 
     TIMER_init(TIMER1_struct, TIMER_1, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
     TIMER_init(TIMER2_struct, TIMER_2, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
-    TIMER_init(TIMER3_struct, TIMER_3, TIMER_MODE_16B, TIMER_PRESCALER_256, 30);    
-    //TIMER_init(TIMER5_struct, TIMER_5, TIMER_MODE_16B, TIMER_PRESCALER_256, 10);
-    
-    //TIMER_init(TIMER6_struct, TIMER_6, TIMER_MODE_16B, TIMER_PRESCALER_1, 1000000);
-    
-    //TIMER_init(TIMER7_struct, TIMER_7, TIMER_PRESCALER_256, 10);
-    
-    // Non-blocking state machine for flash memory
-    TIMER_init(TIMER8_struct, TIMER_8, TIMER_MODE_16B, TIMER_PRESCALER_1, 900000);
-    
-    //Encoder initialization with associated velocity timer   
-    ENCODER_init(ENC1_struct, ENC_1, 30); 
-    TIMER_init(TIMER4_struct, TIMER_4, TIMER_MODE_16B, TIMER_PRESCALER_256, ENCODER_get_fs(ENC1_struct));
+    TIMER_init(TIMER3_struct, TIMER_3, TIMER_MODE_16B, TIMER_PRESCALER_256, 30);   
+    TIMER_init(TIMER4_struct, TIMER_4, TIMER_MODE_16B, TIMER_PRESCALER_256, 30);
+    TIMER_init(TIMER5_struct, TIMER_5, TIMER_MODE_16B, TIMER_PRESCALER_256, 5);   
+    TIMER_init(TIMER6_struct, TIMER_6, TIMER_MODE_16B, TIMER_PRESCALER_256, 30);   
+    TIMER_init(TIMER7_struct, TIMER_7, TIMER_MODE_16B, TIMER_PRESCALER_256, 30);                    // Motor driver refresh timer     
+    //TIMER_init(TIMER8_struct, TIMER_8, TIMER_MODE_16B, TIMER_PRESCALER_256, 60);    // Eve refresh timer 
+    //TIMER_init(TIMER9_struct, TIMER_9, TIMER_MODE_16B, TIMER_PRESCALER_256, 30);    
 
     TIMER_start(TIMER1_struct);
     TIMER_start(TIMER2_struct);
     TIMER_start(TIMER3_struct);   
     TIMER_start(TIMER4_struct);
-    //TIMER_start(TIMER5_struct);
-    //TIMER_start(TIMER6_struct);
-    //TIMER_start(TIMER7_struct);
-    TIMER_start(TIMER8_struct);
+    TIMER_start(TIMER5_struct);
+    TIMER_start(TIMER6_struct);
+    TIMER_start(TIMER7_struct);
+    //TIMER_start(TIMER8_struct);
     //TIMER_start(TIMER9_struct);
-    
-    TRISCbits.TRISC2 = 0;
-    TRISCbits.TRISC3 = 0;
-    LATCbits.LATC2 = 0;
-    LATCbits.LATC3 = 0;
     
     while (1)
     {   
@@ -494,668 +558,135 @@ int main()
             }               
         }   
         
-        // CODEC HP volume management
+        // Motor debug port
         if (TIMER_get_state(TIMER4_struct, TIMER_INT_STATE) == 1)
         {   
-            LATCbits.LATC3 = !LATCbits.LATC3;
-            encoder_direction = ENCODER_get_direction(ENC1_struct);
-            encoder_old_position = encoder_new_position;
-            encoder_new_position = ENCODER_get_position(ENC1_struct);  
-            
-            if (playback_flag == 1)
-            {  
-                if (encoder_new_position > encoder_old_position)
-                {
-                    if (encoder_direction == 0) // FW, decrease volume
-                    {                    
-                        dsPeak_led_write(LED3_struct, HIGH);
-                        if (++hp_vol_l > 0x7F){hp_vol_l = 0x7F;}
-                        if (++hp_vol_r > 0x7F){hp_vol_r = 0x7F;}  
-                        UART_putstr_dma(UART_DEBUG_struct, "Volume DOWN requested\r\n");
-                    }
-                    else
-                    {
-                        dsPeak_led_write(LED3_struct, LOW);
-                        if (--hp_vol_l < 1){hp_vol_l = 1;}
-                        if (--hp_vol_r < 1){hp_vol_r = 1;}
-                        UART_putstr_dma(UART_DEBUG_struct, "Volume UP requested\r\n");
-                    }
-                    if (SPI_module_busy(CODEC_struct->spi_ref) == SPI_MODULE_FREE)
-                    {
-                        CODEC_set_hp_volume(CODEC_struct, hp_vol_r, hp_vol_l);
-                    }
-                }
-            }
+            setpoint_rpm = MOTOR_get_setpoint_rpm(MOTOR_1);
+            actual_rpm = QEI_get_speed_rpm(QEI_1);
+            error_rpm = setpoint_rpm - actual_rpm;
+            motor_debug_buf[0] = 0xAE;
+            motor_debug_buf[1] = 0xAE;
+            motor_debug_buf[2] = ((setpoint_rpm & 0xFF00)>>8);
+            motor_debug_buf[3] = setpoint_rpm&0x00FF;    
+            motor_debug_buf[4] = ((error_rpm & 0xFF00)>>8);
+            motor_debug_buf[5] = error_rpm&0x00FF;    
+            motor_debug_buf[6] = ((actual_rpm & 0xFF00)>>8);
+            motor_debug_buf[7] = actual_rpm&0x00FF; 
+            motor_debug_buf[8] = 0;
+            motor_debug_buf[9] = new_pid_out1;
+            setpoint_rpm = MOTOR_get_setpoint_rpm(MOTOR_2);
+            actual_rpm = QEI_get_speed_rpm(QEI_2);
+            error_rpm = setpoint_rpm - actual_rpm;            
+            motor_debug_buf[10] = ((setpoint_rpm & 0xFF00)>>8);
+            motor_debug_buf[11] = setpoint_rpm&0x00FF;    
+            motor_debug_buf[12] = ((error_rpm & 0xFF00)>>8);
+            motor_debug_buf[13] = error_rpm&0x00FF;    
+            motor_debug_buf[14] = ((actual_rpm & 0xFF00)>>8);
+            motor_debug_buf[15] = actual_rpm&0x00FF; 
+            motor_debug_buf[16] = 0;
+            motor_debug_buf[17] = new_pid_out2;            
+            UART_putbuf_dma(UART_DEBUG_struct, motor_debug_buf, 18);
         }  
 //        
         if (TIMER_get_state(TIMER5_struct, TIMER_INT_STATE) == 1)
         {
+            if (++counter_5sec >= 10)
+            {                  
+                counter_5sec = 0;
+                state++;
+                if (state > 4){state = 0;}
+                //MOTOR_set_rpm(MOTOR_1, speed_rpm_table[state]);
+                //MOTOR_set_rpm(MOTOR_2, speed_rpm_table[state]);
+            }
         } 
         
+        // QEI velocity refresh rate
         if (TIMER_get_state(TIMER6_struct, TIMER_INT_STATE) == 1)
-        {
-        } 
-//        
-//        
+        {           
+            QEI_calculate_velocity(QEI_2);  
+            new_pid_out2 = MOTOR_drive_pid(MOTOR_2);
+            MOTOR_drive_perc(MOTOR_2, MOTOR_get_direction(MOTOR_2), new_pid_out2);
+        }        
+        
+        // QEI velocity refresh rate
         if (TIMER_get_state(TIMER7_struct, TIMER_INT_STATE) == 1)
         {           
+            QEI_calculate_velocity(QEI_1);  
+            new_pid_out1 = MOTOR_drive_pid(MOTOR_1);
+            MOTOR_drive_perc(MOTOR_1, MOTOR_get_direction(MOTOR_1), new_pid_out1);
         }
-        
+
+#ifdef EVE_SCREEN_ENABLE        
         if (TIMER_get_state(TIMER8_struct, TIMER_INT_STATE) == 1)
-        {   
-            // SPI FLASH and CODEC state machine to record / playback audio            
-            // If spi_release flag is set, call deassert_cs and get_rx_buf functions
-            if (spi_release == 1)
-            {
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_rx_channel) == DMA_TXFER_DONE)
-                {
-                    spi_release = 0;
-                    SPI_deassert_cs(FLASH_struct->spi_ref);                    
-                }
-            }                 
+        {           
+            // DisplayList write to BT8XX
 
-            // Query the device busy status
-            if (flash_state_machine == 0)
-            {   
-                dsPeak_led_write(LED4_struct, HIGH);
-                // DMA channel is in idle, ready for another transfer
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_tx_channel) == DMA_TXFER_IDLE)
-                {
-                    spi_release = 1;
-                    if (SPI_flash_busy(FLASH_struct) == 1)
-                    {                        
-                        flash_state_machine = 1;
-                    }
-                }
-            }
+            FT8XX_start_new_dl(eve);					// Start a new display list, reset ring buffer and ring pointer
+            FT8XX_write_dl_long(eve, TAG_MASK(1));
+            FT8XX_write_dl_long(eve, CMD_COLDSTART);
 
-            // Query the device busy status
-            else if (flash_state_machine == 1)
-            {
-                // Status register value is at offset 1 (2nd byte received)
-                flash_status1_reg = SPI_get_dma_rx_buffer_at_index(FLASH_struct->spi_ref, 1);
-                if ((flash_status1_reg & 0x01) == 0)
-                {
-                    // Busy indicator low, flash is ready
-                    flash_state_machine = 2;
-                }   
-                else
-                {
-                    // Busy indicator high, keep polling
-                    flash_state_machine = 0;
-                }
-            }
+            FT8XX_write_dl_long(eve, TAG(st_Gradient[0].touch_tag));
+            FT8XX_draw_gradient(eve, &st_Gradient[0]);
 
-            // Write enable
-            else if (flash_state_machine == 2)                     
-            {
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_tx_channel) == DMA_TXFER_IDLE)
-                {
-                    spi_release = 1;
-                    if (SPI_flash_write_enable(FLASH_struct) == 1)
-                    {
-                        flash_state_machine = 3;
-                    }
-                }
-            }
+            FT8XX_draw_text(eve, &st_Text[0]);    
+            FT8XX_draw_text(eve, &st_Text[1]);    
+            FT8XX_draw_text(eve, &st_Text[2]);    
+            FT8XX_draw_text(eve, &st_Text[3]);     
 
-            // FLASH erase all
-            else if (flash_state_machine == 3)
-            {
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_tx_channel) == DMA_TXFER_IDLE)
-                {
-                    spi_release = 1;
-                    if (SPI_flash_erase(FLASH_struct, CMD_CHIP_ERASE, 0) == 1)
-                    {
-                        flash_state_machine = 4;
-                    }
-                }
-            }
+            FT8XX_write_dl_long(eve, COLOR_RGB(85, 170, 0));
+            FT8XX_set_context_fcolor(eve, 0xFDFF59);
+            FT8XX_write_dl_long(eve, COLOR_RGB(0, 0, 0));
+            
+            FT8XX_CMD_tracker(eve, st_Slider[0].x, st_Slider[0].y, st_Slider[0].w, st_Slider[0].h, st_Slider[0].touch_tag);
+            FT8XX_write_dl_long(eve, TAG(st_Slider[0].touch_tag));
+            FT8XX_draw_slider(eve, &st_Slider[0]); 
 
-            // 
-            else if (flash_state_machine == 4)
-            {
-                // DMA channel is in idle, ready for another transfer
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_tx_channel) == DMA_TXFER_IDLE)
-                {
-                    spi_release = 1;
-                    if (SPI_flash_busy(FLASH_struct) == 1)  // Query flash busy flag
-                    {                        
-                        flash_state_machine = 5;              
-                    }
-                }                
-            }
+            FT8XX_write_dl_long(eve, TAG(st_Keys[0].touch_tag));
+            FT8XX_draw_keys(eve, &st_Keys[0]);
+            FT8XX_write_dl_long(eve, TAG(st_Keys[1].touch_tag));
+            FT8XX_draw_keys(eve, &st_Keys[1]);
+            FT8XX_write_dl_long(eve, TAG(st_Keys[2].touch_tag));
+            FT8XX_draw_keys(eve, &st_Keys[2]);
+            FT8XX_write_dl_long(eve, TAG(st_Keys[3].touch_tag));
+            FT8XX_draw_keys(eve, &st_Keys[3]);
 
-            else if (flash_state_machine == 5)
-            {
-                // Status register value is at offset 1 (2nd byte received)
-                flash_status1_reg = SPI_get_dma_rx_buffer_at_index(FLASH_struct->spi_ref, 1);               
-                if ((flash_status1_reg & 0x01) == 0)
-                {
-                    // Busy indicator low, flash is ready
-                    erase_flag = 0;
-                    flash_state_machine = 6;
-                    dsPeak_led_write(LED4_struct, HIGH);
-                }   
-                else
-                {
-                    // Busy indicator high, keep polling
-                    flash_state_machine = 4;
-                }                
-            }
+            FT8XX_write_dl_long(eve, BEGIN(RECTS));
+            FT8XX_write_dl_long(eve, COLOR_RGB(0, 0, 0));
+            FT8XX_write_dl_long(eve, VERTEX2II(250, 30, 0, 0));
+            FT8XX_write_dl_long(eve, VERTEX2II(460, 230, 0, 0));
+            FT8XX_write_dl_long(eve, END());
 
-            // State machine is idle, waiting for user input
-            else if (flash_state_machine == 6)
-            {    
-                dsPeak_led_write(LED4_struct, LOW);
-                if (record_flag == 1) 
-                {  
-                    flash_state_machine = 7;
-                    DCI_rx_flag = 0;
-                    CODEC_mute(CODEC_sgtl5000, HEADPHONE_MUTE);                    
+            FT8XX_update_screen_dl(eve);         		// Update display list 
+                       
+            tag = FT8XX_read_touch_tag(eve);         
+            tracker = FT8XX_rd32(eve, REG_TRACKER); 
+            
+            if (tag != 0)
+            {               
+                if ((tracker & 0x0000FFFF) == st_Slider[0].touch_tag)
+                {
+                    track_upd = ((tracker&0xFFFF0000)>>16);
+                    FT8XX_modify_slider(&st_Slider[0], SLIDER_VAL, track_upd);
+                    track_upd = (track_upd >> 9); // Divide by 512 to get a range of 0-128
+                    if (track_upd < 10){track_upd = 10;}
+                    FT8XX_wr8(eve, REG_PWM_DUTY, track_upd);
                 }
                 
-                if (playback_flag == 1)
+                if (((tag >= 0x41) && (tag <= 0x5A)) || ((tag >= 0x30) && (tag <= 0x39)) )   // On-screen keyboard key pressed 
                 {
-                    flash_state_machine = 12;
-                    DCI_tx_flag = 0;                              
-                    CODEC_unmute(CODEC_sgtl5000, HEADPHONE_MUTE);
-                }
-                
-                if (erase_flag == 1) 
-                {
-                    spi_release = 1;
-                    flash_state_machine = 0;
+                    key = tag;                                      // save tag value as key press
+                    FT8XX_modify_keys(&st_Keys[0], KEYS_OPT, OPT_FLAT | OPT_CENTERX | key);  // Setting option to tag value will show key depressed
+                    FT8XX_modify_keys(&st_Keys[1], KEYS_OPT, OPT_FLAT | OPT_CENTERX | key);  // Setting option to tag value will show key depressed
+                    FT8XX_modify_keys(&st_Keys[2], KEYS_OPT, OPT_FLAT | OPT_CENTERX | key);  // Setting option to tag value will show key depressed
+                    FT8XX_modify_keys(&st_Keys[3], KEYS_OPT, OPT_FLAT | OPT_CENTERX | key);  // Setting option to tag value will show key depressed
                 }
             }
-
-            // At this point the flash has been erased and is ready to be written
-            // The record button has been pressed, setting the record flag
-            // Store data from CODEC to memory (record mode)
-            else if (flash_state_machine == 7)
-            {                                
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_tx_channel) == DMA_TXFER_IDLE)
-                {
-                    dsPeak_led_write(LED4_struct, HIGH);    // Debug
-                    spi_release = 1;
-                    if (SPI_flash_write_enable(FLASH_struct) == 1)  // Set write enable bit in flash
-                    {
-                        flash_state_machine = 8;
-                    }
-                }
-            }
-            
-            // Must validate if WEL = 1 in status register before programming a page
-            else if (flash_state_machine == 8)
-            {
-                // DMA channel is in idle, ready for another transfer
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_tx_channel) == DMA_TXFER_IDLE)
-                {
-                    spi_release = 1;
-                    if (SPI_flash_busy(FLASH_struct) == 1)  // Query flash busy flag
-                    {                        
-                        flash_state_machine = 9;              
-                    }
-                }                   
-            }
-            
-            else if (flash_state_machine == 9)
-            {    
-                // Status register value is at offset 1 (2nd byte received)
-                flash_status1_reg = SPI_get_dma_rx_buffer_at_index(FLASH_struct->spi_ref, 1);
-                if ((flash_status1_reg & 0x03) == 2)
-                {
-                    // WEL = 1 and BUSY = 0, flash is ready
-                    flash_state_machine = 10;                    
-                }
-                else
-                {
-                    // WEL = 0 or BUSY = 1, keep polling
-                    flash_state_machine = 7;
-                }                       
-            }
-
-            // Send data to flash here
-            else if (flash_state_machine == 10)
-            {          
-                // Transfer SPI data from CODEC DMA RX buffer to SPI DMA TX buffer
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_tx_channel) == DMA_TXFER_IDLE)
-                {    
-                    spi_release = 1;
-                    if (DCI_rx_flag == 1)       // DCI RX buffer full
-                    {   
-                        DCI_rx_flag = 0;                       
-                        // Transfer data between DCI RX buffer and SPI TX buffer                       
-                        spi2_buf[0] = CMD_PAGE_PROGRAM;
-                        spi2_buf[1] = ((flash_wr_adr & 0xFF0000)>>16);
-                        spi2_buf[2] = ((flash_wr_adr & 0x00FF00)>>8);
-                        spi2_buf[3] = flash_wr_adr&0x0000FF;
-                        dci_rx_ptr = DCI_unload_dma_rx_buf(CODEC_sgtl5000, CODEC_BLOCK_TRANSFER);   // 1x loop 128 iterations
-                        uint16_to_byte8(&dci_rx_ptr[0], &spi2_buf[4], CODEC_BLOCK_TRANSFER);                              // 1x loop 128 iterations                      
-                        
-                        if (SPI_load_dma_tx_buffer(FLASH_struct->spi_ref, spi2_buf, 260) == 1)      // 1x loop (260 iterations)
-                        {
-                            SPI_write_dma(FLASH_struct->spi_ref, FLASH_MEMORY_CS);
-                            flash_wr_adr += 256;
-                            if (flash_wr_adr > 0x3FFFFF)    // written last memory slot
-                            {       
-                                flash_state_machine = 11;   // Recording is finished
-                            }
-                            else
-                            {
-                                flash_state_machine = 7;    // Continue recording
-                            }
-                        }                        
-                    }                    
-                }
-            }
-
-            // Recording finished
-            else if (flash_state_machine == 11)
-            {
-                record_flag = 0;   
-                flash_wr_adr = 0;                       // Reset write address to 0
-                record_cnt = 1;                         // A record was completed
-                flash_state_machine = 6;                // Return to record wait state
-            }
-
-            // Playback started
-            // Fetch data from SPI memory
-            else if (flash_state_machine == 12)
-            {
-                dsPeak_led_write(LED4_struct, HIGH);    // Debug
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_tx_channel) == DMA_TXFER_IDLE)
-                {    
-                    spi_release = 1;
-                    if (SPI_flash_read_page(FLASH_struct, flash_rd_adr) == 1)
-                    {
-                        flash_rd_adr += 256;
-                        if (flash_rd_adr > 0x3FFFFF)
-                        {
-                            last_txfer = 1;
-                        }
-                        flash_state_machine = 13;
-                    }
-                }              
-            }
-
-            // Transfer memory data to DCI buffer
-            else if (flash_state_machine == 13)
-            {
-                if (DMA_get_txfer_state(FLASH_struct->spi_ref->DMA_rx_channel) == DMA_TXFER_IDLE)
-                {    
-                    spi_release = 1;
-                    // SPI read is complete, parse buffers
-                    spi_rd_ptr = SPI_unload_dma_rx_buffer(FLASH_struct->spi_ref);
-                    byte8_to_uint16(&spi_rd_ptr[4], &codec_wr_ptr[0], CODEC_BLOCK_TRANSFER);           
-                    flash_state_machine = 14;                         
-                }
-            }
-
-            else if (flash_state_machine == 14)
-            {
-                if (DCI_tx_flag == 1)
-                {
-                    DCI_tx_flag = 0;
-                    DCI_fill_dma_tx_buf(CODEC_sgtl5000, codec_wr_ptr, CODEC_BLOCK_TRANSFER);
-                    if (last_txfer == 0)
-                    {
-                        flash_state_machine = 12;
-                    }
-                    else
-                    {
-                        flash_state_machine = 15;
-                    }                            
-                }                
-            }
-
-            else if (flash_state_machine == 15)
-            {
-                CODEC_mute(CODEC_sgtl5000, HEADPHONE_MUTE);
-                playback_flag = 0;
-                flash_rd_adr = 0;
-                playback_cnt = 1;
-                last_txfer = 0;
-                flash_state_machine = 6;
-            }
-            
-            else
-            {
-                // Nothing to do here
-                flash_state_machine = 6;    // Put state machine to IDLE                
-            }
-        } 
-               
-        if (TIMER_get_state(TIMER9_struct, TIMER_INT_STATE) == 1)
-        {
         }
+#endif
 
-//        if (TIMER_get_state(TIMER2_struct, TIMER_INT_STATE) == 1)
-//        {           
-//#ifdef EVE_SCREEN_ENABLE 
-//            if (encoder_dir == 0)
-//            {
-//                FT8XX_modify_element_string(13, FT_PRIM_TEXT, "Forward ");
-//            }
-//            else
-//            {
-//                FT8XX_modify_element_string(13, FT_PRIM_TEXT, "Backward");
-//            }            
-//            
-//            FT8XX_modify_number(&st_Number[0], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN12));
-//            FT8XX_modify_number(&st_Number[1], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN13));
-//            FT8XX_modify_number(&st_Number[2], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN14));
-//            FT8XX_modify_number(&st_Number[3], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN15));
-//            FT8XX_modify_number(&st_Number[4], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN0));
-//            FT8XX_modify_number(&st_Number[5], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN1));
-//            FT8XX_modify_number(&st_Number[6], NUMBER_VAL, ADC_get_raw_channel(&ADC_struct_AN2));
-//            FT8XX_modify_number(&st_Number[7], NUMBER_VAL, encoder_rpm);
-//            FT8XX_modify_number(&st_Number[8], NUMBER_VAL, encoder_tour);
-//            //tracker = FT8XX_rd32(REG_TRACKER);
-//                       
-//            FT8XX_start_new_dl();					// Start a new display list, reset ring buffer and ring pointer
-//            FT8XX_write_dl_long(TAG_MASK(1));
-//            FT8XX_write_dl_long(CMD_COLDSTART);
-//            
-//            FT8XX_write_dl_long(TAG(st_Gradient[0].touch_tag));
-//            FT8XX_draw_gradient(&st_Gradient[0]);
-//
-//            FT8XX_draw_text(&st_Text[0]);
-//
-//            FT8XX_draw_text(&st_Text[1]);  
-//
-//            FT8XX_draw_text(&st_Text[3]);
-//            FT8XX_draw_text(&st_Text[4]);
-//            FT8XX_draw_text(&st_Text[5]);
-//            FT8XX_draw_text(&st_Text[6]);
-//            FT8XX_draw_text(&st_Text[7]);
-//            FT8XX_draw_text(&st_Text[8]);
-//            FT8XX_draw_text(&st_Text[9]);
-//            FT8XX_draw_text(&st_Text[10]);
-//            FT8XX_draw_text(&st_Text[11]);
-//            FT8XX_draw_text(&st_Text[12]);
-//
-//            FT8XX_draw_text(&st_Text[13]);
-//            FT8XX_draw_text(&st_Text[14]);   
-//            FT8XX_draw_text(&st_Text[15]); 
-//
-//            FT8XX_draw_number(&st_Number[0]);
-//            FT8XX_draw_number(&st_Number[1]);
-//            FT8XX_draw_number(&st_Number[2]);
-//            FT8XX_draw_number(&st_Number[3]);
-//            FT8XX_draw_number(&st_Number[4]);
-//            FT8XX_draw_number(&st_Number[5]);
-//            FT8XX_draw_number(&st_Number[6]);
-//            FT8XX_draw_number(&st_Number[7]);
-//            FT8XX_draw_number(&st_Number[8]);
-//
-//            FT8XX_write_dl_long(BEGIN(LINES));
-//            FT8XX_write_dl_long(VERTEX2II(305, 45, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 45, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(305, 220, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 220, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(305, 45, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(305, 220, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 45, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 220, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(395, 25, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(395, 220, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(305, 70, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 70, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(305, 95, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 95, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(305, 120, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 120, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(305, 145, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 145, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(305, 170, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 170, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(305, 195, 0, 0));
-//            FT8XX_write_dl_long(VERTEX2II(470, 195, 0, 0));               
-//            
-//            FT8XX_write_dl_long(TAG(st_Button[0].touch_tag));
-//            FT8XX_draw_button(&st_Button[0]);
-//
-//            FT8XX_draw_text(&st_Text[2]);   
-//
-//            FT8XX_write_dl_long(COLOR_RGB(85, 170, 0));
-//            FT8XX_set_context_fcolor(0xFDFF59);
-//            FT8XX_write_dl_long(COLOR_RGB(0, 0, 0));
-//
-//            FT8XX_CMD_tracker(st_Slider[0].x, st_Slider[0].y, st_Slider[0].w, st_Slider[0].h, st_Slider[0].touch_tag);
-//            FT8XX_write_dl_long(TAG(st_Slider[0].touch_tag));
-//            FT8XX_draw_slider(&st_Slider[0]);  
-//
-//            FT8XX_CMD_tracker(st_Dial[0].x, st_Dial[0].y, 1, 1, st_Dial[0].touch_tag);
-//            FT8XX_write_dl_long(TAG(st_Dial[0].touch_tag));
-//            FT8XX_draw_dial(&st_Dial[0]);
-//            FT8XX_write_dl_long(COLOR_RGB(255, 255, 255));
-//            
-//            if (ENCODER_get_switch_state() == 0)     
-//            {
-//                
-//                FT8XX_set_context_fcolor(0x00FF00);
-//                FT8XX_draw_button(&st_Button[1]);
-//            }
-//            else
-//            {
-//                FT8XX_set_context_fcolor(0xFF0000);
-//                FT8XX_draw_button(&st_Button[1]);
-//            }
-//            
-//            FT8XX_update_screen_dl();         		// Update display list  
-//                        
-//            tag = FT8XX_read_touch_tag();         
-//            tracker = FT8XX_rd32(REG_TRACKER); 
-//            
-//            if (tag != 0)
-//            {
-//                
-//                if ((tracker & 0x0000FFFF) == st_Slider[0].touch_tag)
-//                {
-//                    track_upd = ((tracker&0xFFFF0000)>>16);
-//                    FT8XX_modify_slider(&st_Slider[0], SLIDER_VAL, track_upd);
-//                    track_upd = (track_upd >>9); // Divide by 512 to get a range of 0-128
-//                    if (track_upd < 10){track_upd = 10;}
-//                    FT8XX_wr8(REG_PWM_DUTY, track_upd);
-//                }
-//                
-//                else if ((tracker & 0x0000FFFF) == st_Dial[0].touch_tag)
-//                {
-//                    track_upd = ((tracker&0xFFFF0000)>>16);
-//                    FT8XX_modify_dial(&st_Dial[0], DIAL_VALUE, track_upd);
-//                }
-//            }
-//            
-//            if (tag == st_Button[0].touch_tag)
-//            {
-//                while(((FT8XX_rd32(REG_TOUCH_DIRECT_XY)) & 0x8000) == 0x0000);
-//                FT8XX_touchpanel_calibrate();
-//                FT8XX_clear_touch_tag();
-//                while(((FT8XX_rd32(REG_TOUCH_DIRECT_XY)) & 0x8000) == 0x0000);
-//            }        
-//#endif
-//        }         
-        
-//        if (C1RXFUL1bits.RXFUL1 == 1)
-//        {
-//            C1RXFUL1bits.RXFUL1 = 0;
-//            if (CAN_parse_rxmsg(&CAN_native) == 1)
-//            {
-//                DSPEAK_LED4_STATE = !DSPEAK_LED4_STATE;
-//                #ifdef UART_DEBUG_ENABLE
-//                UART_putstr(UART_3, "CAN RX data = ");
-//                UART_putbuf(UART_3, &CAN_native.can_rx_payload[0], 8);             
-//                UART_putc(UART_3, 0x0D);
-//                UART_putc(UART_3, 0x0A);
-//                #endif
-//            }
-//        } 
-
-//        if (UART_rx_done(UART_1) == UART_RX_COMPLETE)
-//        {
-//            u485_rx_buf = UART_get_rx_buffer(UART_1);
-//            DSPEAK_LED3_STATE = !DSPEAK_LED3_STATE;
-//        }          
-        
-//        if (TIMER_get_state(TIMER_3, TIMER_INT_STATE) == 1)
-//        { 
-//            if (++counter_sec >= 60)
-//            {    
-//                if (CAN_tx_state == 0)
-//                {
-//                    CAN_tx_return = CAN_send_txmsg(&CAN_native);
-//                    #ifdef UART_DEBUG_ENABLE
-//                    UART_putstr(UART_3, "CAN tx error counter = ");
-//                    UART_putc_ascii(UART_3, retry_counter);
-//                    UART_putc(UART_3, 0x0D);
-//                    UART_putc(UART_3, 0x0A);
-//                    #endif                    
-//                    DSPEAK_LED1_STATE = !DSPEAK_LED1_STATE;
-//                }
-//
-//                if (CAN_tx_return == 3)     // Remote node did not acknowledge
-//                {
-//                    retry_counter = CAN_get_txmsg_errcnt(&CAN_native);
-//                    if (retry_counter > CAN_MAXIMUM_TX_RETRY)
-//                    {
-//                        CAN_tx_state = 1;
-//                        C1TR01CONbits.TXREQ0 = 0x0; 
-//                    }
-//                }
-//                              
-//                RTCC_read_time();
-//                hour = RTCC_get_time_parameter(RTC_HOUR);
-//                minute = RTCC_get_time_parameter(RTC_MINUTE);
-//                second = RTCC_get_time_parameter(RTC_SECOND);
-//#ifdef EVE_SCREEN_ENABLE
-//                //FT8XX_modify_clock_hms(&st_Clock[0], hour, minute, second);
-//#endif
-//                counter_sec = 0; 
-//            }
-//        }        
-
-        // RS-485 test
-//        if (TIMER_get_state(TIMER_4, TIMER_INT_STATE) == 1)
-//        { 
-//            if (++counter_timer4 > 5)
-//            {         
-//                counter_timer4 = 0;
-//                #ifdef BRINGUP_DSPEAK_1
-//                UART_putstr(UART_1, "dsPeak1 sent this message");                 
-//                #ifdef UART_DEBUG_ENABLE
-//                UART_putstr(UART_3, "RS-485 data rx'd = ");
-//                UART_putbuf(UART_3, u485_rx_buf, 25);             
-//                UART_putc(UART_3, 0x0D);
-//                UART_putc(UART_3, 0x0A);                      
-//                #endif
-//                DSPEAK_LED2_STATE = !DSPEAK_LED2_STATE;
-//                #endif
-//
-//                #ifdef BRINGUP_DSPEAK_2
-//                UART_putstr(UART_1, "dsPeak2 sent this message"); 
-//                #ifdef UART_DEBUG_ENABLE
-//                UART_putstr(UART_3, "RS-485 data rx'd = ");
-//                UART_putbuf(UART_3, u485_rx_buf, UART_get_rx_buffer_length(UART_1));             
-//                UART_putc(UART_3, 0x0D);
-//                UART_putc(UART_3, 0x0A);                      
-//                #endif         
-//                DSPEAK_LED2_STATE = !DSPEAK_LED2_STATE;
-//                #endif
-//            }
-//        }
-        
-        // QEI velocity refresh rate
-//        if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
-//        {           
-////            QEI_calculate_velocity(QEI_2);  
-////            new_pid_out2 = MOTOR_drive_pid(MOTOR_2);
-////            MOTOR_drive_perc(MOTOR_2, MOTOR_get_direction(MOTOR_2), new_pid_out2);
-//        }        
-//        
-        
-        //if (TIMER_get_state(TIMER_7, TIMER_INT_STATE) == 1)
-        //{
-            //IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5621_OUTPUT_NORMAL, dac_out);
-            //IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5621_OUTPUT_NORMAL, dac_out);
-            //if (dac_out >= 0xFFF){dac_out = 0;}
-            //IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5621_OUTPUT_NORMAL, sine_dac[dac_out]);
-            //IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5621_OUTPUT_NORMAL, sine_dac[dac_out]);            
-            
-//#ifdef IVIDAC_RESOLUTION_12BIT
-//            if (dac_out >= 512){dac_out = 0;}
-//            IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5621_OUTPUT_NORMAL, sine_dac_512[dac_out]);
-//            IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5621_OUTPUT_NORMAL, sine_dac_512[dac_out]);  
-//#endif
-            
-//#ifdef IVIDAC_RESOLUTION_14BIT
-//            if (dac_out >= 256){dac_out = 0;}
-//            IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, sine_dac_256p_14b[dac_out]);
-//            IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, sine_dac_256p_14b[dac_out]); 
-//            dac_out++;
-//#endif            
-//            IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, dac_out);
-//            IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, dac_out);              
-//            dac_out++;   
-//            if (++dac_out > 0x3FFF){dac_out = 0;}
-//            {
-                //dac_out = 0;
-//                if (dac_step == 0)
-//                {
-//                    dac_step = 1;
-//                    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x3FFF);
-//                    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, 0x3FFF);                      
-//                }
-//                
-//                else if (dac_step == 1)
-//                {
-//                    dac_step = 2;
-//                    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x0000);
-//                    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, 0x0000);                      
-//                }
-//                
-//                else if (dac_step == 2)
-//                {
-//                    dac_step = 3;
-//                    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x3FFF);
-//                    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, 0x3FFF);                      
-//                }
-//                
-//                else if (dac_step == 3)
-//                {
-//                    dac_step = 0;
-//                    IVIDAC_set_output_raw(&IVIDAC_struct[0], IVIDAC_ON_MIKROBUS1, AD5641_OUTPUT_NORMAL, 0x0000);
-//                    IVIDAC_set_output_raw(&IVIDAC_struct[1], IVIDAC_ON_MIKROBUS2, AD5641_OUTPUT_NORMAL, 0x0000);                      
-//                }                  
-//            }
-        //}
-        
-        // QEI velocity refresh rate
-//        if (TIMER_get_state(TIMER_8, TIMER_INT_STATE) == 1)
-//        {   
-//            new_rpm_ain = (uint16_t)(((float)(ADC_get_raw_channel(&ADC_struct_AN2) / 1024.0))*QEI_get_max_rpm(QEI_1));
-//            MOTOR_set_rpm(MOTOR_1, new_rpm_ain);
-//            
-//            QEI_calculate_velocity(QEI_1);  
-//            new_pid_out1 = MOTOR_drive_pid(MOTOR_1);
-//            MOTOR_drive_perc(MOTOR_1, MOTOR_get_direction(MOTOR_1), new_pid_out1);
-//        }
-
-        // SWPWM RGB LED timer
-        //if (TIMER_get_state(TIMER_9, TIMER_INT_STATE) == 1)
-        //{                   
-//            unsigned int cnt = 0;
-//            for (; cnt < 8; cnt++)
-//            {
-//                I2C_buf[0] = 0x90;
-//                I2C_buf[1] = 0x08 + cnt; // Channel
-//                I2C_buf[2] = ((sine_10b_512pts[i2c_sine_counter] & 0x03C0) >> 6) & 0x0F;
-//                I2C_buf[3] = ((sine_10b_512pts[i2c_sine_counter] & 0x003F) << 2) & 0xFC;  
-//                I2C_master_write(I2C_port_1, I2C_buf, 4);                
-//            }         
-//            i2c_sine_counter++;
-//            if (i2c_sine_counter == 512){i2c_sine_counter = 0;}      
-        //}        
+        if (TIMER_get_state(TIMER9_struct, TIMER_INT_STATE) == 1)
+        {   
+        } 
     }
     return 0;
 }
